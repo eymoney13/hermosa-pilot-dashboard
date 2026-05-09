@@ -48,17 +48,16 @@ function ProbabilityBar({
         />
       </div>
 
-      {/* Probability caption — centered under the dot */}
+      {/* Probability caption — anchored to the dot, but clamped within the bar so it never overflows on narrow screens. Wraps if the box is too narrow. */}
       <p
-        className="text-sm text-gray-600 mt-2"
+        className="text-sm text-gray-600 text-center mt-2"
         style={{
-          marginLeft: `${pct}%`,
-          transform: "translateX(-50%)",
-          width: "fit-content",
-          whiteSpace: "nowrap",
+          marginLeft: `max(0px, min(calc(${pct}% - 6rem), calc(100% - 12rem)))`,
+          width: "12rem",
+          maxWidth: "100%",
         }}
       >
-        {pct}% probability of an exceedance
+        {pct}% exceedance probability
       </p>
     </div>
   );
