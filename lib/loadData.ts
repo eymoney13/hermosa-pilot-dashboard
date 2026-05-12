@@ -58,6 +58,16 @@ async function readCsv<T>(relPath: string): Promise<T[]> {
   );
 }
 
+// Like readCsv but resolves to [] if the file is missing — used for optional inputs.
+async function readCsvOptional<T>(relPath: string): Promise<T[]> {
+  try {
+    return await readCsv<T>(relPath);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException)?.code === "ENOENT") return [];
+    throw err;
+  }
+}
+
 async function loadThresholds(): Promise<Record<string, number>> {
   const rows = await readCsv<{ StationCode: string; threshold: number }>(
     "thresholds.csv"
@@ -72,11 +82,13 @@ async function loadThresholds(): Promise<Record<string, number>> {
 }
 
 export async function loadDashboardData(): Promise<DashboardData> {
-  const [nowcastRows, forecastRows, thresholdMap] = await Promise.all([
-    readCsv<NowcastRow>("nowcast_latest.csv"),
-    readCsv<ForecastRow>("forecast_3day.csv"),
-    loadThresholds(),
-  ]);
+  const [nowcastRows, forecastRows, historyRows, thresholdMap] =
+    await Promise.all([
+      readCsv<NowcastRow>("nowcast_latest.csv"),
+      readCsv<ForecastRow>("forecast_3day.csv"),
+      readCsvOptional<ForecastRow>("history_3day.csv"),
+      loadThresholds(),
+    ]);
 
   const nowcastByCode = new Map<string, NowcastRow>();
   for (const row of nowcastRows) {
@@ -85,6 +97,10 @@ export async function loadDashboardData(): Promise<DashboardData> {
   const forecastByCode = new Map<string, ForecastRow>();
   for (const row of forecastRows) {
     if (row?.StationCode) forecastByCode.set(String(row.StationCode), row);
+  }
+  const historyByCode = new Map<string, ForecastRow>();
+  for (const row of historyRows) {
+    if (row?.StationCode) historyByCode.set(String(row.StationCode), row);
   }
 
   const beaches: BeachData[] = [];
@@ -127,6 +143,29 @@ export async function loadDashboardData(): Promise<DashboardData> {
       }
     }
 
+    // history_3day.csv shape mirrors forecast_3day.csv, where day1 = most recent past day.
+    // We re-sort ascending so the array reads past → present left-to-right.
+    const histRow = historyByCode.get(code);
+    const pastDays: ForecastDay[] = [];
+    if (histRow) {
+      for (const i of [1, 2, 3] as const) {
+        const date = histRow[`day${i}_date`] as string | undefined;
+        const probRaw = histRow[`day${i}_probability`];
+        const mpn = histRow[`day${i}_mpn_label`] as string | undefined;
+        if (!date || probRaw == null) continue;
+        const p = Number(probRaw);
+        const dayStatus = statusFromProb(p, code, thresholdMap);
+        if (!dayStatus) continue;
+        pastDays.push({
+          date: String(date),
+          probability: p,
+          mpnLabel: mpn,
+          status: dayStatus,
+        });
+      }
+      pastDays.sort((a, b) => a.date.localeCompare(b.date));
+    }
+
     beaches.push({
       code,
       name: BEACH_NAMES[code] ?? code,
@@ -145,6 +184,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
       insight: normalizeInsight(String(now.insight ?? ""), status),
       status,
       threshold: thresholdFor(code, thresholdMap),
+      pastDays,
       forecast,
     });
   }

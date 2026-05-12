@@ -15,7 +15,7 @@ import type { BeachData } from "@/lib/data";
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: () => string })._getIconUrl;
 
 function colorFor(status: BeachData["status"]) {
-  return status === "Low Bacteria" ? "#2d8a4e" : "#cc3333";
+  return status === "Normal" ? "#2d8a4e" : "#cc3333";
 }
 
 function PanTo({ lat, lon }: { lat: number; lon: number }) {

@@ -5,7 +5,7 @@ export const BEACH_NAMES: Record<string, string> = {
   DHS115: "Hermosa Beach - TK",
 };
 
-export type Status = "Low Bacteria" | "High Bacteria";
+export type Status = "Normal" | "Not recommended";
 
 export interface ForecastDay {
   date: string;
@@ -28,6 +28,7 @@ export interface BeachData {
   insight: string;
   status: Status;
   threshold: number;
+  pastDays: ForecastDay[];
   forecast: ForecastDay[];
 }
 
@@ -53,8 +54,8 @@ export function statusFromProb(
 ): Status | null {
   if (prob == null || Number.isNaN(prob)) return null;
   return prob >= thresholdFor(code, thresholdMap)
-    ? "High Bacteria"
-    : "Low Bacteria";
+    ? "Not recommended"
+    : "Normal";
 }
 
 export function formatLongDate(iso: string): string {

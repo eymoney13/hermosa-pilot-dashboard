@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import type { BeachData } from "@/lib/data";
-import Hero from "./Hero";
-import Details from "./Details";
-import ForecastStrip from "./ForecastStrip";
+import BeachCard from "./BeachCard";
 import MapClient from "./MapClient";
 
 const STATUS_UNDERLINE: Record<string, string> = {
-  "Low Bacteria": "bg-[#2d8a4e]",
-  "High Bacteria": "bg-[#cc3333]",
+  Normal: "bg-[#2d8a4e]",
+  "Not recommended": "bg-[#cc3333]",
 };
 
 export default function DashboardTabs({ beaches }: { beaches: BeachData[] }) {
@@ -53,9 +51,7 @@ export default function DashboardTabs({ beaches }: { beaches: BeachData[] }) {
         </div>
       </nav>
 
-      <Hero beach={active} />
-      <Details beach={active} />
-      <ForecastStrip beach={active} />
+      <BeachCard beach={active} />
 
       <section className="w-full">
         <MapClient beaches={beaches} selectedCode={active.code} />
