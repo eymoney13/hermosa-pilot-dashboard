@@ -1,11 +1,6 @@
-import { useId } from "react";
-import {
-  AlertTriangle,
-  CircleCheck,
-  Info,
-  MapPin,
-} from "lucide-react";
+import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
 import type { BeachData, ForecastDay, Status } from "@/lib/data";
+import InfoTooltip from "./InfoTooltip";
 import WhyPrediction from "./WhyPrediction";
 
 // ---------------------------------------------------------------------------
@@ -96,36 +91,8 @@ const MPN_ICON_COLOR: Record<Status, string> = {
   "Not recommended": "#9B2C2C",
 };
 
-function MpnTooltip({ status }: { status: Status }) {
-  const id = useId();
-  return (
-    <span className="group relative inline-flex align-middle ml-0.5">
-      <button
-        type="button"
-        aria-describedby={id}
-        className="inline-flex opacity-60 hover:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-1 rounded-full transition-opacity"
-        style={{ color: MPN_ICON_COLOR[status] }}
-      >
-        <Info className="h-3.5 w-3.5" aria-label="About MPN/100mL" />
-      </button>
-      <span
-        id={id}
-        role="tooltip"
-        className="pointer-events-none absolute bottom-full right-0 mb-2 w-[280px] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-white border border-gray-200 rounded-md p-3 text-xs shadow-lg z-20"
-      >
-        <span className="block font-medium text-xs text-gray-900 mb-1">
-          MPN/100mL
-        </span>
-        <span className="block text-xs leading-relaxed text-gray-600">
-          Most probable number of bacteria per 100 milliliters of water — the
-          standard EPA measure for water quality. Readings above 104 are
-          classified as an exceedance, meaning bacteria levels are unsafe for
-          swimming.
-        </span>
-      </span>
-    </span>
-  );
-}
+const MPN_TOOLTIP_BODY =
+  "Most probable number of bacteria per 100 milliliters of water — the standard EPA measure for water quality. Readings above 104 are classified as an exceedance, meaning bacteria levels are unsafe for swimming.";
 
 // Splits the subtitle on the first "MPN/100mL" and injects the tooltip after
 // it. Falls back to the raw string if the marker isn't present.
@@ -139,7 +106,13 @@ function MpnSubtitle({ text, status }: { text: string; status: Status }) {
     <>
       {before}
       {marker}
-      <MpnTooltip status={status} />
+      <InfoTooltip
+        title="MPN/100mL"
+        body={MPN_TOOLTIP_BODY}
+        iconColor={MPN_ICON_COLOR[status]}
+        iconClassName="h-3.5 w-3.5"
+        ariaLabel="About MPN/100mL"
+      />
       {after}
     </>
   );
@@ -169,32 +142,9 @@ function StatusHero({ beach }: { beach: BeachData }) {
 // 3. Exceedance scale
 // ---------------------------------------------------------------------------
 
-function ExceedanceTooltip({ pct }: { pct: number }) {
-  const id = useId();
+function exceedanceBody(pct: number): string {
   const article = articleFor(pct);
-  const body = `Less is better — under 30% is generally considered safe. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
-
-  return (
-    <span className="group relative inline-flex">
-      <button
-        type="button"
-        aria-describedby={id}
-        className="inline-flex text-gray-400 hover:text-gray-700 focus:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-1 rounded-full"
-      >
-        <Info className="h-4 w-4" aria-label="About exceedance probability" />
-      </button>
-      <span
-        id={id}
-        role="tooltip"
-        className="pointer-events-none absolute bottom-full right-0 mb-2 w-[280px] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-white border border-gray-200 rounded-md p-3 text-xs shadow-lg z-20"
-      >
-        <span className="block font-medium text-gray-900 mb-1">
-          Exceedance probability
-        </span>
-        <span className="block text-gray-600 leading-relaxed">{body}</span>
-      </span>
-    </span>
-  );
+  return `Less is better — under 30% is generally considered safe. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
 }
 
 function ExceedanceScale({ beach }: { beach: BeachData }) {
@@ -232,7 +182,11 @@ function ExceedanceScale({ beach }: { beach: BeachData }) {
           {pct}%
         </span>
         <span className="text-base text-gray-500">exceedance probability</span>
-        <ExceedanceTooltip pct={pct} />
+        <InfoTooltip
+          title="Exceedance probability"
+          body={exceedanceBody(pct)}
+          ariaLabel="About exceedance probability"
+        />
       </div>
     </div>
   );
