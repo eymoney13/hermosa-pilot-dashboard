@@ -96,7 +96,7 @@ export default function InfoTooltip({
       <span
         id={id}
         role="tooltip"
-        className={`absolute bottom-full right-0 mb-2 w-[280px] transition-opacity bg-white border border-gray-200 rounded-md p-3 text-xs shadow-lg z-20 ${visibilityClass}`}
+        className={`fixed bottom-4 left-4 right-4 sm:absolute sm:bottom-full sm:left-auto sm:right-0 sm:top-auto sm:mb-2 sm:w-[280px] transition-opacity bg-white border border-gray-200 rounded-md p-3 text-xs shadow-lg z-50 ${visibilityClass}`}
       >
         <span className="block font-medium text-xs text-gray-900 mb-1">
           {title}
