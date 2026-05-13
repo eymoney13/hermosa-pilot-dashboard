@@ -41,7 +41,7 @@ export default function WhyPrediction({ beach }: { beach: BeachData }) {
         aria-controls="why-prediction-panel"
         className="w-full py-3 flex justify-between items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
       >
-        <span>Behind the prediction</span>
+        <span>Behind the Prediction</span>
         <ChevronDown
           className={`h-4 w-4 transition-transform duration-200 ${
             open ? "rotate-180" : ""
@@ -74,7 +74,7 @@ export default function WhyPrediction({ beach }: { beach: BeachData }) {
           {beach.insight && (
             <div>
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
-                Last Test Result
+                Latest Lab Sample Result
               </p>
               <p className="text-sm text-gray-700 leading-relaxed">
                 {beach.insight}
