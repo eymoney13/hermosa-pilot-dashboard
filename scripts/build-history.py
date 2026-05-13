@@ -11,15 +11,28 @@ forecast_3day.csv exactly so the existing loader picks it up unchanged.
 from __future__ import annotations
 
 import csv
+import os
 import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-SOURCE_DIR = (
-    Path.home() / "Desktop" / "project-neptune" / "outputs" / "nowcast_history"
+
+def _path_from_env(var: str, default: Path) -> Path:
+    """Resolve a path override from an env var, falling back to the default.
+    Accepts absolute or relative strings; expands a leading ~."""
+    raw = os.environ.get(var)
+    return Path(raw).expanduser() if raw else default
+
+
+SOURCE_DIR = _path_from_env(
+    "NOWCAST_HISTORY_DIR",
+    Path.home() / "Desktop" / "project-neptune" / "outputs" / "nowcast_history",
 )
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-OUTPUT_FILE = PROJECT_ROOT / "public" / "data" / "history_3day.csv"
+OUTPUT_FILE = (
+    _path_from_env("HISTORY_OUTPUT_DIR", PROJECT_ROOT / "public" / "data")
+    / "history_3day.csv"
+)
 
 WANTED_STATIONS = ["DHS114", "DHS115"]
 LOOKBACK_DAYS = 14
@@ -66,6 +79,9 @@ def build_header() -> list[str]:
 
 
 def main() -> int:
+    print(f"SOURCE_DIR:  {SOURCE_DIR}")
+    print(f"OUTPUT_FILE: {OUTPUT_FILE}")
+
     if not SOURCE_DIR.is_dir():
         print(f"Source directory not found: {SOURCE_DIR}", file=sys.stderr)
         return 1
@@ -119,8 +135,12 @@ def main() -> int:
         writer.writeheader()
         writer.writerows(out_rows)
 
+    try:
+        out_display = OUTPUT_FILE.relative_to(PROJECT_ROOT)
+    except ValueError:
+        out_display = OUTPUT_FILE
     print(
-        f"Wrote {OUTPUT_FILE.relative_to(PROJECT_ROOT)} "
+        f"Wrote {out_display} "
         f"with {len(dates)} days for {len(out_rows)} beaches."
     )
     return 0
