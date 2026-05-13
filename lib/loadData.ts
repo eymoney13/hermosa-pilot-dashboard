@@ -6,7 +6,6 @@ import {
   BEACH_NAMES,
   HERMOSA_STATIONS,
   statusFromProb,
-  subtractDays,
   thresholdFor,
   type BeachData,
   type DashboardData,
@@ -192,13 +191,6 @@ export async function loadDashboardData(): Promise<DashboardData> {
   beaches.sort((a, b) => b.latitude - a.latitude);
 
   const predictionDate = beaches[0]?.predictionDate ?? "";
-  const dayValues = beaches
-    .map((b) => b.daysSinceSample)
-    .filter((d): d is number => d != null);
-  const latestSampleDate =
-    dayValues.length > 0 && predictionDate
-      ? subtractDays(predictionDate, Math.min(...dayValues))
-      : null;
 
-  return { beaches, predictionDate, latestSampleDate };
+  return { beaches, predictionDate };
 }

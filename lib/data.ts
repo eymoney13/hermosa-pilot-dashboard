@@ -35,7 +35,6 @@ export interface BeachData {
 export interface DashboardData {
   beaches: BeachData[];
   predictionDate: string;
-  latestSampleDate: string | null;
 }
 
 export function thresholdFor(
