@@ -258,7 +258,7 @@ function SevenDayWindow({ beach }: { beach: BeachData }) {
                 {weekdayShort(day.date)}
               </span>
               <div
-                className={`h-7 w-full rounded-sm ${opacity} ${todayOutline}`}
+                className={`h-7 w-full rounded-sm flex items-center justify-center ${opacity} ${todayOutline}`}
                 style={{ backgroundColor: CELL_FILL[day.status] }}
                 title={`${weekdayShort(day.date)} · ${day.status} · ${Math.round(
                   day.probability * 100
@@ -266,7 +266,11 @@ function SevenDayWindow({ beach }: { beach: BeachData }) {
                 aria-label={`${day.date} ${day.status} ${Math.round(
                   day.probability * 100
                 )}%`}
-              />
+              >
+                <span className="text-[10px] font-medium text-gray-900">
+                  {Math.round(day.probability * 100)}%
+                </span>
+              </div>
             </div>
           );
         })}
