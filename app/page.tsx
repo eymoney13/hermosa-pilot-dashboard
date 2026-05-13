@@ -1,11 +1,11 @@
 import DashboardTabs from "@/components/DashboardTabs";
 import { loadDashboardData } from "@/lib/loadData";
-import { formatLongDate } from "@/lib/data";
+import { formatMonthDayYear } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { beaches, predictionDate, latestSampleDate } = await loadDashboardData();
+  const { beaches, predictionDate } = await loadDashboardData();
 
   return (
     <main className="flex flex-col">
@@ -14,12 +14,15 @@ export default async function Home() {
           <h1 className="text-sm font-medium text-gray-700">
             Hermosa Beach Water Quality
           </h1>
-          <p className="text-sm text-gray-400">
-            {predictionDate ? `Nowcast for ${formatLongDate(predictionDate)}` : ""}
-            {latestSampleDate
-              ? ` · Latest sample ${formatLongDate(latestSampleDate)}`
-              : ""}
-          </p>
+          {predictionDate && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <span
+                aria-hidden="true"
+                className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
+              />
+              <span>Nowcast for {formatMonthDayYear(predictionDate)}</span>
+            </div>
+          )}
         </div>
       </header>
 

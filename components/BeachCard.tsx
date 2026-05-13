@@ -67,17 +67,12 @@ function articleFor(num: number): string {
 
 function LocationHeader({ beach }: { beach: BeachData }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <div className="flex items-center gap-1.5 text-sm text-gray-500">
-          <MapPin className="h-4 w-4" aria-hidden="true" />
-          <span>Hermosa Beach, CA</span>
-        </div>
-        <h2 className="mt-1 text-xl font-medium text-gray-900">{beach.name}</h2>
+    <div>
+      <div className="flex items-center gap-1.5 text-sm text-gray-500">
+        <MapPin className="h-4 w-4" aria-hidden="true" />
+        <span>Hermosa Beach, CA</span>
       </div>
-      <span className="shrink-0 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-500">
-        High confidence
-      </span>
+      <h2 className="mt-1 text-xl font-medium text-gray-900">{beach.name}</h2>
     </div>
   );
 }
