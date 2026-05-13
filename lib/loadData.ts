@@ -110,11 +110,16 @@ export async function loadDashboardData(): Promise<DashboardData> {
     const status = statusFromProb(prob, code, thresholdMap);
     if (!status) continue;
 
-    const factors = [now.top_factor_1, now.top_factor_2, now.top_factor_3]
-      .map((f) =>
-        factorLabel(typeof f === "string" ? f : f != null ? String(f) : null)
-      )
-      .filter((f): f is string => Boolean(f));
+    const factors: string[] = [];
+    const seen = new Set<string>();
+    for (const key of ["top_factor_1", "top_factor_2", "top_factor_3"] as const) {
+      const raw = String(now[key] ?? "").trim();
+      if (!raw) continue;
+      const canonical = factorLabel(raw);
+      if (canonical == null || seen.has(canonical)) continue;
+      seen.add(canonical);
+      factors.push(canonical);
+    }
 
     const days =
       now.days_since_sample == null ||
