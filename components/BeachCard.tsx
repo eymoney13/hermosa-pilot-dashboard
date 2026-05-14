@@ -142,7 +142,24 @@ function StatusHero({ beach }: { beach: BeachData }) {
 
 function exceedanceBody(pct: number): string {
   const article = articleFor(pct);
-  return `Less is better — under 30% is generally considered safe. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
+
+  // Tier 1: Generally safe (0-29%)
+  if (pct < 30) {
+    return `Less is better — under 30% means low risk. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
+  }
+
+  // Tier 2: Caution (30-49%)
+  if (pct < 50) {
+    return `Bacteria levels may be slightly elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, though most samples in this range still test below the EPA threshold.`;
+  }
+
+  // Tier 3: Not recommended (50-74%)
+  if (pct < 75) {
+    return `Bacteria levels are likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria — most samples in this range test above the EPA safe-swimming threshold.`;
+  }
+
+  // Tier 4: Strongly not recommended (75-100%)
+  return `Bacteria levels are very likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, well above the EPA safe-swimming threshold.`;
 }
 
 function ExceedanceScale({ beach }: { beach: BeachData }) {
