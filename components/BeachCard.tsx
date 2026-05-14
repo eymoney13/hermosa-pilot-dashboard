@@ -14,14 +14,6 @@ function weekdayShort(iso: string): string {
   return date.toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short" });
 }
 
-function firstSentence(text: string): string {
-  if (!text) return "";
-  const trimmed = text.trim();
-  const idx = trimmed.indexOf(".");
-  if (idx === -1) return trimmed;
-  return trimmed.slice(0, idx + 1);
-}
-
 const STATUS_TINT: Record<Status, { bg: string; deep: string; mid: string }> = {
   Normal: { bg: "bg-[#e8f5ee]", deep: "text-[#173404]", mid: "text-[#2d8a4e]" },
   "Slightly elevated": {
@@ -89,19 +81,26 @@ function LocationHeader({ beach }: { beach: BeachData }) {
 // 2. Status hero
 // ---------------------------------------------------------------------------
 
-const MPN_ICON_COLOR: Record<Status, string> = {
+const STATUS_ICON_COLOR: Record<Status, string> = {
   Normal: "#3B6D11",
   "Slightly elevated": "#6B5F0E",
   "Not recommended": "#9B2C2C",
 };
 
-const MPN_TOOLTIP_BODY =
-  "Most probable number of bacteria per 100 milliliters of water — the standard EPA measure for water quality. Readings above 104 are classified as an exceedance, meaning bacteria levels are unsafe for swimming.";
+const THRESHOLD_TOOLTIP_BODY =
+  "The EPA's safe-swimming limit for ocean water is 104 MPN/100mL — the most probable number of bacteria per 100 milliliters. Readings above this are classified as an exceedance, meaning bacteria levels are unsafe for swimming.";
 
-// Splits the subtitle on the first "MPN/100mL" and injects the tooltip after
-// it. Falls back to the raw string if the marker isn't present.
-function MpnSubtitle({ text, status }: { text: string; status: Status }) {
-  const marker = "MPN/100mL";
+function predictionSubtitle(status: Status): string {
+  if (status === "Not recommended") {
+    return "Predicted to exceed the EPA swimming threshold today.";
+  }
+  return "Predicted to be below the EPA swimming threshold today.";
+}
+
+// Splits the subtitle on "EPA swimming threshold" and injects the threshold
+// tooltip after that phrase. Falls back to the raw string if not present.
+function ThresholdSubtitle({ text, status }: { text: string; status: Status }) {
+  const marker = "EPA swimming threshold";
   const idx = text.indexOf(marker);
   if (idx === -1) return <>{text}</>;
   const before = text.slice(0, idx);
@@ -111,11 +110,11 @@ function MpnSubtitle({ text, status }: { text: string; status: Status }) {
       {before}
       {marker}
       <InfoTooltip
-        title="MPN/100mL"
-        body={MPN_TOOLTIP_BODY}
-        iconColor={MPN_ICON_COLOR[status]}
+        title="EPA swimming threshold"
+        body={THRESHOLD_TOOLTIP_BODY}
+        iconColor={STATUS_ICON_COLOR[status]}
         iconClassName="h-3.5 w-3.5"
-        ariaLabel="About MPN/100mL"
+        ariaLabel="About the EPA swimming threshold"
       />
       {after}
     </>
@@ -125,7 +124,7 @@ function MpnSubtitle({ text, status }: { text: string; status: Status }) {
 function StatusHero({ beach }: { beach: BeachData }) {
   const tint = STATUS_TINT[beach.status];
   const Icon = beach.status === "Not recommended" ? AlertTriangle : CircleCheck;
-  const subtitle = firstSentence(beach.insight);
+  const subtitle = predictionSubtitle(beach.status);
 
   return (
     <div className={`${tint.bg} rounded-lg p-5`}>
@@ -133,11 +132,9 @@ function StatusHero({ beach }: { beach: BeachData }) {
         <Icon className={`h-6 w-6 ${tint.deep}`} aria-hidden="true" />
         <p className={`text-xl font-medium ${tint.deep}`}>{beach.status}</p>
       </div>
-      {subtitle && (
-        <p className={`mt-2 ml-9 text-sm ${tint.mid}`}>
-          <MpnSubtitle text={subtitle} status={beach.status} />
-        </p>
-      )}
+      <p className={`mt-2 ml-9 text-sm ${tint.mid}`}>
+        <ThresholdSubtitle text={subtitle} status={beach.status} />
+      </p>
     </div>
   );
 }
