@@ -31,10 +31,13 @@ const STATUS_TINT: Record<Status, { bg: string; deep: string; mid: string }> = {
   },
 };
 
-const CELL_FILL: Record<Status, string> = {
-  Normal: "#97C459",
-  "Not recommended": "#E24B4A",
-};
+function tierColorForCell(prob: number): string {
+  const pct = prob * 100;
+  if (pct < 30) return "#97C459";
+  if (pct < 50) return "#EF9F27";
+  if (pct < 75) return "#E24B4A";
+  return "#A32D2D";
+}
 
 const SCALE_GRADIENT =
   "linear-gradient(to right, #97C459 0%, #97C459 25%, #EF9F27 40%, #EF9F27 55%, #E24B4A 65%, #A32D2D 100%)";
@@ -259,7 +262,7 @@ function SevenDayWindow({ beach }: { beach: BeachData }) {
               </span>
               <div
                 className={`h-7 w-full rounded-sm flex items-center justify-center ${opacity} ${todayOutline}`}
-                style={{ backgroundColor: CELL_FILL[day.status] }}
+                style={{ backgroundColor: tierColorForCell(day.probability) }}
                 title={`${weekdayShort(day.date)} · ${day.status} · ${Math.round(
                   day.probability * 100
                 )}%`}
