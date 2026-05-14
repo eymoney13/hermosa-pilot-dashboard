@@ -97,18 +97,10 @@ function predictionSubtitle(status: Status): string {
   return "Predicted to be below the EPA swimming threshold today.";
 }
 
-// Splits the subtitle on "EPA swimming threshold" and injects the threshold
-// tooltip after that phrase. Falls back to the raw string if not present.
 function ThresholdSubtitle({ text, status }: { text: string; status: Status }) {
-  const marker = "EPA swimming threshold";
-  const idx = text.indexOf(marker);
-  if (idx === -1) return <>{text}</>;
-  const before = text.slice(0, idx);
-  const after = text.slice(idx + marker.length);
   return (
     <>
-      {before}
-      {marker}
+      {text}
       <InfoTooltip
         title="EPA swimming threshold"
         body={THRESHOLD_TOOLTIP_BODY}
@@ -116,7 +108,6 @@ function ThresholdSubtitle({ text, status }: { text: string; status: Status }) {
         iconClassName="h-3.5 w-3.5"
         ariaLabel="About the EPA swimming threshold"
       />
-      {after}
     </>
   );
 }
