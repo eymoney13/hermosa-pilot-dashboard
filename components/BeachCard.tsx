@@ -24,6 +24,11 @@ function firstSentence(text: string): string {
 
 const STATUS_TINT: Record<Status, { bg: string; deep: string; mid: string }> = {
   Normal: { bg: "bg-[#e8f5ee]", deep: "text-[#173404]", mid: "text-[#2d8a4e]" },
+  "Slightly elevated": {
+    bg: "bg-[#F5F2D8]",
+    deep: "text-[#6B5F0E]",
+    mid: "text-[#8A7D2A]",
+  },
   "Not recommended": {
     bg: "bg-[#fce8e8]",
     deep: "text-[#412402]",
@@ -34,7 +39,7 @@ const STATUS_TINT: Record<Status, { bg: string; deep: string; mid: string }> = {
 function tierColorForCell(prob: number): string {
   const pct = prob * 100;
   if (pct < 30) return "#97C459";
-  if (pct < 50) return "#EF9F27";
+  if (pct < 50) return "#D5C82E";
   if (pct < 75) return "#E24B4A";
   return "#A32D2D";
 }
@@ -44,7 +49,7 @@ const SCALE_GRADIENT =
 
 const TIER_PILL: Record<string, { bg: string; text: string }> = {
   "Generally safe": { bg: "#CFE5AC", text: "#2D5A0B" },
-  Caution: { bg: "#F5D9A8", text: "#6B3F08" },
+  Caution: { bg: "#E5DA5B", text: "#6B5F0E" },
   "Not recommended": { bg: "#F4C2C2", text: "#7A1F1F" },
   "Strongly not recommended": { bg: "#E89B9B", text: "#5A1414" },
 };
@@ -86,6 +91,7 @@ function LocationHeader({ beach }: { beach: BeachData }) {
 
 const MPN_ICON_COLOR: Record<Status, string> = {
   Normal: "#3B6D11",
+  "Slightly elevated": "#6B5F0E",
   "Not recommended": "#9B2C2C",
 };
 
@@ -118,7 +124,7 @@ function MpnSubtitle({ text, status }: { text: string; status: Status }) {
 
 function StatusHero({ beach }: { beach: BeachData }) {
   const tint = STATUS_TINT[beach.status];
-  const Icon = beach.status === "Normal" ? CircleCheck : AlertTriangle;
+  const Icon = beach.status === "Not recommended" ? AlertTriangle : CircleCheck;
   const subtitle = firstSentence(beach.insight);
 
   return (

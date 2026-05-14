@@ -5,7 +5,7 @@ export const BEACH_NAMES: Record<string, string> = {
   DHS115: "Hermosa Beach - TK",
 };
 
-export type Status = "Normal" | "Not recommended";
+export type Status = "Normal" | "Slightly elevated" | "Not recommended";
 
 export interface ForecastDay {
   date: string;
@@ -52,9 +52,9 @@ export function statusFromProb(
   thresholdMap: Record<string, number>
 ): Status | null {
   if (prob == null || Number.isNaN(prob)) return null;
-  return prob >= thresholdFor(code, thresholdMap)
-    ? "Not recommended"
-    : "Normal";
+  if (prob >= 0.5) return "Not recommended";
+  if (prob >= 0.3) return "Slightly elevated";
+  return "Normal";
 }
 
 export function formatLongDate(iso: string): string {

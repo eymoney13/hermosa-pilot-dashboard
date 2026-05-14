@@ -7,6 +7,10 @@ import type { Status } from "./data";
 export function normalizeInsight(insight: string, status: Status): string {
   if (!insight) return "";
 
+  // Slightly-elevated is a middle band — let the model describe it in its own
+  // words rather than forcing it into the binary safe/unsafe lexicon.
+  if (status === "Slightly elevated") return insight;
+
   const replacements: Array<[RegExp, string]> =
     status === "Not recommended"
       ? [

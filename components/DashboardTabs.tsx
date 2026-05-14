@@ -7,6 +7,7 @@ import MapClient from "./MapClient";
 
 const STATUS_UNDERLINE: Record<string, string> = {
   Normal: "bg-[#2d8a4e]",
+  "Slightly elevated": "bg-[#D5C82E]",
   "Not recommended": "bg-[#cc3333]",
 };
 
