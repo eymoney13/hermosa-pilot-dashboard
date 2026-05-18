@@ -1,3 +1,3 @@
 StationCode,StationName,Latitude,Longitude,day1_date,day1_probability,day1_prediction,day1_mpn,day1_mpn_label,day2_date,day2_probability,day2_prediction,day2_mpn,day2_mpn_label,day3_date,day3_probability,day3_prediction,day3_mpn,day3_mpn_label
-DHS114,"DHS114-Hermosa Beach, Los Angeles",33.8715,-118.407,2026-05-19,0.2502,Safe,8,<10 MPN/100mL,2026-05-20,0.294,Safe,10,10 MPN/100mL,2026-05-21,0.2386,Safe,8,<10 MPN/100mL
-DHS115,"DHS115-Hermosa Beach, Los Angeles",33.8522,-118.399,2026-05-19,0.181,Safe,5,<10 MPN/100mL,2026-05-20,0.232,Safe,5,<10 MPN/100mL,2026-05-21,0.1921,Safe,5,<10 MPN/100mL
+DHS114,"DHS114-Hermosa Beach, Los Angeles",33.8715,-118.407,2026-05-19,0.2477,Safe,8,<10 MPN/100mL,2026-05-20,0.2808,Safe,10,10 MPN/100mL,2026-05-21,0.2186,Safe,5,<10 MPN/100mL
+DHS115,"DHS115-Hermosa Beach, Los Angeles",33.8522,-118.399,2026-05-19,0.1803,Safe,5,<10 MPN/100mL,2026-05-20,0.2212,Safe,5,<10 MPN/100mL,2026-05-21,0.1693,Safe,5,<10 MPN/100mL
