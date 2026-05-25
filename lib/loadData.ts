@@ -11,7 +11,7 @@ import {
   type DashboardData,
   type ForecastDay,
 } from "./data";
-import { factorLabel } from "./factors";
+import { factorLabel, isEnvironmentalFactor } from "./factors";
 import { normalizeInsight } from "./insight";
 
 interface NowcastRow {
@@ -116,7 +116,10 @@ export async function loadDashboardData(): Promise<DashboardData> {
       const raw = String(now[key] ?? "").trim();
       if (!raw) continue;
       const canonical = factorLabel(raw);
+      // Skip empties, duplicates, and non-environmental factors (bacteria
+      // history / sampling metadata) — the latest lab result is shown separately.
       if (canonical == null || seen.has(canonical)) continue;
+      if (!isEnvironmentalFactor(canonical)) continue;
       seen.add(canonical);
       factors.push(canonical);
     }
