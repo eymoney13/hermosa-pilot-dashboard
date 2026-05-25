@@ -40,3 +40,22 @@ export function factorLabel(raw: string | null | undefined): string | null {
   if (!trimmed) return null;
   return FACTOR_CANONICAL[trimmed] ?? trimmed;
 }
+
+// Bacteria-history and sampling factors — these are NOT environmental drivers.
+// The most recent lab result is surfaced separately on the card, so contributing
+// factors should reflect only the environmental conditions driving the
+// exceedance probability. The upstream model (project-neptune) now excludes
+// these before ranking; this is a defensive net for stale/cached CSVs. Both
+// raw and canonical forms are listed so the check works pre- or post-canonical.
+const NON_ENVIRONMENTAL_FACTORS = new Set<string>([
+  "Prior bacteria level",
+  "Recent bacteria level",
+  "Recent exceedance history",
+  "Last sample was unsafe",
+  "Days since last sample",
+]);
+
+export function isEnvironmentalFactor(label: string | null | undefined): boolean {
+  if (label == null) return false;
+  return !NON_ENVIRONMENTAL_FACTORS.has(String(label).trim());
+}
