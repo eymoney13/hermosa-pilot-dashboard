@@ -34,7 +34,11 @@ OUTPUT_FILE = (
     / "history_3day.csv"
 )
 
-WANTED_STATIONS = ["DHS114", "DHS115"]
+WANTED_STATIONS = [
+    code.strip()
+    for code in os.environ.get("BEACH_FILTER", "DHS114,DHS115").split(",")
+    if code.strip()
+]
 LOOKBACK_DAYS = 14
 TARGET_DAYS = 3
 
