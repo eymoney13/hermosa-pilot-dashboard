@@ -9,9 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Hermosa Beach Water Quality",
-  description:
-    "Daily water quality nowcast and 3-day forecast for Hermosa Beach.",
+  title: "Ocean Water Quality",
+  description: "Daily ocean water quality nowcast and 3-day forecast.",
 };
 
 export default function RootLayout({

@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Neptune Dashboard
+
+A [Next.js](https://nextjs.org) (App Router) dashboard that displays ocean water-quality
+nowcasts and 3-day forecasts for **many beach locations** from a single deployment.
+
+Forecast data is produced by the separate [`project-neptune`](https://github.com/eymoney13/project-neptune)
+model repo and pushed into this repo as CSVs by GitHub Actions.
+
+## Architecture
+
+- **One repo, one `main`** serves every location.
+- **Location is a URL route segment**: `/hermosa`, `/manhattan`, `/<slug>`.
+- A **`LOCATIONS` registry** in [`lib/data.ts`](lib/data.ts) holds every per-location
+  value (display name, station codes, beach names, map fallback center).
+- **Per-location data folders** live under `public/data/<slug>/` and each contain:
+  `nowcast_latest.csv`, `forecast_3day.csv`, `history_3day.csv`, `thresholds.csv`.
+- Components are generic — they receive location values as props and hardcode nothing.
+- `/` redirects to the default location (`/hermosa`); unknown slugs return a 404.
+
+## Adding a location
+
+1. Add one entry to the `LOCATIONS` registry in `lib/data.ts`:
+
+   ```ts
+   newslug: {
+     slug: "newslug",
+     displayName: "New Beach, CA",
+     stations: ["DHS999"],
+     beachNames: { DHS999: "New Beach - Main" },
+     mapFallbackCenter: [33.0, -118.0], // [lat, lng]
+   },
+   ```
+
+2. Create `public/data/newslug/` and populate it with that location's CSVs (this is what
+   the `project-neptune` daily-refresh workflow writes into).
+
+No per-location code changes are required.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000); it redirects to the default location.
+Visit `/hermosa` or `/manhattan` directly to view a specific location.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+```
 
-## Learn More
+## Deploy
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deploys on the [Vercel Platform](https://vercel.com). See the
+[Next.js deployment docs](https://nextjs.org/docs/app/building-your-application/deploying)
+for details.

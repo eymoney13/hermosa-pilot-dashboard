@@ -1,9 +1,37 @@
-export const HERMOSA_STATIONS = ["DHS114", "DHS115"] as const;
+export interface LocationConfig {
+  slug: string;
+  displayName: string; // e.g. "Hermosa Beach, CA" — used in BeachCard + header + metadata
+  stations: string[]; // station codes for this location
+  beachNames: Record<string, string>;
+  mapFallbackCenter: [number, number]; // [lat, lng] used by MapView when no beaches loaded
+}
 
-export const BEACH_NAMES: Record<string, string> = {
-  DHS114: "Hermosa Beach - 26th St",
-  DHS115: "Hermosa Beach - TK",
+export const LOCATIONS: Record<string, LocationConfig> = {
+  hermosa: {
+    slug: "hermosa",
+    displayName: "Hermosa Beach, CA",
+    stations: ["DHS114", "DHS115"],
+    beachNames: {
+      DHS114: "Hermosa Beach - 26th St",
+      DHS115: "Hermosa Beach - TK",
+    },
+    mapFallbackCenter: [33.862, -118.403],
+  },
+  manhattan: {
+    slug: "manhattan",
+    displayName: "Manhattan Beach, CA",
+    stations: ["DHS113"],
+    beachNames: {
+      DHS113: "Manhattan Beach - 26th St",
+    },
+    mapFallbackCenter: [33.8945, -118.418],
+  },
 };
+
+// Helper: resolve a slug to a config, or undefined.
+export function getLocation(slug: string): LocationConfig | undefined {
+  return LOCATIONS[slug];
+}
 
 export type Status = "Normal" | "Slightly elevated" | "Not recommended";
 

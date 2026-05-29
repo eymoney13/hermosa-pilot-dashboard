@@ -3,13 +3,12 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import Papa from "papaparse";
 import {
-  BEACH_NAMES,
-  HERMOSA_STATIONS,
   statusFromProb,
   thresholdFor,
   type BeachData,
   type DashboardData,
   type ForecastDay,
+  type LocationConfig,
 } from "./data";
 import { factorLabel, isEnvironmentalFactor } from "./factors";
 import { normalizeInsight } from "./insight";
@@ -44,8 +43,8 @@ interface ForecastRow {
   [key: string]: unknown;
 }
 
-async function readCsv<T>(relPath: string): Promise<T[]> {
-  const filePath = path.join(process.cwd(), "public", "data", relPath);
+async function readCsv<T>(slug: string, relPath: string): Promise<T[]> {
+  const filePath = path.join(process.cwd(), "public", "data", slug, relPath);
   const text = await readFile(filePath, "utf8");
   const parsed = Papa.parse<T>(text, {
     header: true,
@@ -58,17 +57,18 @@ async function readCsv<T>(relPath: string): Promise<T[]> {
 }
 
 // Like readCsv but resolves to [] if the file is missing — used for optional inputs.
-async function readCsvOptional<T>(relPath: string): Promise<T[]> {
+async function readCsvOptional<T>(slug: string, relPath: string): Promise<T[]> {
   try {
-    return await readCsv<T>(relPath);
+    return await readCsv<T>(slug, relPath);
   } catch (err) {
     if ((err as NodeJS.ErrnoException)?.code === "ENOENT") return [];
     throw err;
   }
 }
 
-async function loadThresholds(): Promise<Record<string, number>> {
+async function loadThresholds(slug: string): Promise<Record<string, number>> {
   const rows = await readCsv<{ StationCode: string; threshold: number }>(
+    slug,
     "thresholds.csv"
   );
   const map: Record<string, number> = {};
@@ -80,13 +80,15 @@ async function loadThresholds(): Promise<Record<string, number>> {
   return map;
 }
 
-export async function loadDashboardData(): Promise<DashboardData> {
+export async function loadDashboardData(
+  config: LocationConfig
+): Promise<DashboardData> {
   const [nowcastRows, forecastRows, historyRows, thresholdMap] =
     await Promise.all([
-      readCsv<NowcastRow>("nowcast_latest.csv"),
-      readCsv<ForecastRow>("forecast_3day.csv"),
-      readCsvOptional<ForecastRow>("history_3day.csv"),
-      loadThresholds(),
+      readCsv<NowcastRow>(config.slug, "nowcast_latest.csv"),
+      readCsv<ForecastRow>(config.slug, "forecast_3day.csv"),
+      readCsvOptional<ForecastRow>(config.slug, "history_3day.csv"),
+      loadThresholds(config.slug),
     ]);
 
   const nowcastByCode = new Map<string, NowcastRow>();
@@ -103,7 +105,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
   }
 
   const beaches: BeachData[] = [];
-  for (const code of HERMOSA_STATIONS) {
+  for (const code of config.stations) {
     const now = nowcastByCode.get(code);
     if (!now) continue;
     const prob = Number(now.exc_probability);
@@ -175,7 +177,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
 
     beaches.push({
       code,
-      name: BEACH_NAMES[code] ?? code,
+      name: config.beachNames[code] ?? code,
       latitude: Number(now.Latitude),
       longitude: Number(now.Longitude),
       predictionDate: String(now.prediction_date),

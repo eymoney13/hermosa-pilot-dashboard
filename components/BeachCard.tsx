@@ -65,12 +65,18 @@ function articleFor(num: number): string {
 // 1. Location header
 // ---------------------------------------------------------------------------
 
-function LocationHeader({ beach }: { beach: BeachData }) {
+function LocationHeader({
+  beach,
+  locationLabel,
+}: {
+  beach: BeachData;
+  locationLabel: string;
+}) {
   return (
     <div>
       <div className="flex items-center gap-1.5 text-sm text-gray-500">
         <MapPin className="h-4 w-4" aria-hidden="true" />
-        <span>Hermosa Beach, CA</span>
+        <span>{locationLabel}</span>
       </div>
       <h2 className="mt-1 text-xl font-medium text-gray-900">{beach.name}</h2>
     </div>
@@ -324,11 +330,17 @@ function SevenDayWindow({ beach }: { beach: BeachData }) {
 // Composition
 // ---------------------------------------------------------------------------
 
-export default function BeachCard({ beach }: { beach: BeachData }) {
+export default function BeachCard({
+  beach,
+  locationLabel,
+}: {
+  beach: BeachData;
+  locationLabel: string;
+}) {
   return (
     <div className="mx-auto max-w-3xl px-6 sm:px-10 py-10">
       <div className="space-y-6">
-        <LocationHeader beach={beach} />
+        <LocationHeader beach={beach} locationLabel={locationLabel} />
 
         <div className="space-y-3">
           <StatusHero beach={beach} />

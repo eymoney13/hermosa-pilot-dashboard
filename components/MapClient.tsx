@@ -13,13 +13,19 @@ const MapView = dynamic(() => import("./MapView"), {
 export default function MapClient({
   beaches,
   selectedCode,
+  fallbackCenter,
 }: {
   beaches: BeachData[];
   selectedCode?: string;
+  fallbackCenter: [number, number];
 }) {
   return (
     <div className="h-[300px] w-full">
-      <MapView beaches={beaches} selectedCode={selectedCode} />
+      <MapView
+        beaches={beaches}
+        selectedCode={selectedCode}
+        fallbackCenter={fallbackCenter}
+      />
     </div>
   );
 }

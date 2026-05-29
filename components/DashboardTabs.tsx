@@ -11,7 +11,15 @@ const STATUS_UNDERLINE: Record<string, string> = {
   "Not recommended": "bg-[#cc3333]",
 };
 
-export default function DashboardTabs({ beaches }: { beaches: BeachData[] }) {
+export default function DashboardTabs({
+  beaches,
+  locationLabel,
+  fallbackCenter,
+}: {
+  beaches: BeachData[];
+  locationLabel: string;
+  fallbackCenter: [number, number];
+}) {
   const [activeCode, setActiveCode] = useState<string>(
     beaches[0]?.code ?? ""
   );
@@ -52,10 +60,14 @@ export default function DashboardTabs({ beaches }: { beaches: BeachData[] }) {
         </div>
       </nav>
 
-      <BeachCard beach={active} />
+      <BeachCard beach={active} locationLabel={locationLabel} />
 
       <section className="w-full">
-        <MapClient beaches={beaches} selectedCode={active.code} />
+        <MapClient
+          beaches={beaches}
+          selectedCode={active.code}
+          fallbackCenter={fallbackCenter}
+        />
       </section>
     </>
   );

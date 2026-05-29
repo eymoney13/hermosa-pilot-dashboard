@@ -41,4 +41,4 @@ yarn-error.log*
 next-env.d.ts
 
 # local fixtures
-public/data/history_3day.test-fixture.csv
+public/data/**/history_3day.test-fixture.csv

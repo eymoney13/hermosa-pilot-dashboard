@@ -31,20 +31,22 @@ function PanTo({ lat, lon }: { lat: number; lon: number }) {
 export default function MapView({
   beaches,
   selectedCode,
+  fallbackCenter,
 }: {
   beaches: BeachData[];
   selectedCode?: string;
+  fallbackCenter: [number, number];
 }) {
   const selected = beaches.find((b) => b.code === selectedCode) ?? beaches[0];
   const center = useMemo<[number, number]>(() => {
     if (selected) return [selected.latitude, selected.longitude];
-    if (beaches.length === 0) return [33.862, -118.403];
+    if (beaches.length === 0) return fallbackCenter;
     const avgLat =
       beaches.reduce((s, b) => s + b.latitude, 0) / beaches.length;
     const avgLon =
       beaches.reduce((s, b) => s + b.longitude, 0) / beaches.length;
     return [avgLat, avgLon];
-  }, [beaches, selected]);
+  }, [beaches, selected, fallbackCenter]);
 
   return (
     <MapContainer
