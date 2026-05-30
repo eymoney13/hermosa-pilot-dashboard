@@ -1,2 +1,2 @@
 StationCode,StationName,Latitude,Longitude,day1_date,day1_probability,day1_prediction,day1_mpn,day1_mpn_label,day2_date,day2_probability,day2_prediction,day2_mpn,day2_mpn_label,day3_date,day3_probability,day3_prediction,day3_mpn,day3_mpn_label
-DHS113,"DHS113-Manhattan Beach, Los Angeles",33.8945,-118.418,2026-05-31,0.3132,Safe,10,10 MPN/100mL,2026-06-01,0.2941,Safe,10,10 MPN/100mL,2026-06-02,0.2597,Safe,9,<10 MPN/100mL
+DHS113,"DHS113-Manhattan Beach, Los Angeles",33.8945,-118.418,2026-05-31,0.3119,Safe,10,10 MPN/100mL,2026-06-01,0.2945,Safe,10,10 MPN/100mL,2026-06-02,0.2473,Safe,8,<10 MPN/100mL
