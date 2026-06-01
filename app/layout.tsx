@@ -10,7 +10,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Ocean Water Quality",
-  description: "Daily ocean water quality nowcast and 3-day forecast.",
+  description: "Daily ocean water quality forecast.",
 };
 
 export default function RootLayout({

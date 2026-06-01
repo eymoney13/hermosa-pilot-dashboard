@@ -20,7 +20,7 @@ export async function generateMetadata({
   if (!config) return { title: "Water Quality" };
   return {
     title: `${config.displayName} Water Quality`,
-    description: `Daily water quality nowcast and 3-day forecast for ${config.displayName}.`,
+    description: `Daily water quality forecast for ${config.displayName}.`,
   };
 }
 
@@ -48,7 +48,7 @@ export default async function LocationPage({
                 aria-hidden="true"
                 className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
               />
-              <span>Nowcast for {formatMonthDayYear(predictionDate)}</span>
+              <span>Forecast for {formatMonthDayYear(predictionDate)}</span>
             </div>
           )}
         </div>
