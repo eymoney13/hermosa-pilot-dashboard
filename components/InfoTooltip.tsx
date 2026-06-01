@@ -34,6 +34,10 @@ export default function InfoTooltip({
   // overrides are suppressed until the cursor leaves the wrapper. This prevents
   // "second click won't close because hover keeps it open" on desktop.
   const [clickMode, setClickMode] = useState(false);
+  // On mobile we anchor the popup just below the icon (computed from its
+  // position) and lift it above the map, instead of pinning it to the bottom of
+  // the viewport where the Leaflet map can cover it once you've scrolled.
+  const [mobilePos, setMobilePos] = useState<{ top: number } | null>(null);
   const wrapperRef = useRef<HTMLSpanElement>(null);
 
   // Outside click + Escape only need to be active while open.
@@ -86,7 +90,21 @@ export default function InfoTooltip({
           // handler that we're about to attach on the next tick.
           e.stopPropagation();
           setClickMode(true);
-          setOpen((o) => !o);
+          const next = !open;
+          // On a small (touch) viewport, pin the popup just below the icon so
+          // it appears where the "i" is and stays in front of the map.
+          if (
+            next &&
+            typeof window !== "undefined" &&
+            window.innerWidth < 640 &&
+            wrapperRef.current
+          ) {
+            const r = wrapperRef.current.getBoundingClientRect();
+            setMobilePos({ top: r.bottom + 8 });
+          } else {
+            setMobilePos(null);
+          }
+          setOpen(next);
         }}
         className={buttonClass}
         style={iconColor ? { color: iconColor } : undefined}
@@ -96,6 +114,11 @@ export default function InfoTooltip({
       <span
         id={id}
         role="tooltip"
+        style={
+          mobilePos
+            ? { top: mobilePos.top, bottom: "auto", left: 16, right: 16, zIndex: 9999 }
+            : undefined
+        }
         className={`fixed bottom-4 left-4 right-4 sm:absolute sm:bottom-full sm:left-auto sm:right-0 sm:top-auto sm:mb-2 sm:w-[280px] transition-opacity bg-white border border-gray-200 rounded-md p-3 text-xs shadow-lg z-50 ${visibilityClass}`}
       >
         <span className="block font-medium text-xs text-gray-900 mb-1">
