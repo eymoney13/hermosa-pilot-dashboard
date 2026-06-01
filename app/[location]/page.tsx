@@ -63,7 +63,16 @@ export default async function LocationPage({
       <footer className="w-full py-10">
         <div className="mx-auto max-w-6xl px-6 sm:px-10 text-xs text-gray-400">
           Forecasts are estimates based on environmental data. For official
-          beach advisories, consult LA County Department of Public Health.
+          beach advisories, consult{" "}
+          <a
+            href="http://publichealth.lacounty.gov/phcommon/public/media/mediapubOdisplay.cfm"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-600"
+          >
+            LA County Department of Public Health
+          </a>
+          .
         </div>
       </footer>
     </main>
