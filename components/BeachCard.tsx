@@ -369,7 +369,7 @@ export default function BeachCard({
   const activeDay = activeCell.day;
 
   return (
-    <div className="mx-auto max-w-3xl px-6 sm:px-10 py-10">
+    <div className="mx-auto w-full max-w-3xl px-6 sm:px-10 py-10">
       <div className="space-y-6">
         <LocationHeader beach={beach} locationLabel={locationLabel} />
 
