@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import DashboardTabs from "@/components/DashboardTabs";
+import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
 import { loadDashboardData } from "@/lib/loadData";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
 
@@ -38,10 +39,13 @@ export default async function LocationPage({
   return (
     <main className="flex flex-col">
       <header className="w-full border-b border-gray-100">
-        <div className="mx-auto max-w-6xl px-6 sm:px-10 py-5 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
-          <h1 className="text-sm font-medium text-gray-700">
-            {config.displayName} Water Quality
-          </h1>
+        <div className="mx-auto max-w-6xl px-6 sm:px-10 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <a
+            href="https://projectneptune.co"
+            className="inline-flex items-center"
+          >
+            <ProjectNeptuneLogo size={24} />
+          </a>
           {predictionDate && (
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <span
