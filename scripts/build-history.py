@@ -4,8 +4,10 @@ Build public/data/history_3day.csv from project-neptune's nowcast_history archiv
 
 Walks backward from yesterday, finds the most recent 3 dates with a
 nowcast_YYYY-MM-DD.csv snapshot, and pivots the DHS114 / DHS115 rows into
-a single per-station row with day1_*/day2_*/day3_* columns. Schema matches
-forecast_3day.csv exactly so the existing loader picks it up unchanged.
+a single per-station row with day1_*/day2_*/day3_* columns. The schema is a
+superset of forecast_3day.csv: in addition to the date/probability/mpn fields,
+each day also carries that day's top factors, last lab result, days-since-sample,
+and insight, so the dashboard can replay the exact nowcast each past day showed.
 """
 
 from __future__ import annotations
@@ -78,6 +80,14 @@ def build_header() -> list[str]:
             f"day{i}_prediction",
             f"day{i}_mpn",
             f"day{i}_mpn_label",
+            # Per-day snapshot fields so the dashboard can replay each past day's
+            # nowcast (top factors + the lab result that was latest as of that date).
+            f"day{i}_top_factor_1",
+            f"day{i}_top_factor_2",
+            f"day{i}_top_factor_3",
+            f"day{i}_last_result",
+            f"day{i}_days_since_sample",
+            f"day{i}_insight",
         ]
     return header
 
@@ -124,6 +134,12 @@ def main() -> int:
             row[f"day{i}_prediction"] = day.get("prediction", "")
             row[f"day{i}_mpn"] = day.get("estimated_mpn", "")
             row[f"day{i}_mpn_label"] = day.get("mpn_label", "")
+            row[f"day{i}_top_factor_1"] = day.get("top_factor_1", "")
+            row[f"day{i}_top_factor_2"] = day.get("top_factor_2", "")
+            row[f"day{i}_top_factor_3"] = day.get("top_factor_3", "")
+            row[f"day{i}_last_result"] = day.get("last_result", "")
+            row[f"day{i}_days_since_sample"] = day.get("days_since_sample", "")
+            row[f"day{i}_insight"] = day.get("insight", "")
         # Pad with empty day slots if fewer than 3 valid dates were found.
         for i in range(len(dates) + 1, 4):
             row[f"day{i}_date"] = ""
@@ -131,6 +147,12 @@ def main() -> int:
             row[f"day{i}_prediction"] = ""
             row[f"day{i}_mpn"] = ""
             row[f"day{i}_mpn_label"] = ""
+            row[f"day{i}_top_factor_1"] = ""
+            row[f"day{i}_top_factor_2"] = ""
+            row[f"day{i}_top_factor_3"] = ""
+            row[f"day{i}_last_result"] = ""
+            row[f"day{i}_days_since_sample"] = ""
+            row[f"day{i}_insight"] = ""
         out_rows.append(row)
 
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
