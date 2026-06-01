@@ -40,6 +40,9 @@ interface ForecastRow {
   day3_date: string;
   day3_probability: number;
   day3_mpn_label?: string;
+  // history_3day.csv is a superset of forecast_3day.csv: each day also carries
+  // day{i}_top_factor_1..3, day{i}_last_result, day{i}_days_since_sample, and
+  // day{i}_insight. Those are read via computed keys through the index signature.
   [key: string]: unknown;
 }
 
@@ -80,6 +83,37 @@ async function loadThresholds(slug: string): Promise<Record<string, number>> {
   return map;
 }
 
+// Build the filtered, de-duplicated list of environmental top factors from up to
+// three raw factor cells. Shared by the live nowcast and each past-day snapshot.
+function buildFactors(raws: unknown[]): string[] {
+  const factors: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of raws) {
+    const text = String(raw ?? "").trim();
+    if (!text) continue;
+    const canonical = factorLabel(text);
+    // Skip empties, duplicates, and non-environmental factors (bacteria
+    // history / sampling metadata) — the latest lab result is shown separately.
+    if (canonical == null || seen.has(canonical)) continue;
+    if (!isEnvironmentalFactor(canonical)) continue;
+    seen.add(canonical);
+    factors.push(canonical);
+  }
+  return factors;
+}
+
+// Normalize a raw days_since_sample cell to a number or null.
+function parseDaysSince(raw: unknown): number | null {
+  return raw == null || Number.isNaN(Number(raw)) ? null : Number(raw);
+}
+
+// Normalize a raw last_result cell to a value or null.
+function parseLastResult(raw: unknown): number | string | null {
+  return raw == null || (typeof raw === "number" && Number.isNaN(raw))
+    ? null
+    : (raw as number | string);
+}
+
 export async function loadDashboardData(
   config: LocationConfig
 ): Promise<DashboardData> {
@@ -112,25 +146,13 @@ export async function loadDashboardData(
     const status = statusFromProb(prob, code, thresholdMap);
     if (!status) continue;
 
-    const factors: string[] = [];
-    const seen = new Set<string>();
-    for (const key of ["top_factor_1", "top_factor_2", "top_factor_3"] as const) {
-      const raw = String(now[key] ?? "").trim();
-      if (!raw) continue;
-      const canonical = factorLabel(raw);
-      // Skip empties, duplicates, and non-environmental factors (bacteria
-      // history / sampling metadata) — the latest lab result is shown separately.
-      if (canonical == null || seen.has(canonical)) continue;
-      if (!isEnvironmentalFactor(canonical)) continue;
-      seen.add(canonical);
-      factors.push(canonical);
-    }
+    const factors = buildFactors([
+      now.top_factor_1,
+      now.top_factor_2,
+      now.top_factor_3,
+    ]);
 
-    const days =
-      now.days_since_sample == null ||
-      Number.isNaN(Number(now.days_since_sample))
-        ? null
-        : Number(now.days_since_sample);
+    const days = parseDaysSince(now.days_since_sample);
 
     const fcRow = forecastByCode.get(code);
     const forecast: ForecastDay[] = [];
@@ -143,11 +165,18 @@ export async function loadDashboardData(
         const p = Number(probRaw);
         const dayStatus = statusFromProb(p, code, thresholdMap);
         if (!dayStatus) continue;
+        // Forecast days carry top contributing factors (why the model predicts
+        // this), but no lab sample — there is no future water-quality test.
         forecast.push({
           date: String(date),
           probability: p,
           mpnLabel: mpn,
           status: dayStatus,
+          factors: buildFactors([
+            fcRow[`day${i}_top_factor_1`],
+            fcRow[`day${i}_top_factor_2`],
+            fcRow[`day${i}_top_factor_3`],
+          ]),
         });
       }
     }
@@ -165,11 +194,24 @@ export async function loadDashboardData(
         const p = Number(probRaw);
         const dayStatus = statusFromProb(p, code, thresholdMap);
         if (!dayStatus) continue;
+        // Replay that day's saved nowcast: same factors + the lab result that
+        // was latest as of that date (no future sample leaks backward).
         pastDays.push({
           date: String(date),
           probability: p,
           mpnLabel: mpn,
           status: dayStatus,
+          factors: buildFactors([
+            histRow[`day${i}_top_factor_1`],
+            histRow[`day${i}_top_factor_2`],
+            histRow[`day${i}_top_factor_3`],
+          ]),
+          insight: normalizeInsight(
+            String(histRow[`day${i}_insight`] ?? ""),
+            dayStatus
+          ),
+          lastResult: parseLastResult(histRow[`day${i}_last_result`]),
+          daysSinceSample: parseDaysSince(histRow[`day${i}_days_since_sample`]),
         });
       }
       pastDays.sort((a, b) => a.date.localeCompare(b.date));
@@ -183,11 +225,7 @@ export async function loadDashboardData(
       predictionDate: String(now.prediction_date),
       probability: prob,
       mpnLabel: now.mpn_label,
-      lastResult:
-        now.last_result == null ||
-        (typeof now.last_result === "number" && Number.isNaN(now.last_result))
-          ? null
-          : now.last_result,
+      lastResult: parseLastResult(now.last_result),
       daysSinceSample: days,
       factors,
       insight: normalizeInsight(String(now.insight ?? ""), status),

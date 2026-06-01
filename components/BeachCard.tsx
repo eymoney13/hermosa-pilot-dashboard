@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
 import type { BeachData, ForecastDay, Status } from "@/lib/data";
 import InfoTooltip from "./InfoTooltip";
@@ -118,19 +121,19 @@ function ThresholdSubtitle({ text, status }: { text: string; status: Status }) {
   );
 }
 
-function StatusHero({ beach }: { beach: BeachData }) {
-  const tint = STATUS_TINT[beach.status];
-  const Icon = beach.status === "Not recommended" ? AlertTriangle : CircleCheck;
-  const subtitle = predictionSubtitle(beach.status);
+function StatusHero({ status }: { status: Status }) {
+  const tint = STATUS_TINT[status];
+  const Icon = status === "Not recommended" ? AlertTriangle : CircleCheck;
+  const subtitle = predictionSubtitle(status);
 
   return (
     <div className={`${tint.bg} rounded-lg p-5`}>
       <div className="flex items-center gap-3">
         <Icon className={`h-6 w-6 ${tint.deep}`} aria-hidden="true" />
-        <p className={`text-xl font-medium ${tint.deep}`}>{beach.status}</p>
+        <p className={`text-xl font-medium ${tint.deep}`}>{status}</p>
       </div>
       <p className={`mt-2 ml-9 text-sm ${tint.mid}`}>
-        <ThresholdSubtitle text={subtitle} status={beach.status} />
+        <ThresholdSubtitle text={subtitle} status={status} />
       </p>
     </div>
   );
@@ -162,8 +165,8 @@ function exceedanceBody(pct: number): string {
   return `Bacteria levels are very likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, well above the EPA safe-swimming threshold.`;
 }
 
-function ExceedanceScale({ beach }: { beach: BeachData }) {
-  const probClamped = Math.max(0, Math.min(1, beach.probability));
+function ExceedanceScale({ probability }: { probability: number }) {
+  const probClamped = Math.max(0, Math.min(1, probability));
   const pct = Math.round(probClamped * 100);
   const left = `${probClamped * 100}%`;
 
@@ -190,8 +193,8 @@ function ExceedanceScale({ beach }: { beach: BeachData }) {
         <span
           className="inline-flex items-center rounded-md px-2 py-0.5 text-2xl font-medium tabular-nums"
           style={{
-            backgroundColor: TIER_PILL[tierFor(beach.probability)].bg,
-            color: TIER_PILL[tierFor(beach.probability)].text,
+            backgroundColor: TIER_PILL[tierFor(probability)].bg,
+            color: TIER_PILL[tierFor(probability)].text,
           }}
         >
           {pct}%
@@ -225,6 +228,11 @@ function buildWindowCells(beach: BeachData): WindowCell[] {
       probability: beach.probability,
       mpnLabel: beach.mpnLabel,
       status: beach.status,
+      // Carry today's full snapshot so it behaves like the clickable past days.
+      factors: beach.factors,
+      insight: beach.insight,
+      lastResult: beach.lastResult,
+      daysSinceSample: beach.daysSinceSample,
     },
     type: "today",
   };
@@ -239,8 +247,15 @@ function buildWindowCells(beach: BeachData): WindowCell[] {
   return [...pastCells, todayCell, ...forecastCells].slice(0, 7);
 }
 
-function SevenDayWindow({ beach }: { beach: BeachData }) {
-  const cells = buildWindowCells(beach);
+function SevenDayWindow({
+  cells,
+  selectedDate,
+  onSelect,
+}: {
+  cells: WindowCell[];
+  selectedDate: string;
+  onSelect: (date: string) => void;
+}) {
   if (cells.length === 0) return null;
 
   const totalCols = cells.length;
@@ -262,6 +277,7 @@ function SevenDayWindow({ beach }: { beach: BeachData }) {
 
       <div style={gridStyle}>
         {cells.map(({ day, type }) => {
+          const isSelected = day.date === selectedDate;
           const dayLabelClass =
             type === "today"
               ? "text-blue-600 font-medium"
@@ -269,29 +285,35 @@ function SevenDayWindow({ beach }: { beach: BeachData }) {
               ? "text-gray-400"
               : "text-gray-500";
           const opacity = type === "past" ? "opacity-55" : "opacity-100";
-          const todayOutline =
-            type === "today" ? "outline outline-2 outline-blue-500" : "";
+          const selectedOutline = isSelected
+            ? "outline outline-2 outline-blue-500"
+            : "";
+          const pct = Math.round(day.probability * 100);
 
           return (
-            <div key={day.date} className="flex flex-col items-center gap-1">
+            <button
+              type="button"
+              key={day.date}
+              onClick={() => onSelect(day.date)}
+              aria-pressed={isSelected}
+              title={`${weekdayShort(day.date)} · ${day.status} · ${pct}%`}
+              aria-label={`View ${day.date}: ${day.status}, ${pct}% exceedance`}
+              className="flex w-full flex-col items-center gap-1 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            >
               <span className={`text-[11px] ${dayLabelClass}`}>
                 {weekdayShort(day.date)}
               </span>
               <div
-                className={`h-7 w-full rounded-sm flex items-center justify-center ${opacity} ${todayOutline}`}
+                className={`h-7 w-full rounded-sm flex items-center justify-center transition-all ${opacity} ${selectedOutline} ${
+                  isSelected ? "" : "hover:outline hover:outline-1 hover:outline-blue-300"
+                }`}
                 style={{ backgroundColor: tierColorForCell(day.probability) }}
-                title={`${weekdayShort(day.date)} · ${day.status} · ${Math.round(
-                  day.probability * 100
-                )}%`}
-                aria-label={`${day.date} ${day.status} ${Math.round(
-                  day.probability * 100
-                )}%`}
               >
                 <span className="text-[10px] font-medium text-gray-900">
-                  {Math.round(day.probability * 100)}%
+                  {pct}%
                 </span>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -337,19 +359,37 @@ export default function BeachCard({
   beach: BeachData;
   locationLabel: string;
 }) {
+  const cells = buildWindowCells(beach);
+  // Which day's snapshot the card is displaying — defaults to today's nowcast.
+  const [selectedDate, setSelectedDate] = useState(beach.predictionDate);
+  const activeCell =
+    cells.find((c) => c.day.date === selectedDate) ??
+    cells.find((c) => c.type === "today") ??
+    cells[0];
+  const activeDay = activeCell.day;
+
   return (
     <div className="mx-auto max-w-3xl px-6 sm:px-10 py-10">
       <div className="space-y-6">
         <LocationHeader beach={beach} locationLabel={locationLabel} />
 
         <div className="space-y-3">
-          <StatusHero beach={beach} />
-          <ExceedanceScale beach={beach} />
+          <StatusHero status={activeDay.status} />
+          <ExceedanceScale probability={activeDay.probability} />
         </div>
 
-        <SevenDayWindow beach={beach} />
+        <SevenDayWindow
+          cells={cells}
+          selectedDate={selectedDate}
+          onSelect={setSelectedDate}
+        />
 
-        <WhyPrediction beach={beach} />
+        <WhyPrediction
+          factors={activeDay.factors ?? []}
+          insight={activeDay.insight ?? ""}
+          daysSinceSample={activeDay.daysSinceSample ?? null}
+          predictionDate={activeDay.date}
+        />
       </div>
     </div>
   );

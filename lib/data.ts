@@ -40,6 +40,12 @@ export interface ForecastDay {
   probability: number;
   mpnLabel?: string;
   status: Status;
+  // Per-day snapshot fields — populated for past days (from the history archive)
+  // and for today (from the live nowcast); omitted for forecast/future days.
+  factors?: string[];
+  insight?: string;
+  lastResult?: number | string | null;
+  daysSinceSample?: number | null;
 }
 
 export interface BeachData {
