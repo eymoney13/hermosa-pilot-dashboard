@@ -40,12 +40,24 @@ export default async function LocationPage({
     <main className="flex flex-col">
       <header className="w-full border-b border-gray-100">
         <div className="mx-auto max-w-6xl px-6 sm:px-10 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <a
-            href="https://projectneptune.co"
-            className="inline-flex items-center"
-          >
-            <ProjectNeptuneLogo size={24} />
-          </a>
+          <div className="flex flex-col">
+            <a
+              href="https://projectneptune.co"
+              className="inline-flex items-center"
+            >
+              <ProjectNeptuneLogo size={24} />
+            </a>
+            <p
+              className="pl-0.5 text-[13px] leading-tight"
+              style={{
+                fontFamily: "var(--font-poppins), sans-serif",
+                fontWeight: 700,
+                color: "#2C8487",
+              }}
+            >
+              Ocean Water Quality
+            </p>
+          </div>
           {predictionDate && (
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <span
