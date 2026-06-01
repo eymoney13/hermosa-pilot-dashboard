@@ -30,35 +30,37 @@ export default function DashboardTabs({
 
   return (
     <>
-      <nav className="w-full border-b border-gray-100">
-        <div className="mx-auto max-w-6xl px-6 sm:px-10 flex gap-2 sm:gap-8 overflow-x-auto">
-          {beaches.map((b) => {
-            const isActive = b.code === active.code;
-            return (
-              <button
-                key={b.code}
-                type="button"
-                onClick={() => setActiveCode(b.code)}
-                aria-current={isActive ? "page" : undefined}
-                className={`relative shrink-0 py-4 px-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "text-gray-900"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {b.name}
-                {isActive && (
-                  <span
-                    className={`absolute bottom-0 left-2 right-2 h-0.5 ${
-                      STATUS_UNDERLINE[b.status]
-                    }`}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {beaches.length > 1 && (
+        <nav className="w-full border-b border-gray-100">
+          <div className="mx-auto max-w-6xl px-6 sm:px-10 flex gap-2 sm:gap-8 overflow-x-auto">
+            {beaches.map((b) => {
+              const isActive = b.code === active.code;
+              return (
+                <button
+                  key={b.code}
+                  type="button"
+                  onClick={() => setActiveCode(b.code)}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`relative shrink-0 py-4 px-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "text-gray-900"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {b.name}
+                  {isActive && (
+                    <span
+                      className={`absolute bottom-0 left-2 right-2 h-0.5 ${
+                        STATUS_UNDERLINE[b.status]
+                      }`}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
 
       <BeachCard beach={active} locationLabel={locationLabel} />
 
