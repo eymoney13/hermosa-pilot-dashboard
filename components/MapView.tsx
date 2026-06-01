@@ -88,9 +88,6 @@ export default function MapView({
                   {b.status}
                 </div>
                 <div style={{ fontSize: 12, color: "#555" }}>
-                  Estimated MPN: {b.mpnLabel ?? "—"}
-                </div>
-                <div style={{ fontSize: 12, color: "#555" }}>
                   {pct}% exceedance probability
                 </div>
               </div>
