@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { subtractDays } from "@/lib/data";
+import { subtractDays, type Accuracy } from "@/lib/data";
+import ForecastAccuracy from "./ForecastAccuracy";
 
 // "May 7, 2026" style. lib/data's formatLongDate includes the weekday;
 // here we want a more compact form for the inline metadata line.
@@ -40,11 +41,13 @@ export default function WhyPrediction({
   insight,
   daysSinceSample,
   predictionDate,
+  accuracy,
 }: {
   factors: string[];
   insight: string;
   daysSinceSample: number | null;
   predictionDate: string;
+  accuracy: Accuracy;
 }) {
   const [open, setOpen] = useState(false);
   const sampleMeta = sampleMetadataFor(daysSinceSample, predictionDate);
@@ -70,40 +73,49 @@ export default function WhyPrediction({
       </button>
       <div
         id="why-prediction-panel"
-        className="overflow-hidden transition-[max-height] duration-[250ms] ease-out"
-        style={{ maxHeight: open ? "400px" : "0px" }}
+        className="grid transition-[grid-template-rows] duration-[250ms] ease-out"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
         aria-hidden={!open}
       >
-        <div className="pb-5 space-y-6">
-          {factors.length > 0 && (
-            <div>
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
-                Top contributing factors
-              </p>
-              <ol className="space-y-1.5 text-sm text-gray-700">
-                {factors.map((factor, i) => (
-                  <li key={`${factor}-${i}`} className="flex gap-3">
-                    <span className="text-gray-400 tabular-nums">{i + 1}.</span>
-                    <span>{factor}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
+        {/* grid-rows 0fr/1fr collapse: animates cleanly regardless of content
+            height, so the nested Forecast-accuracy card can expand without
+            being clipped (a fixed max-height could not accommodate it). */}
+        <div className="overflow-hidden">
+          <div className="pb-5 space-y-6">
+            {factors.length > 0 && (
+              <div>
+                <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
+                  Top contributing factors
+                </p>
+                <ol className="space-y-1.5 text-sm text-gray-700">
+                  {factors.map((factor, i) => (
+                    <li key={`${factor}-${i}`} className="flex gap-3">
+                      <span className="text-gray-400 tabular-nums">
+                        {i + 1}.
+                      </span>
+                      <span>{factor}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
 
-          {insight && (
-            <div>
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
-                Latest Lab Sample Result
-              </p>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {insight}
-              </p>
-              {sampleMeta && (
-                <p className="text-xs text-gray-400 mt-1">{sampleMeta}</p>
-              )}
-            </div>
-          )}
+            {insight && (
+              <div>
+                <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
+                  Latest Lab Sample Result
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {insight}
+                </p>
+                {sampleMeta && (
+                  <p className="text-xs text-gray-400 mt-1">{sampleMeta}</p>
+                )}
+              </div>
+            )}
+
+            <ForecastAccuracy accuracy={accuracy} />
+          </div>
         </div>
       </div>
     </div>
