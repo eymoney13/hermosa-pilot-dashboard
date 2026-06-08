@@ -1,8 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Target } from "lucide-react";
-import { ACCURACY_MIN_SAMPLES, formatMonthDay, type Accuracy } from "@/lib/data";
+import { Check, ChevronDown, Target, X } from "lucide-react";
+import {
+  ACCURACY_MIN_SAMPLES,
+  EPA_MPN_THRESHOLD,
+  formatMonthDayYear,
+  type Accuracy,
+  type AccuracySample,
+} from "@/lib/data";
 
 const MATCH_COLOR = "#2d8a4e"; // green — the forecast call agreed with the lab
 const MISS_COLOR = "#cc3333"; // red — the forecast call disagreed with the lab
@@ -19,9 +25,53 @@ function monthAbbr(iso: string): string {
   });
 }
 
+// Detail for the tapped dot — the lab result, our forecast call, and the
+// outcome. Renders directly below the dot strip.
+function SampleDetail({ sample }: { sample: AccuracySample }) {
+  const actualUnsafe = sample.labMpn > EPA_MPN_THRESHOLD;
+  return (
+    <div className="mt-2 rounded-md bg-gray-50 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium text-gray-900">
+          {formatMonthDayYear(sample.date)}
+        </span>
+        <span
+          className="inline-flex items-center gap-1 text-xs font-medium"
+          style={{ color: sample.match ? MATCH_COLOR : MISS_COLOR }}
+        >
+          {sample.match ? (
+            <Check className="h-3.5 w-3.5" aria-hidden="true" />
+          ) : (
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          {sample.match ? "Matched" : "Missed"}
+        </span>
+      </div>
+      <dl className="mt-2 space-y-1 text-sm">
+        <div className="flex justify-between gap-3">
+          <dt className="text-gray-500">Lab result</dt>
+          <dd className="text-right text-gray-800">
+            {sample.labMpn} MPN/100mL · {actualUnsafe ? "above" : "below"}{" "}
+            threshold
+          </dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-gray-500">Our forecast</dt>
+          <dd className="text-right text-gray-800">
+            {sample.predictedExceedance}% ·{" "}
+            {sample.predictedUnsafe ? "predicted exceedance" : "predicted safe"}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
 export default function ForecastAccuracy({ accuracy }: { accuracy: Accuracy }) {
   const [open, setOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const { windowSize, matches, samples } = accuracy;
+  const selectedSample = samples.find((s) => s.date === selectedDate) ?? null;
   const enough = windowSize >= ACCURACY_MIN_SAMPLES;
   const misses = windowSize - matches;
 
@@ -79,28 +129,52 @@ export default function ForecastAccuracy({ accuracy }: { accuracy: Accuracy }) {
 
               <div>
                 <div
-                  role="img"
+                  role="group"
                   aria-label={stripAriaLabel}
                   className="flex flex-wrap gap-1.5"
                 >
-                  {samples.map((s) => (
-                    <span
-                      key={s.date}
-                      title={`${formatMonthDay(s.date)} — ${
-                        s.match ? "matched" : "missed"
-                      }`}
-                      className="h-[22px] w-[22px] rounded-full"
-                      style={{
-                        backgroundColor: s.match ? MATCH_COLOR : MISS_COLOR,
-                      }}
-                    />
-                  ))}
+                  {samples.map((s) => {
+                    const isSelected = s.date === selectedDate;
+                    return (
+                      <button
+                        type="button"
+                        key={s.date}
+                        onClick={() =>
+                          setSelectedDate((cur) =>
+                            cur === s.date ? null : s.date
+                          )
+                        }
+                        aria-pressed={isSelected}
+                        aria-label={`${formatMonthDayYear(s.date)}: lab ${
+                          s.labMpn
+                        } MPN per 100mL, ${
+                          s.predictedUnsafe
+                            ? "predicted exceedance"
+                            : "predicted safe"
+                        }, ${s.match ? "matched" : "missed"}`}
+                        className={`h-[22px] w-[22px] rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                          isSelected ? "ring-2 ring-offset-1 ring-gray-800" : ""
+                        }`}
+                        style={{
+                          backgroundColor: s.match ? MATCH_COLOR : MISS_COLOR,
+                        }}
+                      />
+                    );
+                  })}
                 </div>
                 {samples.length > 0 && (
                   <div className="mt-1.5 flex justify-between text-[11px] text-gray-400">
                     <span>{monthAbbr(samples[0].date)}</span>
                     <span>{monthAbbr(samples[samples.length - 1].date)}</span>
                   </div>
+                )}
+
+                {selectedSample ? (
+                  <SampleDetail sample={selectedSample} />
+                ) : (
+                  <p className="mt-2 text-xs text-gray-400">
+                    Tap a dot for details.
+                  </p>
                 )}
               </div>
 
