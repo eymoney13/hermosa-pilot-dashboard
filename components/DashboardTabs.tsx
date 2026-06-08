@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { BeachData } from "@/lib/data";
+import type { FeatureFlags } from "@/lib/features";
 import BeachCard from "./BeachCard";
 import MapClient from "./MapClient";
 
@@ -15,10 +16,12 @@ export default function DashboardTabs({
   beaches,
   locationLabel,
   fallbackCenter,
+  features,
 }: {
   beaches: BeachData[];
   locationLabel: string;
   fallbackCenter: [number, number];
+  features: FeatureFlags;
 }) {
   const [activeCode, setActiveCode] = useState<string>(
     beaches[0]?.code ?? ""
@@ -62,7 +65,7 @@ export default function DashboardTabs({
         </nav>
       )}
 
-      <BeachCard beach={active} locationLabel={locationLabel} />
+      <BeachCard beach={active} locationLabel={locationLabel} features={features} />
 
       <section className="w-full">
         <MapClient

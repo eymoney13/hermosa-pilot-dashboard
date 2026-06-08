@@ -12,14 +12,18 @@ export interface FeatureFlags {
   // Header label reads "Current conditions for <date>" instead of
   // "Forecast for <date>".
   currentConditionsLabel: boolean;
+  // Big "Neptune Index" (0–100, the exceedance percent) on the right of the
+  // banner, tracking the selected beach.
+  neptuneIndex: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
   currentConditionsLabel: false,
+  neptuneIndex: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
-  hermosa: { currentConditionsLabel: true },
+  hermosa: { currentConditionsLabel: true, neptuneIndex: true },
   manhattan: {}, // stays exactly as today
 };
 

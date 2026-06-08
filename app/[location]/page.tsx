@@ -81,6 +81,7 @@ export default async function LocationPage({
         beaches={beaches}
         locationLabel={config.displayName}
         fallbackCenter={config.mapFallbackCenter}
+        features={features}
       />
 
       <footer className="w-full py-10">

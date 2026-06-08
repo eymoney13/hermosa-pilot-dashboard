@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
-import { RISK_TIERS, type BeachData, type ForecastDay, type Status } from "@/lib/data";
+import {
+  RISK_TIERS,
+  riskTier,
+  type BeachData,
+  type ForecastDay,
+  type Status,
+} from "@/lib/data";
+import type { FeatureFlags } from "@/lib/features";
 import InfoTooltip from "./InfoTooltip";
 import WhyPrediction from "./WhyPrediction";
 
@@ -121,13 +128,24 @@ function ThresholdSubtitle({ text, status }: { text: string; status: Status }) {
   );
 }
 
-function StatusHero({ status }: { status: Status }) {
+function StatusHero({
+  status,
+  probability,
+  showIndex,
+}: {
+  status: Status;
+  probability: number;
+  showIndex: boolean;
+}) {
   const tint = STATUS_TINT[status];
   const Icon = status === "Not recommended" ? AlertTriangle : CircleCheck;
   const subtitle = predictionSubtitle(status);
 
-  return (
-    <div className={`${tint.bg} rounded-lg p-5`}>
+  // The status + subtitle block, identical in both layouts. When the index is
+  // hidden (every non-hermosa location) the box renders exactly as before — no
+  // wrapper — so those dashboards are provably untouched.
+  const statusBlock = (
+    <>
       <div className="flex items-center gap-3">
         <Icon className={`h-6 w-6 ${tint.deep}`} aria-hidden="true" />
         <p className={`text-xl font-medium ${tint.deep}`}>{status}</p>
@@ -135,6 +153,35 @@ function StatusHero({ status }: { status: Status }) {
       <p className={`mt-2 ml-9 text-sm ${tint.mid}`}>
         <ThresholdSubtitle text={subtitle} status={status} />
       </p>
+    </>
+  );
+
+  if (!showIndex) {
+    return <div className={`${tint.bg} rounded-lg p-5`}>{statusBlock}</div>;
+  }
+
+  const index = Math.round(Math.max(0, Math.min(1, probability)) * 100);
+
+  return (
+    <div className={`${tint.bg} rounded-lg p-5`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">{statusBlock}</div>
+
+        <div
+          className="flex shrink-0 flex-col items-end leading-none"
+          aria-label={`Neptune Index ${index}`}
+        >
+          <span className={`text-[11px] uppercase tracking-wide ${tint.mid}`}>
+            Neptune Index
+          </span>
+          <span
+            className="mt-0.5 text-6xl font-semibold tabular-nums"
+            style={{ color: riskTier(index).textColor }}
+          >
+            {index}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -371,9 +418,11 @@ function SevenDayWindow({
 export default function BeachCard({
   beach,
   locationLabel,
+  features,
 }: {
   beach: BeachData;
   locationLabel: string;
+  features: FeatureFlags;
 }) {
   const cells = buildWindowCells(beach);
   // Which day's snapshot the card is displaying — defaults to today's nowcast.
@@ -390,7 +439,11 @@ export default function BeachCard({
         <LocationHeader beach={beach} locationLabel={locationLabel} />
 
         <div className="space-y-3">
-          <StatusHero status={activeDay.status} />
+          <StatusHero
+            status={activeDay.status}
+            probability={activeDay.probability}
+            showIndex={features.neptuneIndex}
+          />
           <ExceedanceScale probability={activeDay.probability} />
         </div>
 
