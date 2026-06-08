@@ -3,12 +3,14 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import Papa from "papaparse";
 import {
+  computeAccuracy,
   statusFromProb,
   thresholdFor,
   type BeachData,
   type DashboardData,
   type ForecastDay,
   type LocationConfig,
+  type RawAccuracySample,
 } from "./data";
 import { factorLabel, isEnvironmentalFactor } from "./factors";
 import { normalizeInsight } from "./insight";
@@ -27,6 +29,15 @@ interface NowcastRow {
   top_factor_3?: string | null;
   insight?: string;
   [key: string]: unknown;
+}
+
+// One row of accuracy.csv: a lab sample (date with a measured Actual_MPN) and
+// the model's exceedance probability for that date (stored as a fraction).
+interface AccuracyRow {
+  StationCode: string;
+  date: string;
+  exc_probability: number;
+  actual_mpn: number;
 }
 
 interface ForecastRow {
@@ -117,13 +128,31 @@ function parseLastResult(raw: unknown): number | string | null {
 export async function loadDashboardData(
   config: LocationConfig
 ): Promise<DashboardData> {
-  const [nowcastRows, forecastRows, historyRows, thresholdMap] =
+  const [nowcastRows, forecastRows, historyRows, accuracyRows, thresholdMap] =
     await Promise.all([
       readCsv<NowcastRow>(config.slug, "nowcast_latest.csv"),
       readCsv<ForecastRow>(config.slug, "forecast_3day.csv"),
       readCsvOptional<ForecastRow>(config.slug, "history_3day.csv"),
+      readCsvOptional<AccuracyRow>(config.slug, "accuracy.csv"),
       loadThresholds(config.slug),
     ]);
+
+  // Group the lab samples by station, chronological (oldest → newest), so each
+  // beach scores its own forecast-vs-lab accuracy from its own history.
+  const accuracyByCode = new Map<string, RawAccuracySample[]>();
+  for (const row of accuracyRows) {
+    if (!row?.StationCode || !row?.date) continue;
+    const excProbability = Number(row.exc_probability);
+    const labMpn = Number(row.actual_mpn);
+    if (Number.isNaN(excProbability) || Number.isNaN(labMpn)) continue;
+    const code = String(row.StationCode);
+    const list = accuracyByCode.get(code) ?? [];
+    list.push({ date: String(row.date), excProbability, labMpn });
+    accuracyByCode.set(code, list);
+  }
+  for (const list of accuracyByCode.values()) {
+    list.sort((a, b) => a.date.localeCompare(b.date));
+  }
 
   const nowcastByCode = new Map<string, NowcastRow>();
   for (const row of nowcastRows) {
@@ -233,6 +262,10 @@ export async function loadDashboardData(
       threshold: thresholdFor(code, thresholdMap),
       pastDays,
       forecast,
+      accuracy: computeAccuracy(
+        accuracyByCode.get(code) ?? [],
+        thresholdFor(code, thresholdMap)
+      ),
     });
   }
 

@@ -35,6 +35,33 @@ export function getLocation(slug: string): LocationConfig | undefined {
 
 export type Status = "Normal" | "Slightly elevated" | "Not recommended";
 
+// EPA single-sample safe-swimming standard for ocean water (MPN/100mL).
+// A lab result above this is classified as an exceedance ("actually unsafe").
+export const EPA_MPN_THRESHOLD = 104;
+
+// How many of the most recent lab samples the forecast-accuracy card scores and
+// shows as dots. Single source of truth so the score and the dot strip (and its
+// screen-reader summary) always describe the same set of samples.
+export const ACCURACY_WINDOW = 20;
+
+// Below this many samples we show "not enough data yet" instead of a score that
+// would be too small to be meaningful.
+export const ACCURACY_MIN_SAMPLES = 5;
+
+// One scored lab sample: the model's call vs. what the lab actually measured.
+export interface AccuracySample {
+  date: string; // ISO date the lab sample was taken
+  predictedExceedance: number; // our exceedance probability that day, as a percent (0-100)
+  labMpn: number; // the lab result, MPN/100mL
+  match: boolean; // predicted class === actual class (both safe or both unsafe)
+}
+
+export interface Accuracy {
+  windowSize: number; // number of samples scored (= samples.length)
+  matches: number; // how many of them matched
+  samples: AccuracySample[]; // chronological, oldest → newest
+}
+
 export interface ForecastDay {
   date: string;
   probability: number;
@@ -64,6 +91,7 @@ export interface BeachData {
   threshold: number;
   pastDays: ForecastDay[];
   forecast: ForecastDay[];
+  accuracy: Accuracy;
 }
 
 export interface DashboardData {
@@ -89,6 +117,41 @@ export function statusFromProb(
   if (prob >= 0.5) return "Not recommended";
   if (prob >= 0.3) return "Slightly elevated";
   return "Normal";
+}
+
+// A raw (prediction, lab result) pair for one sampled day. `excProbability` is a
+// fraction (0-1), matching nowcast_latest.csv's convention.
+export interface RawAccuracySample {
+  date: string;
+  excProbability: number;
+  labMpn: number;
+}
+
+// Score the model's classification against the lab for the most recent samples.
+// A sample MATCHES when our predicted class equals the actual class:
+//   predicted unsafe := excProbability >= threshold  (the same per-station 0.5
+//                       boundary the dashboard uses for its risk language)
+//   actually unsafe  := labMpn > EPA_MPN_THRESHOLD
+// We compare classes, never the probability against the raw MPN directly.
+export function computeAccuracy(
+  rawSamples: RawAccuracySample[],
+  threshold: number,
+  windowN: number = ACCURACY_WINDOW
+): Accuracy {
+  // rawSamples arrive chronological (oldest → newest); score the last N.
+  const recent = rawSamples.slice(-windowN);
+  const samples: AccuracySample[] = recent.map((s) => {
+    const predictedUnsafe = s.excProbability >= threshold;
+    const actualUnsafe = s.labMpn > EPA_MPN_THRESHOLD;
+    return {
+      date: s.date,
+      predictedExceedance: Math.round(s.excProbability * 100),
+      labMpn: s.labMpn,
+      match: predictedUnsafe === actualUnsafe,
+    };
+  });
+  const matches = samples.filter((s) => s.match).length;
+  return { windowSize: samples.length, matches, samples };
 }
 
 export function formatLongDate(iso: string): string {

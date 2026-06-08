@@ -389,6 +389,7 @@ export default function BeachCard({
           insight={activeDay.insight ?? ""}
           daysSinceSample={activeDay.daysSinceSample ?? null}
           predictionDate={activeDay.date}
+          accuracy={beach.accuracy}
         />
       </div>
     </div>
