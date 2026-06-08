@@ -40,9 +40,9 @@ export type Status = "Normal" | "Slightly elevated" | "Not recommended";
 export const EPA_MPN_THRESHOLD = 104;
 
 // How many of the most recent lab samples the forecast-accuracy card scores and
-// shows as dots. Single source of truth so the score and the dot strip (and its
-// screen-reader summary) always describe the same set of samples.
-export const ACCURACY_WINDOW = 20;
+// shows as dots — the last 7. Single source of truth so the score and the dot
+// strip (and its screen-reader summary) always describe the same set of samples.
+export const ACCURACY_WINDOW = 7;
 
 // Below this many samples we show "not enough data yet" instead of a score that
 // would be too small to be meaningful.
