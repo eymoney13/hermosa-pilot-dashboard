@@ -57,6 +57,15 @@ function tierFor(prob: number): string {
   return "Strongly not recommended";
 }
 
+// Legend for the exceedance scale: each tier's swatch (keyed to the gradient
+// bar's discrete colors via tierColorForCell), its label, and its % range.
+const EXCEEDANCE_LEGEND: { label: string; range: string; color: string }[] = [
+  { label: "Normal", range: "0–29%", color: "#97C459" },
+  { label: "Slightly elevated", range: "30–49%", color: "#D5C82E" },
+  { label: "Not recommended", range: "50–74%", color: "#E24B4A" },
+  { label: "Strongly not recommended", range: "75–100%", color: "#A32D2D" },
+];
+
 function articleFor(num: number): string {
   // "an" before 8, 11, 18, 80-89; "a" otherwise.
   const s = String(num);
@@ -206,6 +215,20 @@ function ExceedanceScale({ probability }: { probability: number }) {
           ariaLabel="About exceedance probability"
         />
       </div>
+
+      <dl className="mt-3 space-y-1">
+        {EXCEEDANCE_LEGEND.map((tier) => (
+          <div key={tier.label} className="flex items-center gap-2 text-xs">
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: tier.color }}
+              aria-hidden="true"
+            />
+            <dt className="text-gray-600">{tier.label}</dt>
+            <dd className="ml-auto tabular-nums text-gray-500">{tier.range}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
