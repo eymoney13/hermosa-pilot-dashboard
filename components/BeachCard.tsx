@@ -208,11 +208,13 @@ function ExceedanceScale({ probability }: { probability: number }) {
         >
           {pct}%
         </span>
-        <span className="text-base text-gray-500">exceedance probability</span>
+        <span className="text-base text-gray-500">
+          probability of unsafe bacteria levels
+        </span>
         <InfoTooltip
-          title="Exceedance probability"
+          title="Probability of unsafe bacteria levels"
           body={exceedanceBody(pct)}
-          ariaLabel="About exceedance probability"
+          ariaLabel="About the probability of unsafe bacteria levels"
         />
       </div>
 
