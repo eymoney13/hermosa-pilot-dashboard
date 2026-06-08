@@ -39,6 +39,29 @@ export type Status = "Normal" | "Slightly elevated" | "Not recommended";
 // A lab result above this is classified as an exceedance ("actually unsafe").
 export const EPA_MPN_THRESHOLD = 104;
 
+// Risk tiers keyed to exceedance percent — the single source of truth shared by
+// the exceedance-scale legend (BeachCard) and the forecast-accuracy detail
+// (ForecastAccuracy), so a sample's tier label always matches the legend.
+export interface RiskTier {
+  label: string; // legend / detail label, e.g. "Slightly elevated"
+  range: string; // human-readable percent range for the legend
+  color: string; // swatch color, keyed to the gradient bar's discrete tiers
+  maxExclusive: number; // upper bound (exclusive), in percent
+}
+
+export const RISK_TIERS: RiskTier[] = [
+  { label: "Normal", range: "0–29%", color: "#97C459", maxExclusive: 30 },
+  { label: "Slightly elevated", range: "30–49%", color: "#D5C82E", maxExclusive: 50 },
+  { label: "Not recommended", range: "50–74%", color: "#E24B4A", maxExclusive: 75 },
+  { label: "Strongly not recommended", range: "75–100%", color: "#A32D2D", maxExclusive: Infinity },
+];
+
+// The tier label for an exceedance percentage (0–100).
+export function riskTierLabel(pct: number): string {
+  const tier = RISK_TIERS.find((t) => pct < t.maxExclusive);
+  return (tier ?? RISK_TIERS[RISK_TIERS.length - 1]).label;
+}
+
 // How many of the most recent lab samples the forecast-accuracy card scores and
 // shows as dots — the last 7. Single source of truth so the score and the dot
 // strip (and its screen-reader summary) always describe the same set of samples.

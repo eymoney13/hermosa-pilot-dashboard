@@ -6,6 +6,7 @@ import {
   ACCURACY_MIN_SAMPLES,
   EPA_MPN_THRESHOLD,
   formatMonthDayYear,
+  riskTierLabel,
   type Accuracy,
   type AccuracySample,
 } from "@/lib/data";
@@ -59,7 +60,7 @@ function SampleDetail({ sample }: { sample: AccuracySample }) {
           <dt className="text-gray-500">Our forecast</dt>
           <dd className="text-right text-gray-800">
             {sample.predictedExceedance}% ·{" "}
-            {sample.predictedUnsafe ? "predicted exceedance" : "predicted safe"}
+            {riskTierLabel(sample.predictedExceedance)}
           </dd>
         </div>
       </dl>

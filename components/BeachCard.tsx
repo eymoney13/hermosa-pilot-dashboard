@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
-import type { BeachData, ForecastDay, Status } from "@/lib/data";
+import { RISK_TIERS, type BeachData, type ForecastDay, type Status } from "@/lib/data";
 import InfoTooltip from "./InfoTooltip";
 import WhyPrediction from "./WhyPrediction";
 
@@ -56,15 +56,6 @@ function tierFor(prob: number): string {
   if (pct < 75) return "Not recommended";
   return "Strongly not recommended";
 }
-
-// Legend for the exceedance scale: each tier's swatch (keyed to the gradient
-// bar's discrete colors via tierColorForCell), its label, and its % range.
-const EXCEEDANCE_LEGEND: { label: string; range: string; color: string }[] = [
-  { label: "Normal", range: "0–29%", color: "#97C459" },
-  { label: "Slightly elevated", range: "30–49%", color: "#D5C82E" },
-  { label: "Not recommended", range: "50–74%", color: "#E24B4A" },
-  { label: "Strongly not recommended", range: "75–100%", color: "#A32D2D" },
-];
 
 function articleFor(num: number): string {
   // "an" before 8, 11, 18, 80-89; "a" otherwise.
@@ -219,7 +210,7 @@ function ExceedanceScale({ probability }: { probability: number }) {
       </div>
 
       <dl className="mt-3 space-y-1">
-        {EXCEEDANCE_LEGEND.map((tier) => (
+        {RISK_TIERS.map((tier) => (
           <div key={tier.label} className="flex items-center gap-2 text-xs">
             <span
               className="h-2.5 w-2.5 shrink-0 rounded-full"
