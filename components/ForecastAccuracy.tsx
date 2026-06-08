@@ -28,7 +28,13 @@ function monthAbbr(iso: string): string {
 
 // Detail for the tapped dot — the lab result, our forecast call, and the
 // outcome. Renders directly below the dot strip.
-function SampleDetail({ sample }: { sample: AccuracySample }) {
+function SampleDetail({
+  sample,
+  hidePercent,
+}: {
+  sample: AccuracySample;
+  hidePercent: boolean;
+}) {
   const actualUnsafe = sample.labMpn > EPA_MPN_THRESHOLD;
   return (
     <div className="mt-2 rounded-md bg-gray-50 px-3 py-2.5">
@@ -59,7 +65,8 @@ function SampleDetail({ sample }: { sample: AccuracySample }) {
         <div className="flex justify-between gap-3">
           <dt className="text-gray-500">Our forecast</dt>
           <dd className="text-right text-gray-800">
-            {sample.predictedExceedance}% ·{" "}
+            {sample.predictedExceedance}
+            {hidePercent ? "" : "%"} ·{" "}
             {riskTierLabel(sample.predictedExceedance)}
           </dd>
         </div>
@@ -68,7 +75,13 @@ function SampleDetail({ sample }: { sample: AccuracySample }) {
   );
 }
 
-export default function ForecastAccuracy({ accuracy }: { accuracy: Accuracy }) {
+export default function ForecastAccuracy({
+  accuracy,
+  hidePercent,
+}: {
+  accuracy: Accuracy;
+  hidePercent: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const { windowSize, matches, samples } = accuracy;
@@ -171,7 +184,10 @@ export default function ForecastAccuracy({ accuracy }: { accuracy: Accuracy }) {
                 )}
 
                 {selectedSample ? (
-                  <SampleDetail sample={selectedSample} />
+                  <SampleDetail
+                    sample={selectedSample}
+                    hidePercent={hidePercent}
+                  />
                 ) : (
                   <p className="mt-2 text-xs text-gray-400">
                     Tap a dot for details.

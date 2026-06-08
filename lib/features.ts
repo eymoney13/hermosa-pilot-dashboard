@@ -15,15 +15,22 @@ export interface FeatureFlags {
   // Big "Neptune Index" (0–100, the exceedance percent) on the right of the
   // banner, tracking the selected beach.
   neptuneIndex: boolean;
+  // Render exceedance figures as bare numbers (e.g. "41") instead of "41%".
+  hidePercentSign: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
   currentConditionsLabel: false,
   neptuneIndex: false,
+  hidePercentSign: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
-  hermosa: { currentConditionsLabel: true, neptuneIndex: true },
+  hermosa: {
+    currentConditionsLabel: true,
+    neptuneIndex: true,
+    hidePercentSign: true,
+  },
   manhattan: {}, // stays exactly as today
 };
 

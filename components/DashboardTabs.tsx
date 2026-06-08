@@ -72,6 +72,7 @@ export default function DashboardTabs({
           beaches={beaches}
           selectedCode={active.code}
           fallbackCenter={fallbackCenter}
+          hidePercent={features.hidePercentSign}
         />
       </section>
     </>

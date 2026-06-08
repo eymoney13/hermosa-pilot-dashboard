@@ -32,10 +32,12 @@ export default function MapView({
   beaches,
   selectedCode,
   fallbackCenter,
+  hidePercent,
 }: {
   beaches: BeachData[];
   selectedCode?: string;
   fallbackCenter: [number, number];
+  hidePercent: boolean;
 }) {
   const selected = beaches.find((b) => b.code === selectedCode) ?? beaches[0];
   const center = useMemo<[number, number]>(() => {
@@ -88,7 +90,8 @@ export default function MapView({
                   {b.status}
                 </div>
                 <div style={{ fontSize: 12, color: "#555" }}>
-                  {pct}% probability of unsafe bacteria levels
+                  {pct}
+                  {hidePercent ? "" : "%"} probability of unsafe bacteria levels
                 </div>
               </div>
             </Popup>
