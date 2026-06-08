@@ -52,6 +52,7 @@ export const ACCURACY_MIN_SAMPLES = 5;
 export interface AccuracySample {
   date: string; // ISO date the lab sample was taken
   predictedExceedance: number; // our exceedance probability that day, as a percent (0-100)
+  predictedUnsafe: boolean; // our call: prob >= threshold (stored, not re-derived from the rounded percent)
   labMpn: number; // the lab result, MPN/100mL
   match: boolean; // predicted class === actual class (both safe or both unsafe)
 }
@@ -146,6 +147,7 @@ export function computeAccuracy(
     return {
       date: s.date,
       predictedExceedance: Math.round(s.excProbability * 100),
+      predictedUnsafe,
       labMpn: s.labMpn,
       match: predictedUnsafe === actualUnsafe,
     };
