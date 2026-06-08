@@ -4,6 +4,7 @@ import DashboardTabs from "@/components/DashboardTabs";
 import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
 import { loadDashboardData } from "@/lib/loadData";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
+import { featuresFor } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function LocationPage({
   const config = getLocation(location);
   if (!config) notFound();
 
+  const features = featuresFor(location);
   const { beaches, predictionDate } = await loadDashboardData(config);
 
   return (
@@ -64,7 +66,12 @@ export default async function LocationPage({
                 aria-hidden="true"
                 className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
               />
-              <span>Forecast for {formatMonthDayYear(predictionDate)}</span>
+              <span>
+                {features.currentConditionsLabel
+                  ? "Current conditions"
+                  : "Forecast"}{" "}
+                for {formatMonthDayYear(predictionDate)}
+              </span>
             </div>
           )}
         </div>
