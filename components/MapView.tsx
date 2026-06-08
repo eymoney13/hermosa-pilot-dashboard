@@ -88,7 +88,7 @@ export default function MapView({
                   {b.status}
                 </div>
                 <div style={{ fontSize: 12, color: "#555" }}>
-                  {pct}% exceedance probability
+                  {pct}% probability of unsafe bacteria levels
                 </div>
               </div>
             </Popup>
