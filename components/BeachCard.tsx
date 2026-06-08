@@ -212,7 +212,13 @@ function exceedanceBody(pct: number): string {
   return `Bacteria levels are very likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, well above the EPA safe-swimming threshold.`;
 }
 
-function ExceedanceScale({ probability }: { probability: number }) {
+function ExceedanceScale({
+  probability,
+  hidePercent,
+}: {
+  probability: number;
+  hidePercent: boolean;
+}) {
   const probClamped = Math.max(0, Math.min(1, probability));
   const pct = Math.round(probClamped * 100);
   const left = `${probClamped * 100}%`;
@@ -244,7 +250,8 @@ function ExceedanceScale({ probability }: { probability: number }) {
             color: TIER_PILL[tierFor(probability)].text,
           }}
         >
-          {pct}%
+          {pct}
+          {hidePercent ? "" : "%"}
         </span>
         <span className="text-base text-gray-500">
           probability of unsafe bacteria levels
@@ -314,10 +321,12 @@ function SevenDayWindow({
   cells,
   selectedDate,
   onSelect,
+  hidePercent,
 }: {
   cells: WindowCell[];
   selectedDate: string;
   onSelect: (date: string) => void;
+  hidePercent: boolean;
 }) {
   if (cells.length === 0) return null;
 
@@ -373,7 +382,8 @@ function SevenDayWindow({
                 style={{ backgroundColor: tierColorForCell(day.probability) }}
               >
                 <span className="text-[10px] font-medium text-gray-900">
-                  {pct}%
+                  {pct}
+                  {hidePercent ? "" : "%"}
                 </span>
               </div>
             </button>
@@ -444,13 +454,17 @@ export default function BeachCard({
             probability={activeDay.probability}
             showIndex={features.neptuneIndex}
           />
-          <ExceedanceScale probability={activeDay.probability} />
+          <ExceedanceScale
+            probability={activeDay.probability}
+            hidePercent={features.hidePercentSign}
+          />
         </div>
 
         <SevenDayWindow
           cells={cells}
           selectedDate={selectedDate}
           onSelect={setSelectedDate}
+          hidePercent={features.hidePercentSign}
         />
 
         <WhyPrediction
@@ -459,6 +473,7 @@ export default function BeachCard({
           daysSinceSample={activeDay.daysSinceSample ?? null}
           predictionDate={activeDay.date}
           accuracy={beach.accuracy}
+          hidePercent={features.hidePercentSign}
         />
       </div>
     </div>

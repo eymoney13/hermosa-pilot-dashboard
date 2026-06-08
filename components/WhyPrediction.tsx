@@ -42,12 +42,14 @@ export default function WhyPrediction({
   daysSinceSample,
   predictionDate,
   accuracy,
+  hidePercent,
 }: {
   factors: string[];
   insight: string;
   daysSinceSample: number | null;
   predictionDate: string;
   accuracy: Accuracy;
+  hidePercent: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const sampleMeta = sampleMetadataFor(daysSinceSample, predictionDate);
@@ -114,7 +116,7 @@ export default function WhyPrediction({
               </div>
             )}
 
-            <ForecastAccuracy accuracy={accuracy} />
+            <ForecastAccuracy accuracy={accuracy} hidePercent={hidePercent} />
           </div>
         </div>
       </div>
