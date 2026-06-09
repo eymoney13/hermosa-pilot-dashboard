@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import DashboardTabs from "@/components/DashboardTabs";
 import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
+import SurveyButton from "@/components/SurveyButton";
 import { loadDashboardData } from "@/lib/loadData";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
 import { featuresFor } from "@/lib/features";
@@ -99,6 +100,8 @@ export default async function LocationPage({
           .
         </div>
       </footer>
+
+      <SurveyButton />
     </main>
   );
 }
