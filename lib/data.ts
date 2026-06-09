@@ -44,17 +44,17 @@ export const EPA_MPN_THRESHOLD = 104;
 // (ForecastAccuracy), so a sample's tier label always matches the legend.
 export interface RiskTier {
   label: string; // legend / detail label, e.g. "Slightly elevated"
-  range: string; // human-readable percent range for the legend
+  range: string; // percent range for the legend, WITHOUT the % sign (e.g. "0–29")
   color: string; // swatch color, keyed to the gradient bar's discrete tiers
   textColor: string; // readable, saturated color for large tier-colored text
   maxExclusive: number; // upper bound (exclusive), in percent
 }
 
 export const RISK_TIERS: RiskTier[] = [
-  { label: "Normal", range: "0–29%", color: "#97C459", textColor: "#2D5A0B", maxExclusive: 30 },
-  { label: "Slightly elevated", range: "30–49%", color: "#D5C82E", textColor: "#6B5F0E", maxExclusive: 50 },
-  { label: "Not recommended", range: "50–74%", color: "#E24B4A", textColor: "#7A1F1F", maxExclusive: 75 },
-  { label: "Strongly not recommended", range: "75–100%", color: "#A32D2D", textColor: "#5A1414", maxExclusive: Infinity },
+  { label: "Normal", range: "0–29", color: "#97C459", textColor: "#2D5A0B", maxExclusive: 30 },
+  { label: "Slightly elevated", range: "30–49", color: "#D5C82E", textColor: "#6B5F0E", maxExclusive: 50 },
+  { label: "Not recommended", range: "50–74", color: "#E24B4A", textColor: "#7A1F1F", maxExclusive: 75 },
+  { label: "Strongly not recommended", range: "75–100", color: "#A32D2D", textColor: "#5A1414", maxExclusive: Infinity },
 ];
 
 // The risk tier for an exceedance percentage (0–100).
