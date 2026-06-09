@@ -215,9 +215,11 @@ function exceedanceBody(pct: number): string {
 function ExceedanceScale({
   probability,
   hidePercent,
+  hideReadout,
 }: {
   probability: number;
   hidePercent: boolean;
+  hideReadout: boolean;
 }) {
   const probClamped = Math.max(0, Math.min(1, probability));
   const pct = Math.round(probClamped * 100);
@@ -242,26 +244,28 @@ function ExceedanceScale({
         />
       </div>
 
-      <div className="mt-4 flex items-center gap-2">
-        <span
-          className="inline-flex items-center rounded-md px-2 py-0.5 text-2xl font-medium tabular-nums"
-          style={{
-            backgroundColor: TIER_PILL[tierFor(probability)].bg,
-            color: TIER_PILL[tierFor(probability)].text,
-          }}
-        >
-          {pct}
-          {hidePercent ? "" : "%"}
-        </span>
-        <span className="text-base text-gray-500">
-          probability of unsafe bacteria levels
-        </span>
-        <InfoTooltip
-          title="Probability of unsafe bacteria levels"
-          body={exceedanceBody(pct)}
-          ariaLabel="About the probability of unsafe bacteria levels"
-        />
-      </div>
+      {!hideReadout && (
+        <div className="mt-4 flex items-center gap-2">
+          <span
+            className="inline-flex items-center rounded-md px-2 py-0.5 text-2xl font-medium tabular-nums"
+            style={{
+              backgroundColor: TIER_PILL[tierFor(probability)].bg,
+              color: TIER_PILL[tierFor(probability)].text,
+            }}
+          >
+            {pct}
+            {hidePercent ? "" : "%"}
+          </span>
+          <span className="text-base text-gray-500">
+            probability of unsafe bacteria levels
+          </span>
+          <InfoTooltip
+            title="Probability of unsafe bacteria levels"
+            body={exceedanceBody(pct)}
+            ariaLabel="About the probability of unsafe bacteria levels"
+          />
+        </div>
+      )}
 
       <dl className="mt-3 space-y-1">
         {RISK_TIERS.map((tier) => (
@@ -272,7 +276,10 @@ function ExceedanceScale({
               aria-hidden="true"
             />
             <dt className="text-gray-600">{tier.label}</dt>
-            <dd className="ml-auto tabular-nums text-gray-500">{tier.range}</dd>
+            <dd className="ml-auto tabular-nums text-gray-500">
+              {tier.range}
+              {hidePercent ? "" : "%"}
+            </dd>
           </div>
         ))}
       </dl>
@@ -457,6 +464,7 @@ export default function BeachCard({
           <ExceedanceScale
             probability={activeDay.probability}
             hidePercent={features.hidePercentSign}
+            hideReadout={features.hideExceedanceReadout}
           />
         </div>
 

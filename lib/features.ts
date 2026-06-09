@@ -17,12 +17,17 @@ export interface FeatureFlags {
   neptuneIndex: boolean;
   // Render exceedance figures as bare numbers (e.g. "41") instead of "41%".
   hidePercentSign: boolean;
+  // Hide the exceedance readout row — the number pill, its "probability of
+  // unsafe bacteria levels" label, and the info tooltip — keeping the gradient
+  // scale bar above it and the risk-tier legend below it.
+  hideExceedanceReadout: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
   currentConditionsLabel: false,
   neptuneIndex: false,
   hidePercentSign: false,
+  hideExceedanceReadout: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
@@ -30,6 +35,7 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
     currentConditionsLabel: true,
     neptuneIndex: true,
     hidePercentSign: true,
+    hideExceedanceReadout: true,
   },
   manhattan: {}, // stays exactly as today
 };
