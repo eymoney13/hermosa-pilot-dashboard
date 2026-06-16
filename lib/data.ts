@@ -146,8 +146,13 @@ export function statusFromProb(
   thresholdMap: Record<string, number>
 ): Status | null {
   if (prob == null || Number.isNaN(prob)) return null;
-  if (prob >= 0.5) return "Not recommended";
-  if (prob >= 0.3) return "Slightly elevated";
+  // Classify on the same rounded percent the dashboard displays, so the banner
+  // can never disagree with the number shown. Comparing the raw fraction here
+  // let a value like 0.497 round up to "50" on screen while still falling under
+  // the 0.5 cutoff and reading "Slightly elevated".
+  const pct = Math.round(prob * 100);
+  if (pct >= 50) return "Not recommended";
+  if (pct >= 30) return "Slightly elevated";
   return "Normal";
 }
 
