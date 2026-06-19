@@ -26,6 +26,21 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     },
     mapFallbackCenter: [33.8945, -118.418],
   },
+  // South Bay overview: one dashboard spanning Manhattan, Hermosa (two stations),
+  // and Redondo. Tab order follows the coast north → south. Plain Manhattan-style
+  // UI (no feature flags — see lib/features.ts).
+  southbay: {
+    slug: "southbay",
+    displayName: "South Bay, CA",
+    stations: ["DHS113", "DHS114", "DHS115", "DHS116"],
+    beachNames: {
+      DHS113: "Manhattan Beach - 26th st",
+      DHS114: "Hermosa Beach - 26th St",
+      DHS115: "Hermosa Beach - Herondo St",
+      DHS116: "Redondo Beach - Topaz",
+    },
+    mapFallbackCenter: [33.85, -118.4],
+  },
 };
 
 // Helper: resolve a slug to a config, or undefined.
