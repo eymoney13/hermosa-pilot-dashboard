@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-06-28T11:14:09Z",
+  "generated_at": "2026-06-29T11:40:30Z",
   "location": {
     "id": "DHS113",
     "name": "Manhattan Beach",
     "region": "South Bay, CA"
   },
   "today": {
-    "date": "2026-06-28",
-    "probability": 16,
+    "date": "2026-06-29",
+    "probability": 18,
     "band": "normal"
   },
   "dashboard_url": "https://dashboard.projectneptune.co/southbay"
