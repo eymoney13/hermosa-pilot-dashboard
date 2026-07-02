@@ -16,3 +16,25 @@ body {
 .leaflet-container {
   font-family: inherit;
 }
+
+/* Overview-map prediction dots: strip Leaflet's default white divIcon chrome
+   and render our own colored, numbered pill. */
+.nb-overview-icon {
+  background: transparent;
+  border: none;
+}
+
+.nb-overview-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}

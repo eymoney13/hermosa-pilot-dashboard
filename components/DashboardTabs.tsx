@@ -5,12 +5,16 @@ import type { BeachData } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import BeachCard from "./BeachCard";
 import MapClient from "./MapClient";
+import OverviewMapClient from "./OverviewMapClient";
 
 const STATUS_UNDERLINE: Record<string, string> = {
   Normal: "bg-[#2d8a4e]",
   "Slightly elevated": "bg-[#D5C82E]",
   "Not recommended": "bg-[#cc3333]",
 };
+
+// Sentinel tab value for the all-beaches overview map. Not a real station code.
+const MAP_TAB = "__map__";
 
 export default function DashboardTabs({
   beaches,
@@ -23,12 +27,16 @@ export default function DashboardTabs({
   fallbackCenter: [number, number];
   features: FeatureFlags;
 }) {
+  // The overview map only earns its own tab when there's more than one beach to
+  // glance across; single-beach locations open straight to that beach.
+  const showMapTab = beaches.length > 1;
   const [activeCode, setActiveCode] = useState<string>(
-    beaches[0]?.code ?? ""
+    showMapTab ? MAP_TAB : beaches[0]?.code ?? ""
   );
 
   if (beaches.length === 0) return null;
 
+  const mapActive = activeCode === MAP_TAB;
   const active = beaches.find((b) => b.code === activeCode) ?? beaches[0];
 
   return (
@@ -36,8 +44,23 @@ export default function DashboardTabs({
       {beaches.length > 1 && (
         <nav className="w-full border-b border-gray-100">
           <div className="mx-auto max-w-6xl px-6 sm:px-10 flex gap-2 sm:gap-8 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setActiveCode(MAP_TAB)}
+              aria-current={mapActive ? "page" : undefined}
+              className={`relative shrink-0 py-4 px-2 text-sm font-medium transition-colors ${
+                mapActive
+                  ? "text-gray-900"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Map
+              {mapActive && (
+                <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-gray-900" />
+              )}
+            </button>
             {beaches.map((b) => {
-              const isActive = b.code === active.code;
+              const isActive = !mapActive && b.code === active.code;
               return (
                 <button
                   key={b.code}
@@ -65,16 +88,33 @@ export default function DashboardTabs({
         </nav>
       )}
 
-      <BeachCard beach={active} locationLabel={locationLabel} features={features} />
+      {mapActive ? (
+        <section className="w-full">
+          <OverviewMapClient
+            beaches={beaches}
+            fallbackCenter={fallbackCenter}
+            hidePercent={features.hidePercentSign}
+            onSelect={setActiveCode}
+          />
+        </section>
+      ) : (
+        <>
+          <BeachCard
+            beach={active}
+            locationLabel={locationLabel}
+            features={features}
+          />
 
-      <section className="w-full">
-        <MapClient
-          beaches={beaches}
-          selectedCode={active.code}
-          fallbackCenter={fallbackCenter}
-          hidePercent={features.hidePercentSign}
-        />
-      </section>
+          <section className="w-full">
+            <MapClient
+              beaches={beaches}
+              selectedCode={active.code}
+              fallbackCenter={fallbackCenter}
+              hidePercent={features.hidePercentSign}
+            />
+          </section>
+        </>
+      )}
     </>
   );
 }
