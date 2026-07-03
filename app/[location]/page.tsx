@@ -6,6 +6,7 @@ import SurveyButton from "@/components/SurveyButton";
 import { loadDashboardData } from "@/lib/loadData";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
 import { featuresFor } from "@/lib/features";
+import { fetchNewsAlerts, isNewsEnabled } from "@/lib/news";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,11 @@ export default async function LocationPage({
   if (!config) notFound();
 
   const features = featuresFor(location);
-  const { beaches, predictionDate } = await loadDashboardData(config);
+  const newsEnabled = isNewsEnabled();
+  const [{ beaches, predictionDate }, news] = await Promise.all([
+    loadDashboardData(config),
+    newsEnabled ? fetchNewsAlerts() : Promise.resolve([]),
+  ]);
 
   return (
     <main className="flex flex-col">
@@ -83,6 +88,8 @@ export default async function LocationPage({
         locationLabel={config.displayName}
         fallbackCenter={config.mapFallbackCenter}
         features={features}
+        news={news}
+        newsEnabled={newsEnabled}
       />
 
       <footer className="w-full py-10">

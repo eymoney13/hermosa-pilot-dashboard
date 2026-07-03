@@ -3,8 +3,10 @@
 import { useState } from "react";
 import type { BeachData } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
+import type { NewsItem } from "@/lib/news";
 import BeachCard from "./BeachCard";
 import MapClient from "./MapClient";
+import NewsTab from "./NewsTab";
 
 const STATUS_UNDERLINE: Record<string, string> = {
   Normal: "bg-[#2d8a4e]",
@@ -12,32 +14,41 @@ const STATUS_UNDERLINE: Record<string, string> = {
   "Not recommended": "bg-[#cc3333]",
 };
 
+// Sentinel tab value for the (global, not per-beach) News tab.
+const NEWS_TAB = "__news__";
+
 export default function DashboardTabs({
   beaches,
   locationLabel,
   fallbackCenter,
   features,
+  news,
+  newsEnabled,
 }: {
   beaches: BeachData[];
   locationLabel: string;
   fallbackCenter: [number, number];
   features: FeatureFlags;
+  news: NewsItem[];
+  newsEnabled: boolean;
 }) {
-  const [activeCode, setActiveCode] = useState<string>(
-    beaches[0]?.code ?? ""
-  );
+  const [activeCode, setActiveCode] = useState<string>(beaches[0]?.code ?? "");
 
   if (beaches.length === 0) return null;
 
+  const newsActive = activeCode === NEWS_TAB;
   const active = beaches.find((b) => b.code === activeCode) ?? beaches[0];
+  // The tab bar earns its keep when there's more than one beach to switch
+  // between, or a News tab to reach.
+  const showTabs = beaches.length > 1 || newsEnabled;
 
   return (
     <>
-      {beaches.length > 1 && (
+      {showTabs && (
         <nav className="w-full border-b border-gray-100">
           <div className="mx-auto max-w-6xl px-6 sm:px-10 flex gap-2 sm:gap-8 overflow-x-auto">
             {beaches.map((b) => {
-              const isActive = b.code === active.code;
+              const isActive = !newsActive && b.code === active.code;
               return (
                 <button
                   key={b.code}
@@ -61,20 +72,47 @@ export default function DashboardTabs({
                 </button>
               );
             })}
+            {newsEnabled && (
+              <button
+                type="button"
+                onClick={() => setActiveCode(NEWS_TAB)}
+                aria-current={newsActive ? "page" : undefined}
+                className={`relative shrink-0 py-4 px-2 text-sm font-medium transition-colors ${
+                  newsActive
+                    ? "text-gray-900"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                News
+                {newsActive && (
+                  <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-gray-900" />
+                )}
+              </button>
+            )}
           </div>
         </nav>
       )}
 
-      <BeachCard beach={active} locationLabel={locationLabel} features={features} />
+      {newsActive ? (
+        <NewsTab items={news} />
+      ) : (
+        <>
+          <BeachCard
+            beach={active}
+            locationLabel={locationLabel}
+            features={features}
+          />
 
-      <section className="w-full">
-        <MapClient
-          beaches={beaches}
-          selectedCode={active.code}
-          fallbackCenter={fallbackCenter}
-          hidePercent={features.hidePercentSign}
-        />
-      </section>
+          <section className="w-full">
+            <MapClient
+              beaches={beaches}
+              selectedCode={active.code}
+              fallbackCenter={fallbackCenter}
+              hidePercent={features.hidePercentSign}
+            />
+          </section>
+        </>
+      )}
     </>
   );
 }
