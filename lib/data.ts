@@ -4,6 +4,12 @@ export interface LocationConfig {
   stations: string[]; // station codes for this location
   beachNames: Record<string, string>;
   mapFallbackCenter: [number, number]; // [lat, lng] used by MapView when no beaches loaded
+  // Optional per-location news filter (case-insensitive substring match against
+  // an article's title/snippet/source/url). This is the in-code default; it can
+  // be overridden at runtime by a NEWS_FILTER_TERMS_<SLUG> env var (e.g.
+  // NEWS_FILTER_TERMS_MANHATTAN). Both override the global NEWS_FILTER_* config
+  // for this location only; omit all three to use the global behavior.
+  newsFilterTerms?: string[];
 }
 
 export const LOCATIONS: Record<string, LocationConfig> = {
@@ -25,6 +31,26 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       DHS113: "Manhattan Beach - 26th St",
     },
     mapFallbackCenter: [33.8945, -118.418],
+    // News tab shows only Manhattan Beach + LA-area coverage. Includes local
+    // place names and LA news domains (matched against the article URL) to
+    // catch stories that never spell out the city/state.
+    newsFilterTerms: [
+      "manhattan beach",
+      "el porto",
+      "el segundo",
+      "south bay",
+      "los angeles",
+      "l.a.",
+      "la county",
+      "santa monica bay",
+      "latimes.com",
+      "ktla.com",
+      "dailybreeze.com",
+      "easyreadernews",
+      "kfiam640",
+      "lacounty.gov",
+      "abc7.com",
+    ],
   },
   // South Bay overview: one dashboard spanning Manhattan, Hermosa (two stations),
   // and Redondo. Tab order follows the coast north → south. Plain Manhattan-style
