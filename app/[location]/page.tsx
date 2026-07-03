@@ -6,7 +6,12 @@ import SurveyButton from "@/components/SurveyButton";
 import { loadDashboardData } from "@/lib/loadData";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
 import { featuresFor } from "@/lib/features";
-import { fetchNewsAlerts, isNewsEnabled } from "@/lib/news";
+import {
+  fetchNewsAlerts,
+  getNewsFeedUrls,
+  isNewsEnabled,
+  resolveNewsFilterTerms,
+} from "@/lib/news";
 
 export const dynamic = "force-dynamic";
 
@@ -39,9 +44,12 @@ export default async function LocationPage({
 
   const features = featuresFor(location);
   const newsEnabled = isNewsEnabled();
+  const newsFilterTerms = resolveNewsFilterTerms(config.newsFilterTerms);
   const [{ beaches, predictionDate }, news] = await Promise.all([
     loadDashboardData(config),
-    newsEnabled ? fetchNewsAlerts() : Promise.resolve([]),
+    newsEnabled
+      ? fetchNewsAlerts(getNewsFeedUrls(), newsFilterTerms)
+      : Promise.resolve([]),
   ]);
 
   return (

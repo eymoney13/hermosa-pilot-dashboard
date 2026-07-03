@@ -89,6 +89,17 @@ export function getNewsFilterTerms(): string[] {
   return REGION_TERMS[region] ?? [];
 }
 
+// Resolve the effective filter terms for a page: a per-location override (e.g.
+// the Manhattan dashboard's beach + LA list, from LocationConfig.newsFilterTerms)
+// wins when present; otherwise fall back to the global env-driven terms. Always
+// normalized to lowercase.
+export function resolveNewsFilterTerms(override?: string[]): string[] {
+  const custom = (override ?? [])
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return custom.length > 0 ? custom : getNewsFilterTerms();
+}
+
 function matchesAnyTerm(item: NewsItem, terms: string[]): boolean {
   if (terms.length === 0) return true;
   const hay =
@@ -97,8 +108,11 @@ function matchesAnyTerm(item: NewsItem, terms: string[]): boolean {
 }
 
 // Merge every configured feed into one newest-first, de-duplicated list.
+// `terms` overrides the filter for this call (e.g. per-location); defaults to
+// the global env-driven terms.
 export async function fetchNewsAlerts(
-  urls: string[] = getNewsFeedUrls()
+  urls: string[] = getNewsFeedUrls(),
+  terms: string[] = getNewsFilterTerms()
 ): Promise<NewsItem[]> {
   if (urls.length === 0) return [];
 
@@ -107,7 +121,6 @@ export async function fetchNewsAlerts(
     r.status === "fulfilled" ? r.value : []
   );
 
-  const terms = getNewsFilterTerms();
   const items = allItems.filter((item) => matchesAnyTerm(item, terms));
 
   const seen = new Set<string>();
