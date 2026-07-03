@@ -5,8 +5,10 @@ export interface LocationConfig {
   beachNames: Record<string, string>;
   mapFallbackCenter: [number, number]; // [lat, lng] used by MapView when no beaches loaded
   // Optional per-location news filter (case-insensitive substring match against
-  // an article's title/snippet/source/url). Overrides the global NEWS_FILTER_*
-  // env config for this location only; omit to use the global behavior.
+  // an article's title/snippet/source/url). This is the in-code default; it can
+  // be overridden at runtime by a NEWS_FILTER_TERMS_<SLUG> env var (e.g.
+  // NEWS_FILTER_TERMS_MANHATTAN). Both override the global NEWS_FILTER_* config
+  // for this location only; omit all three to use the global behavior.
   newsFilterTerms?: string[];
 }
 

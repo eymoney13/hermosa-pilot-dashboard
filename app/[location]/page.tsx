@@ -44,7 +44,10 @@ export default async function LocationPage({
 
   const features = featuresFor(location);
   const newsEnabled = isNewsEnabled();
-  const newsFilterTerms = resolveNewsFilterTerms(config.newsFilterTerms);
+  const newsFilterTerms = resolveNewsFilterTerms(
+    config.slug,
+    config.newsFilterTerms
+  );
   const [{ beaches, predictionDate }, news] = await Promise.all([
     loadDashboardData(config),
     newsEnabled

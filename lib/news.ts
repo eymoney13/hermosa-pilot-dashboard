@@ -89,15 +89,34 @@ export function getNewsFilterTerms(): string[] {
   return REGION_TERMS[region] ?? [];
 }
 
-// Resolve the effective filter terms for a page: a per-location override (e.g.
-// the Manhattan dashboard's beach + LA list, from LocationConfig.newsFilterTerms)
-// wins when present; otherwise fall back to the global env-driven terms. Always
-// normalized to lowercase.
-export function resolveNewsFilterTerms(override?: string[]): string[] {
-  const custom = (override ?? [])
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  return custom.length > 0 ? custom : getNewsFilterTerms();
+function normalizeTerms(terms: string[]): string[] {
+  return terms.map((s) => s.trim().toLowerCase()).filter(Boolean);
+}
+
+// Per-location filter override from the env, e.g. NEWS_FILTER_TERMS_MANHATTAN
+// for the "manhattan" slug. Lets a location's filter be tuned in Vercel without
+// a code change. Slug is uppercased and non-alphanumerics become underscores.
+function envTermsForSlug(slug: string): string[] {
+  const key = `NEWS_FILTER_TERMS_${slug.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
+  return normalizeTerms((process.env[key] ?? "").split(","));
+}
+
+// Resolve the effective filter terms for a location, in precedence order:
+//   1. NEWS_FILTER_TERMS_<SLUG> env var (per-location, runtime-adjustable)
+//   2. LocationConfig.newsFilterTerms (per-location default, in code)
+//   3. global NEWS_FILTER_TERMS / NEWS_FILTER_REGION env config
+// Always normalized to lowercase.
+export function resolveNewsFilterTerms(
+  slug?: string,
+  override?: string[]
+): string[] {
+  if (slug) {
+    const envTerms = envTermsForSlug(slug);
+    if (envTerms.length > 0) return envTerms;
+  }
+  const custom = normalizeTerms(override ?? []);
+  if (custom.length > 0) return custom;
+  return getNewsFilterTerms();
 }
 
 function matchesAnyTerm(item: NewsItem, terms: string[]): boolean {
