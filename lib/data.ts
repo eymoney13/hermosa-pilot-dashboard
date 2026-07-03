@@ -181,8 +181,9 @@ export interface RawAccuracySample {
 
 // Score the model's classification against the lab for the most recent samples.
 // A sample MATCHES when our predicted class equals the actual class:
-//   predicted unsafe := excProbability >= threshold  (the same per-station 0.5
-//                       boundary the dashboard uses for its risk language)
+//   predicted unsafe := round(excProbability*100) >= round(threshold*100)  (the
+//                       same rounded-percent boundary statusFromProb uses, so
+//                       the score never disagrees with the number on screen)
 //   actually unsafe  := labMpn > EPA_MPN_THRESHOLD
 // We compare classes, never the probability against the raw MPN directly.
 export function computeAccuracy(
@@ -192,12 +193,18 @@ export function computeAccuracy(
 ): Accuracy {
   // rawSamples arrive chronological (oldest → newest); score the last N.
   const recent = rawSamples.slice(-windowN);
+  // Classify on the same rounded percent the dashboard displays (see
+  // statusFromProb), never the raw fraction. Otherwise a probability like 0.497
+  // shows on screen as "50% — Not recommended" but scores as "predicted safe",
+  // so a genuine miss reads as "Matched".
+  const thresholdPct = Math.round(threshold * 100);
   const samples: AccuracySample[] = recent.map((s) => {
-    const predictedUnsafe = s.excProbability >= threshold;
+    const predictedExceedance = Math.round(s.excProbability * 100);
+    const predictedUnsafe = predictedExceedance >= thresholdPct;
     const actualUnsafe = s.labMpn > EPA_MPN_THRESHOLD;
     return {
       date: s.date,
-      predictedExceedance: Math.round(s.excProbability * 100),
+      predictedExceedance,
       predictedUnsafe,
       labMpn: s.labMpn,
       match: predictedUnsafe === actualUnsafe,
