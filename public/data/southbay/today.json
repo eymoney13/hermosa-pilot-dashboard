@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-04T11:04:27Z",
+  "generated_at": "2026-07-05T11:46:18Z",
   "location": {
     "id": "DHS113",
     "name": "Manhattan Beach",
     "region": "South Bay, CA"
   },
   "today": {
-    "date": "2026-07-04",
+    "date": "2026-07-05",
     "probability": 16,
     "band": "normal"
   },
