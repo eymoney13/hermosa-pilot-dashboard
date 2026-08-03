@@ -39,6 +39,7 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
   },
   manhattan: {}, // stays exactly as today
   southbay: {}, // plain Manhattan-style — all flags default off
+  cabrillo: {}, // plain Manhattan-style — all flags default off
 };
 
 // Resolve the flag set for a location slug. Unknown slugs fall through to the

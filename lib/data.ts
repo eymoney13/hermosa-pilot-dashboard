@@ -67,6 +67,21 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     },
     mapFallbackCenter: [33.85, -118.4],
   },
+  // Cabrillo Beach (San Pedro) overview: three stations. Multi-beach, so the
+  // dashboard opens to the all-locations Map tab (like South Bay). Station
+  // coordinates come from the data files; the names below are placeholders —
+  // confirm the real display names.
+  cabrillo: {
+    slug: "cabrillo",
+    displayName: "Cabrillo Beach, CA",
+    stations: ["CB-01", "CB-02", "SMB-7-9"],
+    beachNames: {
+      "CB-01": "Inner Cabrillo Beach (boatlaunch)",
+      "CB-02": "Inner Cabrillo Beach (restrooms)",
+      "SMB-7-9": "Outer Cabrillo Beach",
+    },
+    mapFallbackCenter: [33.707, -118.283],
+  },
 };
 
 // Helper: resolve a slug to a config, or undefined.
