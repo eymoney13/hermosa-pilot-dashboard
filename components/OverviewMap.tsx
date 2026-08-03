@@ -86,7 +86,7 @@ export default function OverviewMap({
           eventHandlers={{ click: () => onSelect(b.code) }}
           keyboard
         >
-          <Tooltip direction="bottom" offset={[0, 20]} opacity={1} permanent>
+          <Tooltip direction="left" offset={[-22, 0]} opacity={1} permanent>
             <span style={{ fontWeight: 600, fontSize: 11 }}>{b.name}</span>
           </Tooltip>
         </Marker>
