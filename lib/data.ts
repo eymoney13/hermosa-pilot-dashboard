@@ -28,7 +28,7 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     displayName: "Manhattan Beach, CA",
     stations: ["DHS113"],
     beachNames: {
-      DHS113: "Manhattan Beach - 26th St",
+      DHS113: "Manhattan Beach - 28th St",
     },
     mapFallbackCenter: [33.8945, -118.418],
     // News tab shows only Manhattan Beach + LA-area coverage. Includes local
@@ -60,7 +60,7 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     displayName: "South Bay, CA",
     stations: ["DHS113", "DHS114", "DHS115", "DHS116"],
     beachNames: {
-      DHS113: "Manhattan Beach - 26th st",
+      DHS113: "Manhattan Beach - 28th st",
       DHS114: "Hermosa Beach - 26th St",
       DHS115: "Hermosa Beach - Herondo St",
       DHS116: "Redondo Beach - Topaz",
