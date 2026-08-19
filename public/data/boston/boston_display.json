@@ -1,0 +1,220 @@
+{
+  "region": "massachusetts",
+  "display_name": "Boston Harbor",
+  "beaches": [
+    {
+      "name": "Carson Beach",
+      "town": "South Boston",
+      "primary_station": "21MABCH-MA689045-1",
+      "stations": [
+        "21MABCH-MA689045-1",
+        "21MABCH-MA689045-2",
+        "21MABCH-MA334293",
+        "21MABCH-MA641647"
+      ],
+      "lat": 42.32966,
+      "lon": -71.04004,
+      "exc_rate_pct": 3.5,
+      "n_samples": 767
+    },
+    {
+      "name": "M Street Beach",
+      "town": "South Boston",
+      "primary_station": "21MABCH-MA715607-1",
+      "stations": [
+        "21MABCH-MA715607-1",
+        "21MABCH-MA846279-1",
+        "21MABCH-MA846279"
+      ],
+      "lat": 42.27697,
+      "lon": -71.0093,
+      "exc_rate_pct": 10.9,
+      "n_samples": 1414
+    },
+    {
+      "name": "Nantasket Beach",
+      "town": "Hull",
+      "primary_station": "21MABCH-MA871019-4",
+      "stations": [
+        "21MABCH-MA871019-4",
+        "21MABCH-MA871019-2",
+        "21MABCH-MA871019-3",
+        "21MABCH-MA871019-1",
+        "21MABCH-MA104582",
+        "21MABCH-MA388986",
+        "21MABCH-MA135071",
+        "21MABCH-MA833667"
+      ],
+      "lat": 42.276,
+      "lon": -70.86186,
+      "exc_rate_pct": 3.2,
+      "n_samples": 833
+    },
+    {
+      "name": "Revere Beach",
+      "town": "Revere",
+      "primary_station": "21MABCH-MA693303-1",
+      "stations": [
+        "21MABCH-MA693303-1",
+        "21MABCH-MA693303-2",
+        "21MABCH-MA693303-3",
+        "21MABCH-MA693303-4",
+        "MYRWA-BEI093",
+        "MYRWA-MIC004",
+        "21MABCH-MA186671",
+        "21MABCH-MA227000",
+        "21MABCH-MA198444",
+        "21MABCH-MA809018"
+      ],
+      "lat": 42.42273,
+      "lon": -70.98284,
+      "exc_rate_pct": 6.2,
+      "n_samples": 993
+    },
+    {
+      "name": "Constitution Beach",
+      "town": "East Boston",
+      "primary_station": "21MABCH-MA289542-2",
+      "stations": [
+        "21MABCH-MA289542-2",
+        "21MABCH-MA289542-1",
+        "21MABCH-MA289542-3",
+        "21MABCH-MA738501",
+        "21MABCH-MA780232",
+        "21MABCH-MA187787"
+      ],
+      "lat": 42.38441,
+      "lon": -71.00713,
+      "exc_rate_pct": 8.1,
+      "n_samples": 3560
+    },
+    {
+      "name": "Winthrop Beach",
+      "town": "Winthrop",
+      "primary_station": "21MABCH-MA570977-1",
+      "stations": [
+        "21MABCH-MA570977-1"
+      ],
+      "lat": 42.37576,
+      "lon": -70.96862,
+      "exc_rate_pct": 6.0,
+      "n_samples": 199
+    },
+    {
+      "name": "Short Beach",
+      "town": "Winthrop",
+      "primary_station": "21MABCH-MA667947-1",
+      "stations": [
+        "21MABCH-MA667947-1",
+        "21MABCH-MA053694-1",
+        "21MABCH-MA667947",
+        "21MABCH-MA053694"
+      ],
+      "lat": 42.39261,
+      "lon": -70.98103,
+      "exc_rate_pct": 9.4,
+      "n_samples": 447
+    },
+    {
+      "name": "Wollaston Beach",
+      "town": "Quincy",
+      "primary_station": "21MABCH-MA957964-1",
+      "stations": [
+        "21MABCH-MA957964-1",
+        "21MABCH-MA715607-1",
+        "21MABCH-MA203090-1",
+        "21MABCH-MA562850-1",
+        "21MABCH-MA957964",
+        "21MABCH-MA203090",
+        "21MABCH-MA715607",
+        "21MABCH-MA562850"
+      ],
+      "lat": 42.27893,
+      "lon": -71.01436,
+      "exc_rate_pct": 13.6,
+      "n_samples": 4925
+    },
+    {
+      "name": "Nahant Beach",
+      "town": "Nahant",
+      "primary_station": "21MABCH-MA898442-1",
+      "stations": [
+        "21MABCH-MA898442-1",
+        "21MABCH-MA898442-3",
+        "21MABCH-MA898442-2",
+        "21MABCH-MA898442-4",
+        "21MABCH-MA151015-1",
+        "21MABCH-MA272297",
+        "21MABCH-MA503638",
+        "21MABCH-MA211183",
+        "21MABCH-MA203203"
+      ],
+      "lat": 42.4551,
+      "lon": -70.93597,
+      "exc_rate_pct": 11.2,
+      "n_samples": 1163
+    },
+    {
+      "name": "Malibu Beach",
+      "town": "Dorchester",
+      "primary_station": "21MABCH-MA259042-1",
+      "stations": [
+        "21MABCH-MA259042-1",
+        "21MABCH-MA259042"
+      ],
+      "lat": 42.30666,
+      "lon": -71.04784,
+      "exc_rate_pct": 11.2,
+      "n_samples": 1023
+    },
+    {
+      "name": "Savin Hill Beach",
+      "town": "Dorchester",
+      "primary_station": "21MABCH-MA698753-1",
+      "stations": [
+        "21MABCH-MA698753-1",
+        "21MABCH-MA698753"
+      ],
+      "lat": 42.30794,
+      "lon": -71.0515,
+      "exc_rate_pct": 13.1,
+      "n_samples": 255
+    },
+    {
+      "name": "Tenean Beach",
+      "town": "Dorchester",
+      "primary_station": "21MABCH-MA124463-1",
+      "stations": [
+        "21MABCH-MA124463-1",
+        "21MABCH-MA124463"
+      ],
+      "lat": 42.293,
+      "lon": -71.04314,
+      "exc_rate_pct": 20.0,
+      "n_samples": 1235
+    },
+    {
+      "name": "King's Beach",
+      "town": "Lynn",
+      "primary_station": "21MABCH-MA544995-3",
+      "stations": [
+        "21MABCH-MA544995-3",
+        "21MABCH-MA544995-2",
+        "21MABCH-MA544995-1",
+        "21MABCH-MA898442-3",
+        "21MABCH-MA984037-1",
+        "21MABCH-MA924979",
+        "21MABCH-MA446515",
+        "21MABCH-MA737501",
+        "21MABCH-MA565550",
+        "21MABCH-MA579166",
+        "MYRWA-BEI093",
+        "21MABCH-MA984037"
+      ],
+      "lat": 42.46532,
+      "lon": -70.92081,
+      "exc_rate_pct": 32.1,
+      "n_samples": 3875
+    }
+  ]
+}
