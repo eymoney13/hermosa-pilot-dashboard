@@ -15,6 +15,13 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// The CA boards all defer to LA County; a location can name its own authority
+// via LocationConfig.advisory.
+const DEFAULT_ADVISORY = {
+  label: "LA County Department of Public Health",
+  href: "http://publichealth.lacounty.gov/phcommon/public/media/mediapubOdisplay.cfm",
+};
+
 export function generateStaticParams() {
   return Object.keys(LOCATIONS).map((location) => ({ location }));
 }
@@ -94,26 +101,43 @@ export default async function LocationPage({
         </div>
       </header>
 
-      <DashboardTabs
-        beaches={beaches}
-        locationLabel={config.displayName}
-        fallbackCenter={config.mapFallbackCenter}
-        features={features}
-        news={news}
-        newsEnabled={newsEnabled}
-      />
+      {beaches.length > 0 ? (
+        <DashboardTabs
+          beaches={beaches}
+          locationLabel={config.displayName}
+          fallbackCenter={config.mapFallbackCenter}
+          features={features}
+          news={news}
+          newsEnabled={newsEnabled}
+        />
+      ) : (
+        // A registered location whose backend hasn't published its first run
+        // yet. Without this the page renders as a bare header (DashboardTabs
+        // returns null on an empty roster).
+        <div className="mx-auto w-full max-w-6xl px-6 sm:px-10 py-16">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
+            <p className="text-sm font-medium text-slate-700">
+              No readings published yet for {config.displayName}.
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              This dashboard goes live as soon as the daily model run publishes
+              its first forecast.
+            </p>
+          </div>
+        </div>
+      )}
 
       <footer className="w-full py-10">
         <div className="mx-auto max-w-6xl px-6 sm:px-10 text-xs text-gray-400">
           Forecasts are estimates based on environmental data. For official
           beach advisories, consult{" "}
           <a
-            href="http://publichealth.lacounty.gov/phcommon/public/media/mediapubOdisplay.cfm"
+            href={(config.advisory ?? DEFAULT_ADVISORY).href}
             target="_blank"
             rel="noopener noreferrer"
             className="underline hover:text-gray-600"
           >
-            LA County Department of Public Health
+            {(config.advisory ?? DEFAULT_ADVISORY).label}
           </a>
           .
         </div>

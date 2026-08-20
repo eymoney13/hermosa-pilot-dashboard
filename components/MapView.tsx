@@ -10,7 +10,7 @@ import {
   Popup,
   useMap,
 } from "react-leaflet";
-import type { BeachData } from "@/lib/data";
+import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: () => string })._getIconUrl;
 
@@ -18,6 +18,19 @@ function colorFor(status: BeachData["status"]) {
   if (status === "Not recommended") return "#cc3333";
   if (status === "Slightly elevated") return "#D5C82E";
   return "#2d8a4e";
+}
+
+// What a pin says and how it is coloured. Binary boards read Good/Poor off the
+// beach's own cutoff so the map agrees with the card; everything else keeps the
+// 3-tier status.
+function readingFor(beach: BeachData, binaryVerdict: boolean) {
+  if (binaryVerdict && beach.verdict) {
+    return {
+      label: beach.verdict,
+      color: colorFor(VERDICT_AS_STATUS[beach.verdict]),
+    };
+  }
+  return { label: beach.status, color: colorFor(beach.status) };
 }
 
 function PanTo({ lat, lon }: { lat: number; lon: number }) {
@@ -33,11 +46,13 @@ export default function MapView({
   selectedCode,
   fallbackCenter,
   hidePercent,
+  binaryVerdict,
 }: {
   beaches: BeachData[];
   selectedCode?: string;
   fallbackCenter: [number, number];
   hidePercent: boolean;
+  binaryVerdict: boolean;
 }) {
   const selected = beaches.find((b) => b.code === selectedCode) ?? beaches[0];
   const center = useMemo<[number, number]>(() => {
@@ -65,7 +80,7 @@ export default function MapView({
       />
       {selected && <PanTo lat={selected.latitude} lon={selected.longitude} />}
       {beaches.map((b) => {
-        const color = colorFor(b.status);
+        const { label, color } = readingFor(b, binaryVerdict);
         const pct = Math.round(b.probability * 100);
         const isSelected = b.code === selected?.code;
         return (
@@ -81,18 +96,23 @@ export default function MapView({
             }}
           >
             <Tooltip direction="top" offset={[0, -8]} opacity={1}>
-              <span style={{ fontWeight: 500 }}>{b.name}</span> — {b.status}
+              <span style={{ fontWeight: 500 }}>{b.name}</span> — {label}
             </Tooltip>
             <Popup>
               <div style={{ minWidth: 180 }}>
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>{b.name}</div>
                 <div style={{ color, fontWeight: 500, marginBottom: 4 }}>
-                  {b.status}
+                  {label}
                 </div>
-                <div style={{ fontSize: 12, color: "#555" }}>
-                  {pct}
-                  {hidePercent ? "" : "%"} probability of unsafe bacteria levels
-                </div>
+                {/* Binary boards hide the probability everywhere, popups
+                    included — the card's summary is where the number speaks. */}
+                {!binaryVerdict && (
+                  <div style={{ fontSize: 12, color: "#555" }}>
+                    {pct}
+                    {hidePercent ? "" : "%"} probability of unsafe bacteria
+                    levels
+                  </div>
+                )}
               </div>
             </Popup>
           </CircleMarker>

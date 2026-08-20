@@ -14,11 +14,13 @@ export default function OverviewMapClient({
   beaches,
   fallbackCenter,
   hidePercent,
+  binaryVerdict,
   onSelect,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
   hidePercent: boolean;
+  binaryVerdict: boolean;
   onSelect: (code: string) => void;
 }) {
   return (
@@ -27,6 +29,7 @@ export default function OverviewMapClient({
         beaches={beaches}
         fallbackCenter={fallbackCenter}
         hidePercent={hidePercent}
+        binaryVerdict={binaryVerdict}
         onSelect={onSelect}
       />
     </div>

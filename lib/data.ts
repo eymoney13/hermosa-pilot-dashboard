@@ -10,6 +10,19 @@ export interface LocationConfig {
   // NEWS_FILTER_TERMS_MANHATTAN). Both override the global NEWS_FILTER_* config
   // for this location only; omit all three to use the global behavior.
   newsFilterTerms?: string[];
+  // Optional: the beach roster (which stations to show, their display names and
+  // coordinates) is published by the backend as a JSON file at
+  // public/data/<slug>/<rosterFile>, rather than hand-listed in `stations` /
+  // `beachNames` above. Locations that set this leave those two empty — the
+  // roster is whatever the backend last published. See RosterFile in loadData.ts.
+  rosterFile?: string;
+  // Optional: classify status against this location's own per-station threshold
+  // instead of the shared fixed tiers (see statusFromProb). Opt-in, because the
+  // CA locations are calibrated to the fixed 30/50 cutoffs and must not move.
+  statusFromThreshold?: boolean;
+  // Official advisory authority linked in the page footer. Defaults to LA County
+  // (the CA locations) when omitted.
+  advisory?: { label: string; href: string };
 }
 
 export const LOCATIONS: Record<string, LocationConfig> = {
@@ -82,6 +95,25 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     },
     mapFallbackCenter: [33.707, -118.283],
   },
+  // Boston-area beaches (Massachusetts). Unlike the CA locations, the roster is
+  // owned by the backend and published as boston_display.json — so `stations`
+  // and `beachNames` stay empty here and are resolved at load time. Boston's
+  // model ships its own Safe/Unsafe call against a per-beach threshold
+  // (DEFAULT 0.29), so it classifies on that threshold rather than the shared
+  // fixed tiers, keeping the dashboard in agreement with the backend.
+  boston: {
+    slug: "boston",
+    displayName: "Boston, MA",
+    stations: [],
+    beachNames: {},
+    rosterFile: "boston_display.json",
+    statusFromThreshold: true,
+    mapFallbackCenter: [42.33, -71.02],
+    advisory: {
+      label: "Massachusetts Department of Public Health",
+      href: "https://www.mass.gov/info-details/beach-water-quality",
+    },
+  },
 };
 
 // Helper: resolve a slug to a config, or undefined.
@@ -90,6 +122,12 @@ export function getLocation(slug: string): LocationConfig | undefined {
 }
 
 export type Status = "Normal" | "Slightly elevated" | "Not recommended";
+
+// The binary read used by boards whose model publishes a straight Safe/Unsafe
+// call against a per-beach probability cutoff (see verdictFor). Locations opt
+// into showing it via the `binaryVerdict` feature flag; `Status` stays the
+// internal 3-tier value every board computes, so nothing keyed to it changes.
+export type Verdict = "Good" | "Poor";
 
 // EPA single-sample safe-swimming standard for ocean water (MPN/100mL).
 // A lab result above this is classified as an exceedance ("actually unsafe").
@@ -150,17 +188,64 @@ export interface Accuracy {
   samples: AccuracySample[]; // chronological, oldest → newest
 }
 
+// Which way a contributing factor pushed the model's risk estimate. Published
+// by backends that ship SHAP directions alongside their top factors.
+export type FactorDirection = "increasing risk" | "decreasing risk";
+
+// A ranked driver of one day's prediction: what the model keyed on, and whether
+// it pushed risk up or down.
+export interface Driver {
+  factor: string; // canonical display label (see lib/factors.ts)
+  direction: FactorDirection;
+}
+
+// The measured environmental conditions behind one day's prediction, in human
+// units. Every field is optional: the backend blanks any value whose source
+// feed is too stale to describe that day (an NDBC buoy that stopped reporting,
+// say), and the dashboard must then say nothing rather than guess. See
+// scripts/env_conditions_region.py in project-neptune.
+export interface Conditions {
+  rainTodayMm?: number; // rain on the day itself
+  rainPrior3dMm?: number; // rain over the three days before it
+  windKph?: number;
+  airTempC?: number;
+  solarMj?: number; // shortwave radiation — sunlight, which inactivates bacteria
+  waterTempC?: number;
+  waveHeightM?: number;
+  tideRangeM?: number; // the day's tidal range; bigger range flushes harder
+  springTide?: boolean;
+  riverFlow?: "low" | "moderate" | "high" | "very high";
+  // Distance to the nearest combined sewer overflow outfall. Geometry, not an
+  // observation, so it never goes stale — a standing property of the beach.
+  csoDistKm?: number;
+}
+
 export interface ForecastDay {
   date: string;
   probability: number;
   mpnLabel?: string;
   status: Status;
+  // The cutoff this day was classified against. Boston's model re-tunes its
+  // threshold per forecast horizon (day 1 and day 3 can differ by 8 points), so
+  // a day must be scored against its own value, not the nowcast's. Backends
+  // that publish one fixed cutoff leave this equal to BeachData.threshold.
+  threshold?: number;
+  // The binary Good/Poor call for this day, resolved at load time — the
+  // backend's published decision where it ships one, otherwise derived. Only
+  // meaningful on boards that render it (see the `binaryVerdict` flag).
+  verdict?: Verdict | null;
   // Per-day snapshot fields — populated for past days (from the history archive)
   // and for today (from the live nowcast); omitted for forecast/future days.
   factors?: string[];
   insight?: string;
   lastResult?: number | string | null;
   daysSinceSample?: number | null;
+  // Ranked drivers with the direction each pushed risk, and the conditions
+  // themselves. Unlike `factors` these are populated for FUTURE days too — a
+  // forecast has no lab sample but it does have forecast weather, and that is
+  // exactly what the written summary explains the day in terms of.
+  drivers?: Driver[];
+  conditions?: Conditions;
 }
 
 export interface BeachData {
@@ -175,8 +260,21 @@ export interface BeachData {
   daysSinceSample: number | null;
   factors: string[];
   insight: string;
+  // Today's ranked drivers and measured conditions — see ForecastDay.
+  drivers: Driver[];
+  conditions: Conditions;
   status: Status;
   threshold: number;
+  // Today's binary Good/Poor call — see ForecastDay.verdict.
+  verdict: Verdict | null;
+  // The model had no recent lab sample to anchor this beach's prediction, so it
+  // leans entirely on environmental signal. Surfaced as a caveat in the summary.
+  noRecentSample: boolean;
+  // Long-run descriptive stats from the backend's roster file: what share of
+  // every lab sample ever taken here exceeded the EPA limit, and how many
+  // samples that is. null for locations without a roster file.
+  excRatePct: number | null;
+  nSamples: number | null;
   pastDays: ForecastDay[];
   forecast: ForecastDay[];
   accuracy: Accuracy;
@@ -211,6 +309,71 @@ export function statusFromProb(
   if (pct >= 30) return "Slightly elevated";
   return "Normal";
 }
+
+// The fixed tiers above place "Slightly elevated" at 30 and "Not recommended"
+// at 50 — the elevated band opens at 60% of the unsafe cutoff. We keep that
+// same shape when classifying against a location's own threshold, so a board
+// calibrated to a different cutoff still reads with familiar proportions.
+const ELEVATED_BAND_RATIO = 30 / 50;
+
+// Status for locations whose backend publishes its own Safe/Unsafe call against
+// a per-station threshold (LocationConfig.statusFromThreshold). "Not
+// recommended" starts exactly at that threshold, so the banner can never
+// disagree with the backend's own verdict for the same beach.
+//
+// Comparison happens on the rounded percent both sides display, matching
+// statusFromProb — see the note there on why the raw fraction is the wrong
+// thing to compare.
+export function statusFromThreshold(
+  prob: number | null | undefined,
+  threshold: number
+): Status | null {
+  if (prob == null || Number.isNaN(prob)) return null;
+  const pct = Math.round(prob * 100);
+  const unsafePct = Math.round(threshold * 100);
+  if (pct >= unsafePct) return "Not recommended";
+  if (pct >= Math.round(unsafePct * ELEVATED_BAND_RATIO)) {
+    return "Slightly elevated";
+  }
+  return "Normal";
+}
+
+// Fallback binary call, derived from a probability and its cutoff. Only used
+// when the backend does not publish its own decision for the row — prefer
+// verdictFromPrediction, which cannot drift from the model.
+//
+// Comparison is on the rounded percent, matching statusFromProb /
+// statusFromThreshold, so the call agrees with any number shown alongside it.
+export function verdictFor(
+  prob: number | null | undefined,
+  threshold: number
+): Verdict | null {
+  if (prob == null || Number.isNaN(prob)) return null;
+  return Math.round(prob * 100) >= Math.round(threshold * 100) ? "Poor" : "Good";
+}
+
+// The model's own Safe/Unsafe decision for a row, as published in the
+// `prediction` / `day{i}_prediction` columns.
+//
+// This is authoritative and beats recomputing from the probability. The two can
+// legitimately differ: the model compares raw fractions, while everything the
+// dashboard displays is rounded to whole percent, so a 13.8% probability
+// against a 14% cutoff is Safe to the model but rounds to "14 >= 14" here.
+// Inside that half-point band the model's call wins.
+export function verdictFromPrediction(raw: unknown): Verdict | null {
+  const text = String(raw ?? "").trim().toLowerCase();
+  if (text === "unsafe") return "Poor";
+  if (text === "safe") return "Good";
+  return null;
+}
+
+// Good/Poor reuses the Normal / Not-recommended palette rather than
+// introducing a second green and a second red. Callers style a verdict by
+// mapping it through this.
+export const VERDICT_AS_STATUS: Record<Verdict, Status> = {
+  Good: "Normal",
+  Poor: "Not recommended",
+};
 
 // A raw (prediction, lab result) pair for one sampled day. `excProbability` is a
 // fraction (0-1), matching nowcast_latest.csv's convention.

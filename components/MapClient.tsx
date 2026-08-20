@@ -15,11 +15,13 @@ export default function MapClient({
   selectedCode,
   fallbackCenter,
   hidePercent,
+  binaryVerdict,
 }: {
   beaches: BeachData[];
   selectedCode?: string;
   fallbackCenter: [number, number];
   hidePercent: boolean;
+  binaryVerdict: boolean;
 }) {
   return (
     <div className="h-[300px] w-full">
@@ -28,6 +30,7 @@ export default function MapClient({
         selectedCode={selectedCode}
         fallbackCenter={fallbackCenter}
         hidePercent={hidePercent}
+        binaryVerdict={binaryVerdict}
       />
     </div>
   );
