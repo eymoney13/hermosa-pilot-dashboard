@@ -18,6 +18,7 @@ const WORKFLOWS = [
   'daily-refresh-manhattan.yml',
   'daily-refresh-southbay.yml',
   'daily-refresh-cabrillo.yml',
+  'daily-refresh-boston.yml',
 ];
 
 export const dynamic = 'force-dynamic';
