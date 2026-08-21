@@ -20,10 +20,16 @@ import type { Conditions, Driver, ForecastDay, Verdict } from "./data";
 // backend that publishes no conditions at all — the sentence that needed it is
 // dropped rather than softened into a guess.
 
-// "Carson Beach — South Boston" → "Carson Beach". The roster appends the town to
-// disambiguate tab labels; prose reads better without it.
+// "Carson Beach - South Boston" -> "Carson Beach". The roster appends the town
+// to disambiguate tab labels; prose reads better without it.
+//
+// Only ever called for boards that render this summary (currently Boston, via
+// the predictionSummary flag). Worth knowing before it is used more widely: the
+// separator is a plain hyphen, which also appears inside CA beach names like
+// "Hermosa Beach - 26th St", so on those boards this would trim the street
+// rather than a town.
 function shortName(name: string): string {
-  return name.split(" — ")[0].trim() || name;
+  return name.split(" - ")[0].trim() || name;
 }
 
 function weekdayLong(iso: string): string {
@@ -178,7 +184,7 @@ function rainSentence(c: Conditions, past: boolean): TopicSentence | null {
       text:
         `There ${tense(past, "has", "had")} been no real rain ${window}, so ` +
         `little runoff ${tense(past, "is", "was")} washing bacteria off streets ` +
-        `and storm drains into the water — the biggest driver of bacteria along ` +
+        `and storm drains into the water, the biggest driver of bacteria along ` +
         `this coast.`,
     };
   }
@@ -224,8 +230,8 @@ function riverSentence(c: Conditions, past: boolean): TopicSentence | null {
     valence: "hurts",
     text:
       `The nearest river ${was} running ${c.riverFlow}, which ` +
-      `${tense(past, "carries", "carried")} inland runoff — and the bacteria in ` +
-      `it — down to the shoreline.`,
+      `${tense(past, "carries", "carried")} inland runoff and the bacteria in ` +
+      `it down to the shoreline.`,
   };
 }
 

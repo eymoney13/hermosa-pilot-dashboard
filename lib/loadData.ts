@@ -166,7 +166,7 @@ async function resolveRoster(config: LocationConfig): Promise<RosterEntry[]> {
       .map((b) => ({
         code: String(b.primary_station),
         // Town disambiguates the several "Town Beach"-style names in the roster.
-        name: b.town ? `${b.name} — ${b.town}` : b.name,
+        name: b.town ? `${b.name} - ${b.town}` : b.name,
         latitude: Number(b.lat),
         longitude: Number(b.lon),
         excRatePct: numOrUndefined(b.exc_rate_pct),
