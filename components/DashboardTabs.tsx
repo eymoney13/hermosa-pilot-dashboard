@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { BeachData } from "@/lib/data";
+import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import type { NewsItem } from "@/lib/news";
 import BeachCard from "./BeachCard";
@@ -42,6 +42,16 @@ export default function DashboardTabs({
   );
 
   if (beaches.length === 0) return null;
+
+  // On binary boards the tab underline must agree with the card's Good/Poor
+  // call, not the 3-tier status — a beach can be Poor while its status still
+  // reads "Normal" under the shared tiers.
+  const underlineFor = (b: BeachData): string => {
+    if (!features.binaryVerdict) return STATUS_UNDERLINE[b.status];
+    return STATUS_UNDERLINE[
+      b.verdict ? VERDICT_AS_STATUS[b.verdict] : b.status
+    ];
+  };
 
   const mapActive = activeCode === MAP_TAB;
   const newsActive = activeCode === NEWS_TAB;
@@ -90,9 +100,9 @@ export default function DashboardTabs({
                   {b.name}
                   {isActive && (
                     <span
-                      className={`absolute bottom-0 left-2 right-2 h-0.5 ${
-                        STATUS_UNDERLINE[b.status]
-                      }`}
+                      className={`absolute bottom-0 left-2 right-2 h-0.5 ${underlineFor(
+                        b
+                      )}`}
                     />
                   )}
                 </button>
@@ -125,6 +135,7 @@ export default function DashboardTabs({
             beaches={beaches}
             fallbackCenter={fallbackCenter}
             hidePercent={features.hidePercentSign}
+            binaryVerdict={features.binaryVerdict}
             onSelect={setActiveCode}
           />
         </section>
@@ -144,6 +155,7 @@ export default function DashboardTabs({
               selectedCode={active.code}
               fallbackCenter={fallbackCenter}
               hidePercent={features.hidePercentSign}
+              binaryVerdict={features.binaryVerdict}
             />
           </section>
         </>

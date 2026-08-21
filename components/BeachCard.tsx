@@ -5,11 +5,14 @@ import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
 import {
   RISK_TIERS,
   riskTier,
+  VERDICT_AS_STATUS,
   type BeachData,
   type ForecastDay,
   type Status,
+  type Verdict,
 } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
+import { buildSummary } from "@/lib/summary";
 import InfoTooltip from "./InfoTooltip";
 import WhyPrediction from "./WhyPrediction";
 
@@ -22,6 +25,15 @@ function weekdayShort(iso: string): string {
   if (!y || !m || !d) return iso;
   const date = new Date(Date.UTC(y, m - 1, d));
   return date.toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short" });
+}
+
+function weekdayLong(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
+    timeZone: "UTC",
+    weekday: "long",
+  });
 }
 
 const STATUS_TINT: Record<Status, { bg: string; deep: string; mid: string }> = {
@@ -45,6 +57,23 @@ function tierColorForCell(prob: number): string {
   if (pct < 75) return "#E24B4A";
   return "#A32D2D";
 }
+
+// Day-cell fills for the binary boards, drawn from the same green/red the tier
+// scale uses at its ends.
+const VERDICT_CELL_COLOR: Record<Verdict, string> = {
+  Good: "#97C459",
+  Poor: "#E24B4A",
+};
+
+// Text colour for the verdict written inside a day cell. Dark on the light
+// green, white on the saturated red — each is the higher-contrast direction for
+// its own background, so the label stays legible at 11px without needing a
+// different cell colour. Colour alone never carries the meaning here: the word
+// is the read, and the fill reinforces it.
+const VERDICT_CELL_TEXT: Record<Verdict, string> = {
+  Good: "#1F3D07",
+  Poor: "#FFFFFF",
+};
 
 const SCALE_GRADIENT =
   "linear-gradient(to right, #97C459 0%, #97C459 25%, #EF9F27 40%, #EF9F27 55%, #E24B4A 65%, #A32D2D 100%)";
@@ -106,11 +135,15 @@ const STATUS_ICON_COLOR: Record<Status, string> = {
 const THRESHOLD_TOOLTIP_BODY =
   "The EPA's safe-swimming limit for ocean water is 104 MPN/100mL — the most probable number of bacteria per 100 milliliters. Readings above this are classified as an exceedance, meaning bacteria levels are unsafe for swimming.";
 
-function predictionSubtitle(status: Status): string {
-  if (status === "Not recommended") {
-    return "Predicted to exceed the EPA swimming threshold today.";
-  }
-  return "Predicted to be below the EPA swimming threshold today.";
+// `when` names the day being viewed. The CA boards pass nothing and keep their
+// existing "today" wording; the binary board passes the real day so the hero
+// can't say "today" while the summary right beneath it says "on Thursday".
+function predictionSubtitle(status: Status, when = "today"): string {
+  const verb =
+    status === "Not recommended"
+      ? "Predicted to exceed"
+      : "Predicted to be below";
+  return `${verb} the EPA swimming threshold ${when}.`;
 }
 
 function ThresholdSubtitle({ text, status }: { text: string; status: Status }) {
@@ -130,16 +163,26 @@ function ThresholdSubtitle({ text, status }: { text: string; status: Status }) {
 
 function StatusHero({
   status,
+  verdict,
   probability,
   showIndex,
+  when,
 }: {
   status: Status;
+  // When set, the hero reads "Good"/"Poor" instead of the 3-tier status. Only
+  // the label changes: colors, icon and subtitle come from the equivalent tier,
+  // so the binary boards reuse one palette rather than introducing a second.
+  verdict: Verdict | null;
   probability: number;
   showIndex: boolean;
+  // The day being viewed, worded for the subtitle ("today", "on Thursday").
+  // Undefined keeps the existing "today" phrasing.
+  when?: string;
 }) {
-  const tint = STATUS_TINT[status];
-  const Icon = status === "Not recommended" ? AlertTriangle : CircleCheck;
-  const subtitle = predictionSubtitle(status);
+  const toneStatus = verdict ? VERDICT_AS_STATUS[verdict] : status;
+  const tint = STATUS_TINT[toneStatus];
+  const Icon = toneStatus === "Not recommended" ? AlertTriangle : CircleCheck;
+  const subtitle = predictionSubtitle(toneStatus, when);
 
   // The status + subtitle block, identical in both layouts. When the index is
   // hidden (every non-hermosa location) the box renders exactly as before — no
@@ -148,10 +191,12 @@ function StatusHero({
     <>
       <div className="flex items-center gap-3">
         <Icon className={`h-6 w-6 ${tint.deep}`} aria-hidden="true" />
-        <p className={`text-xl font-medium ${tint.deep}`}>{status}</p>
+        <p className={`text-xl font-medium ${tint.deep}`}>
+          {verdict ?? status}
+        </p>
       </div>
       <p className={`mt-2 ml-9 text-sm ${tint.mid}`}>
-        <ThresholdSubtitle text={subtitle} status={status} />
+        <ThresholdSubtitle text={subtitle} status={toneStatus} />
       </p>
     </>
   );
@@ -288,6 +333,30 @@ function ExceedanceScale({
 }
 
 // ---------------------------------------------------------------------------
+// 3b. Prediction summary
+// ---------------------------------------------------------------------------
+
+// Prose stand-in for the numbers a binary board hides: what the model predicts,
+// how far the day sits from this beach's cutoff, how the beach has tested over
+// its whole record, and what the next few days look like. Text is built in
+// lib/summary.ts from published values only.
+function PredictionSummary({ paragraphs }: { paragraphs: string[] }) {
+  if (paragraphs.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <p className="text-xs uppercase tracking-wide text-gray-500">
+        What we&rsquo;re seeing
+      </p>
+      {paragraphs.map((text, i) => (
+        <p key={i} className="text-sm leading-relaxed text-gray-700">
+          {text}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // 4. 7-day window
 // ---------------------------------------------------------------------------
 
@@ -305,6 +374,8 @@ function buildWindowCells(beach: BeachData): WindowCell[] {
       probability: beach.probability,
       mpnLabel: beach.mpnLabel,
       status: beach.status,
+      threshold: beach.threshold,
+      verdict: beach.verdict,
       // Carry today's full snapshot so it behaves like the clickable past days.
       factors: beach.factors,
       insight: beach.insight,
@@ -329,11 +400,16 @@ function SevenDayWindow({
   selectedDate,
   onSelect,
   hidePercent,
+  binaryVerdict,
 }: {
   cells: WindowCell[];
   selectedDate: string;
   onSelect: (date: string) => void;
   hidePercent: boolean;
+  // Binary boards write the Good/Poor call into each day cell and colour it to
+  // match. No number: a percentage here would contradict a board built to hide
+  // it, and a bare coloured bar leaves the reader decoding a legend.
+  binaryVerdict: boolean;
 }) {
   if (cells.length === 0) return null;
 
@@ -351,7 +427,7 @@ function SevenDayWindow({
   return (
     <div>
       <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
-        7-Day Window
+        {cells.length}-Day Window
       </p>
 
       <div style={gridStyle}>
@@ -368,6 +444,10 @@ function SevenDayWindow({
             ? "outline outline-2 outline-blue-500"
             : "";
           const pct = Math.round(day.probability * 100);
+          // Each day is scored against its own cutoff — Boston's model re-tunes
+          // the threshold per forecast horizon.
+          const verdict = binaryVerdict ? day.verdict ?? null : null;
+          const readout = verdict ?? `${day.status} · ${pct}%`;
 
           return (
             <button
@@ -375,8 +455,8 @@ function SevenDayWindow({
               key={day.date}
               onClick={() => onSelect(day.date)}
               aria-pressed={isSelected}
-              title={`${weekdayShort(day.date)} · ${day.status} · ${pct}%`}
-              aria-label={`View ${day.date}: ${day.status}, ${pct}% exceedance`}
+              title={`${weekdayShort(day.date)} · ${readout}`}
+              aria-label={`View ${day.date}: ${readout}`}
               className="flex w-full flex-col items-center gap-1 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             >
               <span className={`text-[11px] ${dayLabelClass}`}>
@@ -386,12 +466,25 @@ function SevenDayWindow({
                 className={`h-7 w-full rounded-sm flex items-center justify-center transition-all ${opacity} ${selectedOutline} ${
                   isSelected ? "" : "hover:outline hover:outline-1 hover:outline-blue-300"
                 }`}
-                style={{ backgroundColor: tierColorForCell(day.probability) }}
+                style={{
+                  backgroundColor: verdict
+                    ? VERDICT_CELL_COLOR[verdict]
+                    : tierColorForCell(day.probability),
+                }}
               >
-                <span className="text-[10px] font-medium text-gray-900">
-                  {pct}
-                  {hidePercent ? "" : "%"}
-                </span>
+                {verdict ? (
+                  <span
+                    className="text-[11px] font-semibold"
+                    style={{ color: VERDICT_CELL_TEXT[verdict] }}
+                  >
+                    {verdict}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium text-gray-900">
+                    {pct}
+                    {hidePercent ? "" : "%"}
+                  </span>
+                )}
               </div>
             </button>
           );
@@ -450,6 +543,23 @@ export default function BeachCard({
     cells[0];
   const activeDay = activeCell.day;
 
+  const verdict = features.binaryVerdict ? activeDay.verdict ?? null : null;
+
+  const summary = features.predictionSummary
+    ? buildSummary({
+        name: beach.name,
+        verdict: activeDay.verdict ?? null,
+        date: activeDay.date,
+        isToday: activeCell.type === "today",
+        noRecentSample: beach.noRecentSample,
+        // Each day explains itself with its OWN conditions: a forecast day's
+        // drivers are that day's forecast weather, not today's.
+        drivers: activeDay.drivers ?? beach.drivers,
+        conditions: activeDay.conditions ?? beach.conditions,
+        forecast: beach.forecast,
+      })
+    : [];
+
   return (
     <div className="mx-auto w-full max-w-3xl px-6 sm:px-10 py-10">
       <div className="space-y-6">
@@ -458,21 +568,35 @@ export default function BeachCard({
         <div className="space-y-3">
           <StatusHero
             status={activeDay.status}
+            verdict={verdict}
             probability={activeDay.probability}
             showIndex={features.neptuneIndex}
+            when={
+              features.binaryVerdict && activeCell.type !== "today"
+                ? `on ${weekdayLong(activeDay.date)}`
+                : undefined
+            }
           />
-          <ExceedanceScale
-            probability={activeDay.probability}
-            hidePercent={features.hidePercentSign}
-            hideReadout={features.hideExceedanceReadout}
-          />
+          {/* The tier scale is calibrated to cutoffs at 30/50/75%. A binary
+              board's cutoffs sit well below that, so the bar and its legend
+              would describe a scale this beach is not measured on. */}
+          {!features.binaryVerdict && (
+            <ExceedanceScale
+              probability={activeDay.probability}
+              hidePercent={features.hidePercentSign}
+              hideReadout={features.hideExceedanceReadout}
+            />
+          )}
         </div>
+
+        <PredictionSummary paragraphs={summary} />
 
         <SevenDayWindow
           cells={cells}
           selectedDate={selectedDate}
           onSelect={setSelectedDate}
           hidePercent={features.hidePercentSign}
+          binaryVerdict={features.binaryVerdict}
         />
 
         <WhyPrediction

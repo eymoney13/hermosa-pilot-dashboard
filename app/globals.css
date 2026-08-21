@@ -38,3 +38,10 @@ body {
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
+
+/* Binary boards put no number in the marker, so the 40px disc the numeric
+   version needs would read as a blank blob. Same colour, tighter footprint. */
+.nb-overview-dot--plain {
+  width: 20px;
+  height: 20px;
+}

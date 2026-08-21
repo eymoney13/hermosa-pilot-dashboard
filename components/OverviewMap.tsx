@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
-import type { BeachData } from "@/lib/data";
+import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 
 function colorFor(status: BeachData["status"]) {
   if (status === "Not recommended") return "#cc3333";
@@ -19,17 +19,31 @@ function textColorFor(status: BeachData["status"]) {
 // A pill-shaped marker with today's prediction number inside — the at-a-glance
 // read for the whole region. Built as a divIcon so we can render real text
 // (CircleMarker is SVG-only and can't hold a centered label).
-function dotIcon(beach: BeachData, hidePercent: boolean): L.DivIcon {
-  const num = Math.round(Math.max(0, Math.min(1, beach.probability)) * 100);
-  const bg = colorFor(beach.status);
-  const fg = textColorFor(beach.status);
-  const label = `${num}${hidePercent ? "" : "%"}`;
-  const html = `<div class="nb-overview-dot" style="background:${bg};color:${fg}">${label}</div>`;
+//
+// Binary boards show no number: the marker is a plain coloured dot, and the
+// beach name already sits beside it in a permanent tooltip.
+function dotIcon(
+  beach: BeachData,
+  hidePercent: boolean,
+  binaryVerdict: boolean
+): L.DivIcon {
+  const verdict = binaryVerdict ? beach.verdict : null;
+  const status = verdict ? VERDICT_AS_STATUS[verdict] : beach.status;
+  const bg = colorFor(status);
+  const fg = textColorFor(status);
+  const label = verdict
+    ? ""
+    : `${Math.round(Math.max(0, Math.min(1, beach.probability)) * 100)}${
+        hidePercent ? "" : "%"
+      }`;
+  const size = verdict ? 20 : 40;
+  const cls = verdict ? "nb-overview-dot nb-overview-dot--plain" : "nb-overview-dot";
+  const html = `<div class="${cls}" style="background:${bg};color:${fg}">${label}</div>`;
   return L.divIcon({
     html,
     className: "nb-overview-icon",
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
@@ -50,11 +64,13 @@ export default function OverviewMap({
   beaches,
   fallbackCenter,
   hidePercent,
+  binaryVerdict,
   onSelect,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
   hidePercent: boolean;
+  binaryVerdict: boolean;
   onSelect: (code: string) => void;
 }) {
   const center = useMemo<[number, number]>(() => {
@@ -82,11 +98,16 @@ export default function OverviewMap({
         <Marker
           key={b.code}
           position={[b.latitude, b.longitude]}
-          icon={dotIcon(b, hidePercent)}
+          icon={dotIcon(b, hidePercent, binaryVerdict)}
           eventHandlers={{ click: () => onSelect(b.code) }}
           keyboard
         >
-          <Tooltip direction="left" offset={[-22, 0]} opacity={1} permanent>
+          <Tooltip
+            direction="left"
+            offset={[binaryVerdict ? -12 : -22, 0]}
+            opacity={1}
+            permanent
+          >
             <span style={{ fontWeight: 600, fontSize: 11 }}>{b.name}</span>
           </Tooltip>
         </Marker>

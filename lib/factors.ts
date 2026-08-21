@@ -117,6 +117,25 @@ const CANONICAL: Record<string, string> = {
   flow1_q50: "Moderate river flow",
   "Moderate river flow": "Moderate river flow",
 
+  // Combined sewer overflows (Massachusetts) — Boston Harbor's analogue of the
+  // CA boards' storm-drain runoff. The rain interaction is a real day-to-day
+  // driver; the proximity/count features are fixed properties of the site and
+  // are filtered out below alongside the bacteria-history ones.
+  cso_rain: "Rain near sewer outfalls",
+  "Rain near combined sewer outfalls": "Rain near sewer outfalls",
+  "Rain near sewer outfalls": "Rain near sewer outfalls",
+  cso_dist_km: "Beach location",
+  cso_n2: "Beach location",
+  cso_n5: "Beach location",
+  cso_prox: "Beach location",
+  beach_lat: "Beach location",
+  beach_lon: "Beach location",
+  "Distance to nearest sewer outfall": "Beach location",
+  "Sewer outfalls within 2 km": "Beach location",
+  "Sewer outfalls within 5 km": "Beach location",
+  "Sewer outfall proximity": "Beach location",
+  "Beach location": "Beach location",
+
   // Calendar / location
   doy_sin: "Seasonal pattern",
   doy_cos: "Seasonal pattern",
@@ -171,6 +190,12 @@ const NON_ENVIRONMENTAL_FACTORS = new Set<string>([
   "Prior bacteria level",
   "Last sample was unsafe",
   "Days since last sample",
+  // Site descriptors, not conditions: constant for a beach, so they describe
+  // where it is rather than what is happening there today. Naming one as a
+  // "contributing factor" tells a reader nothing they can act on.
+  "Beach location",
+  "Beach orientation",
+  "Weekend",
 ]);
 
 export function isEnvironmentalFactor(label: string | null | undefined): boolean {

@@ -21,6 +21,18 @@ export interface FeatureFlags {
   // unsafe bacteria levels" label, and the info tooltip — keeping the gradient
   // scale bar above it and the risk-tier legend below it.
   hideExceedanceReadout: boolean;
+  // Replace the 3-tier status read with a straight binary Good / Poor call
+  // against each beach's own probability cutoff, and drop every percentage the
+  // board would otherwise show (the gradient scale and its legend, the day-cell
+  // labels, the map-pin numbers). For boards whose model publishes its own
+  // Safe/Unsafe decision and whose cutoffs sit far below the shared 30/50/75
+  // tiers, where those tiers would put a flagged beach in the "Normal" band.
+  // Requires LocationConfig.statusFromThreshold so the two agree.
+  binaryVerdict: boolean;
+  // Show the generated plain-English summary of what the model is predicting
+  // and why (see lib/summary.ts). Carries the probability as prose for boards
+  // that hide the number itself.
+  predictionSummary: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -28,6 +40,8 @@ const DEFAULT_FLAGS: FeatureFlags = {
   neptuneIndex: false,
   hidePercentSign: false,
   hideExceedanceReadout: false,
+  binaryVerdict: false,
+  predictionSummary: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
@@ -40,6 +54,14 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
   manhattan: {}, // stays exactly as today
   southbay: {}, // plain Manhattan-style — all flags default off
   cabrillo: {}, // plain Manhattan-style — all flags default off
+  // Boston reads as a binary Good/Poor board: its model ships its own
+  // Safe/Unsafe call against per-beach cutoffs of 10-25%, which the shared
+  // 30/50/75 tiers would collapse into a single "Normal" band. The probability
+  // still drives the page — it just speaks through the written summary.
+  boston: {
+    binaryVerdict: true,
+    predictionSummary: true,
+  },
 };
 
 // Resolve the flag set for a location slug. Unknown slugs fall through to the
