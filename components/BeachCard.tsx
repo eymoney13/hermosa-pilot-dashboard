@@ -550,7 +550,9 @@ export default function BeachCard({
         name: beach.name,
         verdict: activeDay.verdict ?? null,
         date: activeDay.date,
-        isToday: activeCell.type === "today",
+        // "past" | "today" | "forecast" — the cell type already carries it, and
+        // the summary needs it for tense, not just for the outlook.
+        timeframe: activeCell.type,
         noRecentSample: beach.noRecentSample,
         // Each day explains itself with its OWN conditions: a forecast day's
         // drivers are that day's forecast weather, not today's.

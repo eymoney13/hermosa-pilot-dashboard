@@ -145,6 +145,12 @@ function topicsFor(drivers: Driver[]): Topic[] {
 // the value. conditionSentences uses the valence to keep the paragraph coherent
 // with the rating, so a Good day is never explained entirely in terms of things
 // that make water worse.
+//
+// TENSE. A past day is a record of what was predicted, not a prediction, so it
+// reads in the past tense throughout — "the river was running low", not "is
+// running low". The mechanism half of a sentence usually stays in the present,
+// because how sunlight kills bacteria is a standing fact rather than something
+// that was only true on Tuesday.
 
 type Valence = "helps" | "hurts";
 
@@ -153,26 +159,34 @@ interface TopicSentence {
   valence: Valence;
 }
 
-function rainSentence(c: Conditions): TopicSentence | null {
+/** Pick between present- and past-tense wording. */
+function tense(past: boolean, present: string, wasPast: string): string {
+  return past ? wasPast : present;
+}
+
+function rainSentence(c: Conditions, past: boolean): TopicSentence | null {
   const today = c.rainTodayMm;
   const prior = c.rainPrior3dMm;
   if (today == null && prior == null) return null;
 
   const total = (today ?? 0) + (prior ?? 0);
+  const window = tense(past, "over the past few days", "in the days before");
 
   if (total < WET_MM) {
     return {
       valence: "helps",
       text:
-        "There has been no real rain over the past few days, so little runoff " +
-        "is washing bacteria off streets and storm drains into the water — the " +
-        "biggest driver of bacteria along this coast.",
+        `There ${tense(past, "has", "had")} been no real rain ${window}, so ` +
+        `little runoff ${tense(past, "is", "was")} washing bacteria off streets ` +
+        `and storm drains into the water — the biggest driver of bacteria along ` +
+        `this coast.`,
     };
   }
   const phrase = rainPhrase(total);
   // Combined sewer overflows are Boston Harbor's version of the runoff story.
   // Only worth raising for a beach close enough to an outfall to be affected,
-  // and only after a storm big enough to activate one.
+  // and only after a storm big enough to activate one. Left in the present
+  // tense either way: it describes what storms do here, not what one storm did.
   const nearOutfall = c.csoDistKm != null && c.csoDistKm <= 2;
   const sewer =
     nearOutfall && total >= MM_PER_INCH / 2
@@ -181,39 +195,41 @@ function rainSentence(c: Conditions): TopicSentence | null {
   return {
     valence: "hurts",
     text:
-      `${phrase[0].toUpperCase()}${phrase.slice(1)} has fallen over the past ` +
-      `few days, and that runoff carries bacteria off streets and storm drains ` +
-      `into the water.${sewer}`,
+      `${phrase[0].toUpperCase()}${phrase.slice(1)} ${tense(past, "has", "had")} ` +
+      `fallen ${window}, and that runoff ${tense(past, "carries", "carried")} ` +
+      `bacteria off streets and storm drains into the water.${sewer}`,
   };
 }
 
-function riverSentence(c: Conditions): TopicSentence | null {
+function riverSentence(c: Conditions, past: boolean): TopicSentence | null {
   if (!c.riverFlow) return null;
+  const was = tense(past, "is", "was");
   if (c.riverFlow === "low") {
     return {
       valence: "helps",
       text:
-        "The nearest river is running low, so it is carrying little inland " +
-        "runoff down to the shoreline.",
+        `The nearest river ${was} running low, so it ${was} carrying little ` +
+        `inland runoff down to the shoreline.`,
     };
   }
   if (c.riverFlow === "moderate") {
     return {
       valence: "hurts",
       text:
-        "The nearest river is running at a moderate level, bringing some " +
-        "inland runoff down to the shoreline.",
+        `The nearest river ${was} running at a moderate level, bringing some ` +
+        `inland runoff down to the shoreline.`,
     };
   }
   return {
     valence: "hurts",
     text:
-      `The nearest river is running ${c.riverFlow}, which carries inland ` +
-      `runoff — and the bacteria in it — down to the shoreline.`,
+      `The nearest river ${was} running ${c.riverFlow}, which ` +
+      `${tense(past, "carries", "carried")} inland runoff — and the bacteria in ` +
+      `it — down to the shoreline.`,
   };
 }
 
-function sunSentence(c: Conditions): TopicSentence | null {
+function sunSentence(c: Conditions, past: boolean): TopicSentence | null {
   if (c.solarMj == null) return null;
   // Sunlight inactivates faecal bacteria within hours; a bright day is a real
   // cleanup mechanism, an overcast one removes it. Thresholds are ordinary
@@ -222,75 +238,83 @@ function sunSentence(c: Conditions): TopicSentence | null {
     return {
       valence: "helps",
       text:
-        "Sunlight works in the beach's favor: strong sun breaks down bacteria " +
-        "in the surface water through the day.",
+        `Sunlight ${tense(past, "works", "worked")} in the beach's favor: ` +
+        `strong sun breaks down bacteria in the surface water through the day.`,
     };
   }
   if (c.solarMj <= 8) {
     return {
       valence: "hurts",
       text:
-        "Cloud cover means less ultraviolet light reaching the water, so " +
-        "bacteria that do get in survive longer than they would on a bright day.",
+        `Cloud cover ${tense(past, "means", "meant")} less ultraviolet light ` +
+        `reaching the water, so bacteria that ${tense(past, "do get", "got")} ` +
+        `in ${tense(past, "survive", "survived")} longer than they would on a ` +
+        `bright day.`,
     };
   }
   return null;
 }
 
-function warmthSentence(c: Conditions): TopicSentence | null {
+function warmthSentence(c: Conditions, past: boolean): TopicSentence | null {
   const water = c.waterTempC;
   const air = c.airTempC;
   if (water != null) {
     return water >= 20
       ? {
           valence: "hurts",
-          text: `Water temperatures near ${fahrenheit(water)}°F let bacteria persist longer once they reach the shoreline.`,
+          text:
+            `Water temperatures near ${fahrenheit(water)}°F let bacteria ` +
+            `persist longer once they ${tense(past, "reach", "reached")} the shoreline.`,
         }
       : {
           valence: "helps",
-          text: `Cool water near ${fahrenheit(water)}°F is less hospitable to bacteria than midsummer temperatures.`,
+          text:
+            `Cool water near ${fahrenheit(water)}°F ${tense(past, "is", "was")} ` +
+            `less hospitable to bacteria than midsummer temperatures.`,
         };
   }
   if (air != null && air >= 27) {
     return {
       valence: "hurts",
       text:
-        `A warm day near ${fahrenheit(air)}°F keeps the shallows warm, and ` +
-        `bacteria survive longer in warm water.`,
+        `A warm day near ${fahrenheit(air)}°F ${tense(past, "keeps", "kept")} ` +
+        `the shallows warm, and bacteria survive longer in warm water.`,
     };
   }
   return null;
 }
 
-function windSentence(c: Conditions): TopicSentence | null {
+function windSentence(c: Conditions, past: boolean): TopicSentence | null {
   if (c.windKph == null) return null;
   const speed = mph(c.windKph);
   if (speed >= 15) {
     return {
       valence: "helps",
       text:
-        `Winds around ${speed} mph are stirring the nearshore water, which ` +
-        `mixes and disperses whatever reaches the beach.`,
+        `Winds around ${speed} mph ${tense(past, "are", "were")} stirring the ` +
+        `nearshore water, which mixes and disperses whatever reaches the beach.`,
     };
   }
   if (speed <= 6) {
     return {
       valence: "hurts",
       text:
-        "Light winds mean little mixing along the shore, so anything that does " +
-        "reach the water tends to linger near the beach.",
+        `Light winds ${tense(past, "mean", "meant")} little mixing along the ` +
+        `shore, so anything that ${tense(past, "does reach", "reached")} the ` +
+        `water ${tense(past, "tends", "tended")} to linger near the beach.`,
     };
   }
   return null;
 }
 
-function tideSentence(c: Conditions): TopicSentence | null {
+function tideSentence(c: Conditions, past: boolean): TopicSentence | null {
   if (c.springTide) {
     return {
       valence: "helps",
       text:
-        "Spring tides around the full moon give the biggest daily rise and " +
-        "fall of the month, flushing the shoreline harder than usual.",
+        `Spring tides around the full moon ${tense(past, "give", "gave")} the ` +
+        `biggest daily rise and fall of the month, flushing the shoreline ` +
+        `harder than usual.`,
     };
   }
   if (c.tideRangeM == null) return null;
@@ -299,26 +323,30 @@ function tideSentence(c: Conditions): TopicSentence | null {
   return {
     valence: "helps",
     text:
-      `A tidal range of about ${range} ft exchanges water along the shore each ` +
-      `cycle, which is how the beach clears itself between tides.`,
+      `A tidal range of about ${range} ft ${tense(past, "exchanges", "exchanged")} ` +
+      `water along the shore each cycle, which is how the beach clears itself ` +
+      `between tides.`,
   };
 }
 
-function wavesSentence(c: Conditions): TopicSentence | null {
+function wavesSentence(c: Conditions, past: boolean): TopicSentence | null {
   if (c.waveHeightM == null) return null;
   const height = feet(c.waveHeightM);
   return height >= 3
     ? {
         valence: "helps",
-        text: `Waves running about ${height} ft keep the surf zone well mixed.`,
+        text: `Waves running about ${height} ft ${tense(past, "keep", "kept")} the surf zone well mixed.`,
       }
     : {
         valence: "hurts",
-        text: "Small surf means less mixing in the shallows than a rougher day.",
+        text: `Small surf ${tense(past, "means", "meant")} less mixing in the shallows than a rougher day.`,
       };
 }
 
-const TOPIC_SENTENCE: Record<Topic, (c: Conditions) => TopicSentence | null> = {
+const TOPIC_SENTENCE: Record<
+  Topic,
+  (c: Conditions, past: boolean) => TopicSentence | null
+> = {
   rain: rainSentence,
   river: riverSentence,
   sun: sunSentence,
@@ -363,7 +391,8 @@ const FALLBACK_TOPICS: Topic[] = ["rain", "river", "sun", "tide", "wind", "waves
 function conditionSentences(
   drivers: Driver[],
   c: Conditions,
-  verdict: Verdict
+  verdict: Verdict,
+  past: boolean
 ): string[] {
   const ranked = topicsFor(drivers);
   const candidates = [...ranked, ...FALLBACK_TOPICS.filter((t) => !ranked.includes(t))];
@@ -379,7 +408,7 @@ function conditionSentences(
   // event, so it stays in the ordinary sort — otherwise a Poor day during a dry
   // stretch opens "there has been no real rain", which reads as an argument
   // that the water is fine and buries the reason it isn't.
-  const rain = rainSentence(c);
+  const rain = rainSentence(c, past);
   const pinned = rain?.valence === "hurts" ? rain : null;
 
   const wanted: Valence = verdict === "Good" ? "helps" : "hurts";
@@ -387,7 +416,7 @@ function conditionSentences(
   const conflicting: string[] = [];
   for (const topic of candidates) {
     if (topic === "rain" && pinned) continue; // already leading
-    const sentence = TOPIC_SENTENCE[topic](c);
+    const sentence = TOPIC_SENTENCE[topic](c, past);
     if (!sentence) continue;
     (sentence.valence === wanted ? agreeing : conflicting).push(sentence.text);
   }
@@ -395,6 +424,7 @@ function conditionSentences(
   const rest = [...agreeing, ...conflicting];
   return (pinned ? [pinned.text, ...rest] : rest).slice(0, MAX_TOPICS);
 }
+
 
 // ---------------------------------------------------------------------------
 // Summary
@@ -407,8 +437,13 @@ export interface SummaryInput {
   verdict: Verdict | null;
   /** The selected day's ISO date. */
   date: string;
-  /** True when the selected day is the live nowcast rather than a forecast day. */
-  isToday: boolean;
+  /**
+   * Where the selected day sits relative to now. Drives tense as well as
+   * content: a past day is a record of what was predicted, so it reads in the
+   * past tense and carries no outlook (that would be describing days that have
+   * already happened). Matches the window-cell type the card already tracks.
+   */
+  timeframe: "past" | "today" | "forecast";
   /** The model had no recent lab sample to anchor this beach. */
   noRecentSample: boolean;
   /** The selected day's ranked environmental drivers, strongest first. */
@@ -423,11 +458,16 @@ export interface SummaryInput {
 function leadSentence(
   short: string,
   verdict: Verdict,
-  isToday: boolean,
+  timeframe: SummaryInput["timeframe"],
   date: string
 ): string {
   const quality = verdict === "Good" ? "good" : "poor";
-  const when = isToday ? "today" : `on ${weekdayLong(date)}`;
+  if (timeframe === "past") {
+    // Past tense, and "was predicted" rather than "had": this is the record of
+    // a forecast, not a measurement of what the water actually turned out to be.
+    return `${short} was predicted to have ${quality} water quality on ${weekdayLong(date)}.`;
+  }
+  const when = timeframe === "today" ? "today" : `on ${weekdayLong(date)}`;
   return `${short} is expected to have ${quality} water quality ${when}.`;
 }
 
@@ -470,9 +510,13 @@ function outlookSentence(
 // Why there is no lab result to point at. Framed as what the forecast IS rather
 // than as a shortfall — an environment-driven prediction on a day nobody
 // sampled is the whole point of the model, not a caveat on it.
-const NO_SAMPLE_NOTE =
-  "There is no recent lab test for this beach, so this is a forecast from " +
-  "current conditions rather than a reading from the water.";
+function noSampleNote(past: boolean): string {
+  return past
+    ? "There was no recent lab test for this beach, so that was a forecast " +
+      "from conditions rather than a reading from the water."
+    : "There is no recent lab test for this beach, so this is a forecast from " +
+      "current conditions rather than a reading from the water.";
+}
 
 /**
  * Build the summary as paragraphs. Returns [] when the day can't be classified,
@@ -484,16 +528,18 @@ export function buildSummary(input: SummaryInput): string[] {
 
   const short = shortName(input.name);
 
+  const past = input.timeframe === "past";
+
   const first = [
-    leadSentence(short, verdict, input.isToday, input.date),
-    ...conditionSentences(input.drivers ?? [], input.conditions ?? {}, verdict),
+    leadSentence(short, verdict, input.timeframe, input.date),
+    ...conditionSentences(input.drivers ?? [], input.conditions ?? {}, verdict, past),
   ].join(" ");
 
   // The outlook describes days *after* today, so it only belongs on today's
   // view — from a forecast day it would be describing the past.
   const second = [
-    input.isToday ? outlookSentence(input.forecast, verdict) : null,
-    input.noRecentSample ? NO_SAMPLE_NOTE : null,
+    input.timeframe === "today" ? outlookSentence(input.forecast, verdict) : null,
+    input.noRecentSample ? noSampleNote(past) : null,
   ]
     .filter(Boolean)
     .join(" ");
