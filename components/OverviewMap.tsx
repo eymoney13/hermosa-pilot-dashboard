@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
@@ -127,6 +127,9 @@ export interface LabelPlacement {
   w: number;
   /** True when the label sits far enough out to need a connector line. */
   tethered: boolean;
+  /** Which candidate produced this, so the next pass can prefer it again. */
+  dir: number;
+  ring: number;
 }
 
 /**
@@ -143,7 +146,8 @@ export interface LabelPlacement {
 function placeLabels(
   map: L.Map,
   beaches: BeachData[],
-  dotRadius: number
+  dotRadius: number,
+  previous: Map<string, { dir: number; ring: number }>
 ): LabelPlacement[] {
   const points = beaches.map((b) => ({
     beach: b,
@@ -156,7 +160,22 @@ function placeLabels(
   // the map shrinks around them.
   const size = map.getSize();
 
+  // Beaches whose dot is off-screen (or nearly) take no part in placement. They
+  // matter because zooming in pushes most dots outside the viewport, and the
+  // in-bounds rule below would otherwise drag every one of their labels back
+  // into the visible box, where they pile up on each other — the labels for
+  // beaches you cannot even see crowding out the ones you can. Off-screen labels
+  // keep a default offset beside their dot and are simply not visible.
+  // Deliberately small. A generous margin lets dots that are just outside the
+  // viewport still claim in-bounds label positions, which crowds the edges with
+  // labels for beaches the reader cannot see.
+  const MARGIN = 8;
+  const onScreen = (pt: L.Point) =>
+    pt.x > -MARGIN && pt.y > -MARGIN && pt.x < size.x + MARGIN && pt.y < size.y + MARGIN;
+
   // Crowding = how many other dots sit within a label's reach.
+  const visible = points.map(({ pt }) => onScreen(pt));
+
   const crowding = points.map(({ pt }) =>
     points.reduce((n, other) => {
       const d = Math.hypot(other.pt.x - pt.x, other.pt.y - pt.y);
@@ -168,44 +187,81 @@ function placeLabels(
     .sort((a, b) => crowding[b] - crowding[a]);
 
   // Dots are obstacles too — a label across another beach's marker hides it.
-  const dotRects: Rect[] = points.map(({ pt }) => ({
-    x: pt.x - dotRadius,
-    y: pt.y - dotRadius,
-    w: dotRadius * 2,
-    h: dotRadius * 2,
-  }));
+  const dotRects: Rect[] = points
+    .filter((_, i) => visible[i])
+    .map(({ pt }) => ({
+      x: pt.x - dotRadius,
+      y: pt.y - dotRadius,
+      w: dotRadius * 2,
+      h: dotRadius * 2,
+    }));
 
   const placed: Rect[] = [];
   const out: LabelPlacement[] = [];
+  const fits = (rect: Rect) =>
+    rect.x >= EDGE_MARGIN &&
+    rect.y >= EDGE_MARGIN &&
+    rect.x + rect.w <= size.x - EDGE_MARGIN &&
+    rect.y + rect.h <= size.y - EDGE_MARGIN &&
+    !placed.some((q) => overlaps(rect, q)) &&
+    !dotRects.some((q) => overlaps(rect, q));
 
   for (const i of order) {
     const { beach, pt } = points[i];
     const text = beach.name;
+
+    if (!visible[i]) {
+      // Off-screen: park it beside the dot and move on. No collision
+      // bookkeeping, so it cannot displace anything that is actually in view.
+      const w = textWidth(text) + LABEL_PAD_X * 2 + LABEL_BORDER;
+      const h = LABEL_HEIGHT + LABEL_PAD_Y + LABEL_BORDER;
+      out.push({
+        code: beach.code,
+        text,
+        dx: -(dotRadius + 6 + w),
+        dy: -h / 2,
+        w,
+        tethered: false,
+        dir: 0,
+        ring: 0,
+      });
+      continue;
+    }
+
     const w = textWidth(text) + LABEL_PAD_X * 2 + LABEL_BORDER;
     const h = LABEL_HEIGHT + LABEL_PAD_Y + LABEL_BORDER;
 
-    let best: { dx: number; dy: number; ring: number } | null = null;
-    outer: for (let r = 0; r < CANDIDATE_RINGS.length; r++) {
-      const reach = dotRadius + 6;
-      for (const [ux, uy] of CANDIDATE_DIRECTIONS) {
-        // Offset the label centre far enough that its own box clears the dot.
-        const cx = pt.x + ux * (reach + (w / 2) * Math.abs(ux)) * CANDIDATE_RINGS[r];
-        const cy = pt.y + uy * (reach + (h / 2) * Math.abs(uy)) * CANDIDATE_RINGS[r];
-        const rect: Rect = { x: cx - w / 2, y: cy - h / 2, w, h };
-        const outside =
-          rect.x < EDGE_MARGIN ||
-          rect.y < EDGE_MARGIN ||
-          rect.x + rect.w > size.x - EDGE_MARGIN ||
-          rect.y + rect.h > size.y - EDGE_MARGIN;
-        const clash =
-          outside ||
-          placed.some((q) => overlaps(rect, q)) ||
-          dotRects.some((q) => overlaps(rect, q));
-        if (!clash) {
-          best = { dx: rect.x - pt.x, dy: rect.y - pt.y, ring: r };
-          placed.push(rect);
-          break outer;
-        }
+    // Candidates in preference order, with one exception: whatever this label
+    // used last time is tried FIRST. Zoom changes the pixel distances between
+    // beaches so the layout genuinely has to be redone, but most labels can
+    // usually keep the spot they already had, and a set that mostly stays put
+    // reads as a stable map rather than one that reshuffles on every zoom.
+    //
+    // This only reorders the search. The greedy pass is otherwise unchanged, so
+    // packing cannot come out worse than it would have — unlike reserving old
+    // positions up front, which starves later labels and forces overlaps.
+    const prev = previous.get(beach.code);
+    const candidates: Array<[number, number]> = [];
+    if (prev) candidates.push([prev.ring, prev.dir]);
+    for (let r = 0; r < CANDIDATE_RINGS.length; r++) {
+      for (let d = 0; d < CANDIDATE_DIRECTIONS.length; d++) {
+        if (prev && prev.ring === r && prev.dir === d) continue;
+        candidates.push([r, d]);
+      }
+    }
+
+    let best: { dx: number; dy: number; ring: number; dir: number } | null = null;
+    const reach = dotRadius + 6;
+    for (const [r, d] of candidates) {
+      const [ux, uy] = CANDIDATE_DIRECTIONS[d];
+      // Offset the label centre far enough that its own box clears the dot.
+      const cx = pt.x + ux * (reach + (w / 2) * Math.abs(ux)) * CANDIDATE_RINGS[r];
+      const cy = pt.y + uy * (reach + (h / 2) * Math.abs(uy)) * CANDIDATE_RINGS[r];
+      const rect: Rect = { x: cx - w / 2, y: cy - h / 2, w, h };
+      if (fits(rect)) {
+        best = { dx: rect.x - pt.x, dy: rect.y - pt.y, ring: r, dir: d };
+        placed.push(rect);
+        break;
       }
     }
 
@@ -220,7 +276,7 @@ function placeLabels(
       const x = clamp(cx - w / 2, w, size.x);
       const y = clamp(pt.y - h / 2, h, size.y);
       const rect: Rect = { x, y, w, h };
-      best = { dx: rect.x - pt.x, dy: rect.y - pt.y, ring: 1 };
+      best = { dx: rect.x - pt.x, dy: rect.y - pt.y, ring: 1, dir: 0 };
       placed.push(rect);
     }
 
@@ -231,6 +287,8 @@ function placeLabels(
       dy: best.dy,
       w,
       tethered: best.ring > 0,
+      dir: best.dir,
+      ring: best.ring,
     });
   }
   return out;
@@ -250,9 +308,16 @@ function BeachLabels({
 }) {
   const map = useMap();
   const [placements, setPlacements] = useState<LabelPlacement[]>([]);
+  // Which candidate each label used last time, fed back in so placement tries
+  // that spot first and most labels keep it. A ref rather than state: reading it
+  // must not make recompute a new function, or the effect below would
+  // resubscribe on every pass.
+  const previous = useRef(new Map<string, { dir: number; ring: number }>());
 
   const recompute = useCallback(() => {
-    setPlacements(placeLabels(map, beaches, dotRadius));
+    const next = placeLabels(map, beaches, dotRadius, previous.current);
+    previous.current = new Map(next.map((p) => [p.code, { dir: p.dir, ring: p.ring }]));
+    setPlacements(next);
   }, [map, beaches, dotRadius]);
 
   useEffect(() => {
@@ -263,15 +328,24 @@ function BeachLabels({
     // effect, which would cascade a second render.) FitAll's fitBounds
     // fires moveend/zoomend right after, which recomputes again anyway.
     const frame = requestAnimationFrame(recompute);
-    // Positions are in screen space, so any change to the viewport invalidates
-    // them. zoomend/moveend cover pan and zoom; resize covers layout changes.
+    // Zoom and resize only — deliberately NOT pan.
+    //
+    // Panning translates every dot by the same vector, so the beaches' positions
+    // relative to each other do not change and a layout that was collision-free
+    // before the pan still is. Recomputing would do no useful work and would
+    // reshuffle labels under the reader's cursor while they drag — labels
+    // flipping from one side of their dot to the other mid-pan reads as the map
+    // being unstable. The label markers are anchored to their beach's latlng, so
+    // Leaflet translates them along with the dots for free.
+    //
+    // Zoom genuinely changes the problem: it changes the pixel distance between
+    // beaches, so a layout that fitted at one zoom may not at another. Resize
+    // changes the box the labels have to fit inside.
     map.on("zoomend", recompute);
-    map.on("moveend", recompute);
     map.on("resize", recompute);
     return () => {
       cancelAnimationFrame(frame);
       map.off("zoomend", recompute);
-      map.off("moveend", recompute);
       map.off("resize", recompute);
     };
   }, [map, recompute]);
