@@ -96,7 +96,10 @@ export default function MapView({
             }}
           >
             <Tooltip direction="top" offset={[0, -8]} opacity={1}>
-              <span style={{ fontWeight: 500 }}>{b.name}</span> — {label}
+              {/* Colon, not a hyphen: the beach name may already contain one
+                  ("Carson Beach - South Boston"), and a second would read as
+                  part of the name rather than as a separator. */}
+              <span style={{ fontWeight: 500 }}>{b.name}</span>: {label}
             </Tooltip>
             <Popup>
               <div style={{ minWidth: 180 }}>
