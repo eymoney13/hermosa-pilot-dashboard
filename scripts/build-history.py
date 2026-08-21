@@ -3,11 +3,21 @@
 Build public/data/history_3day.csv from project-neptune's nowcast_history archive.
 
 Walks backward from yesterday, finds the most recent 3 dates with a
-nowcast_YYYY-MM-DD.csv snapshot, and pivots the DHS114 / DHS115 rows into
-a single per-station row with day1_*/day2_*/day3_* columns. The schema is a
-superset of forecast_3day.csv: in addition to the date/probability/mpn fields,
-each day also carries that day's top factors, last lab result, days-since-sample,
-and insight, so the dashboard can replay the exact nowcast each past day showed.
+nowcast_YYYY-MM-DD.csv snapshot, and pivots the wanted stations into a single
+per-station row with day1_*/day2_*/day3_* columns. The schema is a superset of
+forecast_3day.csv: in addition to the date/probability/mpn fields, each day also
+carries that day's top factors, last lab result, days-since-sample, and insight,
+so the dashboard can replay the exact nowcast each past day showed.
+
+TWO SNAPSHOT SCHEMAS. The California pipeline and the region pipelines
+(generate_nowcast_region.py, e.g. Massachusetts/Boston) archive to the same
+directory layout but do not publish the same columns — CA has estimated_mpn and
+insight, a region has per-beach thresholds, a deeper factor ranking with SHAP
+directions, and measured environmental conditions. Rather than branch on region,
+BASE_DAY_FIELDS below is emitted always (so CA output is unchanged) and
+OPTIONAL_SOURCE_COLUMNS are emitted only when the snapshots actually carry them.
+A snapshot missing a base field yields an empty cell, which every consumer
+already tolerates.
 """
 
 from __future__ import annotations
@@ -44,6 +54,40 @@ WANTED_STATIONS = [
 LOOKBACK_DAYS = 14
 TARGET_DAYS = 3
 
+# Per-day output columns emitted for every snapshot, as (output suffix, source
+# column). This is CA's original schema and is deliberately unchanged — a region
+# snapshot simply leaves the columns it lacks empty.
+BASE_DAY_FIELDS: list[tuple[str, str]] = [
+    ("probability", "exc_probability"),
+    ("prediction", "prediction"),
+    ("mpn", "estimated_mpn"),
+    ("mpn_label", "mpn_label"),
+    ("top_factor_1", "top_factor_1"),
+    ("top_factor_2", "top_factor_2"),
+    ("top_factor_3", "top_factor_3"),
+    ("last_result", "last_result"),
+    ("days_since_sample", "days_since_sample"),
+    ("insight", "insight"),
+]
+
+# Emitted as day{i}_<name> only when the snapshots carry them. Keeps CA's output
+# byte-identical while letting a region carry everything its dashboard needs to
+# describe a past day the same way it describes today.
+OPTIONAL_SOURCE_COLUMNS: list[str] = (
+    # The cutoff that day was scored against. A region re-tunes per beach, so a
+    # past day classified against today's cutoff would disagree with the call
+    # actually made that day.
+    ["threshold", "no_recent_sample"]
+    # Deeper factor ranking + the direction each drove risk.
+    + [f"top_factor_{i}" for i in range(4, 16)]
+    + [f"shap_direction_{i}" for i in range(1, 16)]
+    # Measured conditions, so a past day's written summary reads from that day's
+    # weather rather than from today's.
+    + ["rain_today_mm", "rain_prior3d_mm", "wind_kph", "air_temp_c", "solar_mj",
+       "water_temp_c", "wave_height_m", "tide_range_m", "spring_tide",
+       "river_flow", "cso_dist_km"]
+)
+
 
 def find_recent_dates() -> list[str]:
     """Walk back from yesterday; return ISO dates whose snapshot files exist,
@@ -71,24 +115,41 @@ def load_station_rows(file_path: Path) -> dict[str, dict[str, str]]:
     return out
 
 
-def build_header() -> list[str]:
+# A snapshot is a region snapshot if it carries these. Both come from
+# generate_nowcast_region.py and neither exists in a CA snapshot, so the pair is
+# an unambiguous marker.
+REGION_MARKER_COLUMNS = {"threshold", "no_recent_sample"}
+
+
+def detect_optional_columns(rows_by_date: dict[str, dict[str, dict[str, str]]]) -> list[str]:
+    """Which OPTIONAL_SOURCE_COLUMNS these snapshots actually carry.
+
+    Gated on REGION_MARKER_COLUMNS rather than picking up whatever happens to
+    match. CA snapshots publish shap_direction_2 and shap_direction_3 (with no
+    _1), which would otherwise be swept in and quietly change the schema of a
+    live CA file to no purpose — the CA boards render no written summary. So CA
+    output stays exactly as it was, and only a region snapshot gets the extras.
+
+    Read off the rows rather than the file header so an empty or partially
+    written archive degrades to "nothing optional" instead of raising.
+    """
+    seen: set[str] = set()
+    for by_station in rows_by_date.values():
+        for row in by_station.values():
+            seen.update(row.keys())
+    if not REGION_MARKER_COLUMNS.issubset(seen):
+        return []
+    return [c for c in OPTIONAL_SOURCE_COLUMNS if c in seen]
+
+
+def build_header(optional: list[str]) -> list[str]:
     header = ["StationCode", "StationName", "Latitude", "Longitude"]
     for i in range(1, 4):
-        header += [
-            f"day{i}_date",
-            f"day{i}_probability",
-            f"day{i}_prediction",
-            f"day{i}_mpn",
-            f"day{i}_mpn_label",
-            # Per-day snapshot fields so the dashboard can replay each past day's
-            # nowcast (top factors + the lab result that was latest as of that date).
-            f"day{i}_top_factor_1",
-            f"day{i}_top_factor_2",
-            f"day{i}_top_factor_3",
-            f"day{i}_last_result",
-            f"day{i}_days_since_sample",
-            f"day{i}_insight",
-        ]
+        # Per-day snapshot fields so the dashboard can replay each past day's
+        # nowcast (top factors + the lab result that was latest as of that date).
+        header.append(f"day{i}_date")
+        header += [f"day{i}_{name}" for name, _ in BASE_DAY_FIELDS]
+        header += [f"day{i}_{name}" for name in optional]
     return header
 
 
@@ -111,7 +172,11 @@ def main() -> int:
     }
     static_meta = rows_by_date[dates[0]]
 
-    header = build_header()
+    optional = detect_optional_columns(rows_by_date)
+    if optional:
+        print(f"Region snapshot columns detected: {len(optional)} extra per day")
+    header = build_header(optional)
+
     out_rows: list[dict[str, str]] = []
     for code in WANTED_STATIONS:
         meta = static_meta.get(code)
@@ -121,38 +186,31 @@ def main() -> int:
                 file=sys.stderr,
             )
             continue
+        # Coordinates are absent from region snapshots (their dashboards take
+        # them from the published roster instead), so these are lookups rather
+        # than required keys.
         row: dict[str, str] = {
             "StationCode": code,
-            "StationName": meta["StationName"],
-            "Latitude": meta["Latitude"],
-            "Longitude": meta["Longitude"],
+            "StationName": meta.get("StationName", ""),
+            "Latitude": meta.get("Latitude", ""),
+            "Longitude": meta.get("Longitude", ""),
         }
         for i, iso in enumerate(dates, start=1):
             day = rows_by_date[iso].get(code, {})
             row[f"day{i}_date"] = iso
-            row[f"day{i}_probability"] = day.get("exc_probability", "")
-            row[f"day{i}_prediction"] = day.get("prediction", "")
-            row[f"day{i}_mpn"] = day.get("estimated_mpn", "")
-            row[f"day{i}_mpn_label"] = day.get("mpn_label", "")
-            row[f"day{i}_top_factor_1"] = day.get("top_factor_1", "")
-            row[f"day{i}_top_factor_2"] = day.get("top_factor_2", "")
-            row[f"day{i}_top_factor_3"] = day.get("top_factor_3", "")
-            row[f"day{i}_last_result"] = day.get("last_result", "")
-            row[f"day{i}_days_since_sample"] = day.get("days_since_sample", "")
-            row[f"day{i}_insight"] = day.get("insight", "")
-        # Pad with empty day slots if fewer than 3 valid dates were found.
+            for name, source in BASE_DAY_FIELDS:
+                row[f"day{i}_{name}"] = day.get(source, "")
+            for name in optional:
+                row[f"day{i}_{name}"] = day.get(name, "")
+        # Pad with empty day slots if fewer than 3 valid dates were found. This
+        # is the normal state for the first two runs after an archive starts:
+        # the window grows as snapshots accumulate rather than failing.
         for i in range(len(dates) + 1, 4):
             row[f"day{i}_date"] = ""
-            row[f"day{i}_probability"] = ""
-            row[f"day{i}_prediction"] = ""
-            row[f"day{i}_mpn"] = ""
-            row[f"day{i}_mpn_label"] = ""
-            row[f"day{i}_top_factor_1"] = ""
-            row[f"day{i}_top_factor_2"] = ""
-            row[f"day{i}_top_factor_3"] = ""
-            row[f"day{i}_last_result"] = ""
-            row[f"day{i}_days_since_sample"] = ""
-            row[f"day{i}_insight"] = ""
+            for name, _ in BASE_DAY_FIELDS:
+                row[f"day{i}_{name}"] = ""
+            for name in optional:
+                row[f"day{i}_{name}"] = ""
         out_rows.append(row)
 
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
