@@ -133,7 +133,7 @@ const STATUS_ICON_COLOR: Record<Status, string> = {
 };
 
 const THRESHOLD_TOOLTIP_BODY =
-  "The EPA's safe-swimming limit for ocean water is 104 MPN/100mL — the most probable number of bacteria per 100 milliliters. Readings above this are classified as an exceedance, meaning bacteria levels are unsafe for swimming.";
+  "The EPA's safe-swimming limit for ocean water is 104 MPN/100mL, the most probable number of bacteria per 100 milliliters. Readings above this are classified as an exceedance, meaning bacteria levels are unsafe for swimming.";
 
 // `when` names the day being viewed. The CA boards pass nothing and keep their
 // existing "today" wording; the binary board passes the real day so the hero
