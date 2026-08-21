@@ -55,19 +55,23 @@ function dotIcon(
 // on the Boston board, Winthrop/Short/Constitution and the three Dorchester
 // beaches were mutually unreadable. These beaches genuinely sit that close
 // together, so the fix is to place the labels rather than to nudge the offset.
-
-// The roster appends the town to disambiguate tab labels ("Carson Beach — South
-// Boston"). On a map the town is what the map is already showing, and dropping
-// it buys back roughly half the label width — the single cheapest thing we can
-// do for collisions.
-function mapLabel(name: string): string {
-  return name.split(" — ")[0].trim() || name;
-}
+//
+// Labels carry the full roster name, town and all ("Carson Beach — South
+// Boston"). Shortening them would make placement easier, but the town is part
+// of how a beach is identified everywhere else on the board, and a map label
+// that disagrees with the tab above it is its own small confusion. Placement
+// absorbs the extra width instead.
 
 const LABEL_FONT = "600 11px ui-sans-serif, system-ui, -apple-system, sans-serif";
 const LABEL_PAD_X = 6;
 const LABEL_PAD_Y = 3;
 const LABEL_HEIGHT = 18;
+// The 1px border on each side of .nb-map-label. Small, but it is the difference
+// between a label placed flush against the map edge fitting and overflowing it.
+const LABEL_BORDER = 2;
+// Keep labels this far off the map edge. Flush against it is technically inside
+// and still reads as clipped.
+const EDGE_MARGIN = 2;
 // Keep placed labels this far apart, so near-misses still read as separate.
 const LABEL_GAP = 2;
 
@@ -146,6 +150,12 @@ function placeLabels(
     pt: map.latLngToContainerPoint([b.latitude, b.longitude]),
   }));
 
+  // The map's own box. A label that clears every neighbour but hangs off the
+  // edge of the map is still unreadable, and on a narrow viewport that is the
+  // common case rather than the rare one — the labels are a fixed width while
+  // the map shrinks around them.
+  const size = map.getSize();
+
   // Crowding = how many other dots sit within a label's reach.
   const crowding = points.map(({ pt }) =>
     points.reduce((n, other) => {
@@ -170,9 +180,9 @@ function placeLabels(
 
   for (const i of order) {
     const { beach, pt } = points[i];
-    const text = mapLabel(beach.name);
-    const w = textWidth(text) + LABEL_PAD_X * 2;
-    const h = LABEL_HEIGHT + LABEL_PAD_Y;
+    const text = beach.name;
+    const w = textWidth(text) + LABEL_PAD_X * 2 + LABEL_BORDER;
+    const h = LABEL_HEIGHT + LABEL_PAD_Y + LABEL_BORDER;
 
     let best: { dx: number; dy: number; ring: number } | null = null;
     outer: for (let r = 0; r < CANDIDATE_RINGS.length; r++) {
@@ -182,7 +192,13 @@ function placeLabels(
         const cx = pt.x + ux * (reach + (w / 2) * Math.abs(ux)) * CANDIDATE_RINGS[r];
         const cy = pt.y + uy * (reach + (h / 2) * Math.abs(uy)) * CANDIDATE_RINGS[r];
         const rect: Rect = { x: cx - w / 2, y: cy - h / 2, w, h };
+        const outside =
+          rect.x < EDGE_MARGIN ||
+          rect.y < EDGE_MARGIN ||
+          rect.x + rect.w > size.x - EDGE_MARGIN ||
+          rect.y + rect.h > size.y - EDGE_MARGIN;
         const clash =
+          outside ||
           placed.some((q) => overlaps(rect, q)) ||
           dotRects.some((q) => overlaps(rect, q));
         if (!clash) {
@@ -194,12 +210,17 @@ function placeLabels(
     }
 
     if (!best) {
-      // Nothing cleared. Take the outermost ring to the left and accept it —
-      // still readable, still attributable, and never silently dropped.
-      const r = CANDIDATE_RINGS[CANDIDATE_RINGS.length - 1];
-      const cx = pt.x - (dotRadius + 6 + w / 2) * r;
-      const rect: Rect = { x: cx - w / 2, y: pt.y - h / 2, w, h };
-      best = { dx: rect.x - pt.x, dy: rect.y - pt.y, ring: CANDIDATE_RINGS.length - 1 };
+      // Nothing cleared. Fall back to the first ring beside the dot and accept
+      // the overlap — a label you can half-read beats one that isn't there —
+      // but still clamp it inside the map, since a label pushed off the edge is
+      // not readable at all.
+      const cx = pt.x - (dotRadius + 6 + w / 2);
+      const clamp = (v: number, span: number, box: number) =>
+        Math.min(Math.max(v, EDGE_MARGIN), Math.max(box - span - EDGE_MARGIN, EDGE_MARGIN));
+      const x = clamp(cx - w / 2, w, size.x);
+      const y = clamp(pt.y - h / 2, h, size.y);
+      const rect: Rect = { x, y, w, h };
+      best = { dx: rect.x - pt.x, dy: rect.y - pt.y, ring: 1 };
       placed.push(rect);
     }
 
