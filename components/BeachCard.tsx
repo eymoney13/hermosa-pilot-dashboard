@@ -133,7 +133,7 @@ const STATUS_ICON_COLOR: Record<Status, string> = {
 };
 
 const THRESHOLD_TOOLTIP_BODY =
-  "The EPA's safe-swimming limit for ocean water is 104 MPN/100mL — the most probable number of bacteria per 100 milliliters. Readings above this are classified as an exceedance, meaning bacteria levels are unsafe for swimming.";
+  "The EPA's safe-swimming limit for ocean water is 104 MPN/100mL, the most probable number of bacteria per 100 milliliters. Readings above this are classified as an exceedance, meaning bacteria levels are unsafe for swimming.";
 
 // `when` names the day being viewed. The CA boards pass nothing and keep their
 // existing "today" wording; the binary board passes the real day so the hero
@@ -240,7 +240,7 @@ function exceedanceBody(pct: number): string {
 
   // Tier 1: Generally safe (0-29%)
   if (pct < 30) {
-    return `Less is better — under 30% means low risk. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
+    return `Less is better: under 30% means low risk. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
   }
 
   // Tier 2: Caution (30-49%)
@@ -250,7 +250,7 @@ function exceedanceBody(pct: number): string {
 
   // Tier 3: Not recommended (50-74%)
   if (pct < 75) {
-    return `Bacteria levels are likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria — most samples in this range test above the EPA safe-swimming threshold.`;
+    return `Bacteria levels are likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria; most samples in this range test above the EPA safe-swimming threshold.`;
   }
 
   // Tier 4: Strongly not recommended (75-100%)
