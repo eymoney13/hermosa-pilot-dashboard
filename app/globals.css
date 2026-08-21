@@ -45,3 +45,45 @@ body {
   width: 20px;
   height: 20px;
 }
+
+/* Map labels. Rendered as their own markers rather than Leaflet tooltips so
+   OverviewMap can place them around the dots (a tooltip only offers a fixed
+   direction + offset, which is what made them collide). Styled to match the
+   tooltip look they replace. */
+.nb-map-label-icon {
+  background: transparent;
+  border: none;
+  /* The layer is only a positioning frame — clicks belong to the label itself,
+     not to the empty box around it. */
+  pointer-events: none;
+}
+
+.nb-map-label {
+  display: inline-block;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+  color: #1f2937;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Connector back to the dot for a label pushed out of its first-choice spot,
+   so a displaced label is still attributable to its beach. Positioned by an
+   inline left/top that points at the dot; the 1px box reads as a small tick
+   rather than a full leader line, which at this density would be noise. */
+.nb-map-label-tether {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  margin: -2px 0 0 -2px;
+  border-radius: 9999px;
+  background: rgba(31, 41, 55, 0.35);
+  pointer-events: none;
+}
