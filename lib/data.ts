@@ -111,7 +111,7 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     mapFallbackCenter: [42.33, -71.02],
     advisory: {
       label: "Massachusetts Department of Public Health",
-      href: "https://www.mass.gov/info-details/beach-water-quality",
+      href: "https://www.mass.gov/info-details/interactive-beach-water-quality-dashboard",
     },
   },
 };
