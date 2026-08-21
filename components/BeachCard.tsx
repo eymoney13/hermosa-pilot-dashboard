@@ -65,6 +65,16 @@ const VERDICT_CELL_COLOR: Record<Verdict, string> = {
   Poor: "#E24B4A",
 };
 
+// Text colour for the verdict written inside a day cell. Dark on the light
+// green, white on the saturated red — each is the higher-contrast direction for
+// its own background, so the label stays legible at 11px without needing a
+// different cell colour. Colour alone never carries the meaning here: the word
+// is the read, and the fill reinforces it.
+const VERDICT_CELL_TEXT: Record<Verdict, string> = {
+  Good: "#1F3D07",
+  Poor: "#FFFFFF",
+};
+
 const SCALE_GRADIENT =
   "linear-gradient(to right, #97C459 0%, #97C459 25%, #EF9F27 40%, #EF9F27 55%, #E24B4A 65%, #A32D2D 100%)";
 
@@ -396,8 +406,9 @@ function SevenDayWindow({
   selectedDate: string;
   onSelect: (date: string) => void;
   hidePercent: boolean;
-  // Binary boards colour each day by its Good/Poor call and show no number —
-  // a percentage in the cell would contradict a board built to hide it.
+  // Binary boards write the Good/Poor call into each day cell and colour it to
+  // match. No number: a percentage here would contradict a board built to hide
+  // it, and a bare coloured bar leaves the reader decoding a legend.
   binaryVerdict: boolean;
 }) {
   if (cells.length === 0) return null;
@@ -461,7 +472,14 @@ function SevenDayWindow({
                     : tierColorForCell(day.probability),
                 }}
               >
-                {!verdict && (
+                {verdict ? (
+                  <span
+                    className="text-[11px] font-semibold"
+                    style={{ color: VERDICT_CELL_TEXT[verdict] }}
+                  >
+                    {verdict}
+                  </span>
+                ) : (
                   <span className="text-[10px] font-medium text-gray-900">
                     {pct}
                     {hidePercent ? "" : "%"}
