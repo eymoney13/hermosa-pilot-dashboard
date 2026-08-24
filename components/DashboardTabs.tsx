@@ -8,6 +8,7 @@ import BeachCard from "./BeachCard";
 import MapClient from "./MapClient";
 import NewsTab from "./NewsTab";
 import OverviewMapClient from "./OverviewMapClient";
+import BeachList from "./BeachList";
 
 const STATUS_UNDERLINE: Record<string, string> = {
   Normal: "bg-[#2d8a4e]",
@@ -17,6 +18,7 @@ const STATUS_UNDERLINE: Record<string, string> = {
 
 // Sentinel tab values — neither is a real station code.
 const MAP_TAB = "__map__"; // all-beaches overview map
+const LIST_TAB = "__list__"; // all-beaches list, one row each
 const NEWS_TAB = "__news__"; // global (not per-beach) news
 
 export default function DashboardTabs({
@@ -37,8 +39,13 @@ export default function DashboardTabs({
   // The overview map only earns its own tab when there's more than one beach to
   // glance across; single-beach locations open straight to that beach.
   const showMapTab = beaches.length > 1;
+  // Same threshold as the map: a list of one is not a list.
+  const showListTab = features.listTab && beaches.length > 1;
+  // The list opens the board when present. It answers the first question a
+  // reader arrives with - how is the coast this week - where the map answers
+  // the second, which of these is near me.
   const [activeCode, setActiveCode] = useState<string>(
-    showMapTab ? MAP_TAB : beaches[0]?.code ?? ""
+    showListTab ? LIST_TAB : showMapTab ? MAP_TAB : beaches[0]?.code ?? ""
   );
 
   if (beaches.length === 0) return null;
@@ -54,17 +61,35 @@ export default function DashboardTabs({
   };
 
   const mapActive = activeCode === MAP_TAB;
+  const listActive = activeCode === LIST_TAB;
   const newsActive = activeCode === NEWS_TAB;
   const active = beaches.find((b) => b.code === activeCode) ?? beaches[0];
   // The tab bar earns its keep when there's more than one beach to switch
   // between, or a News tab to reach.
-  const showTabs = showMapTab || newsEnabled;
+  const showTabs = showMapTab || showListTab || newsEnabled;
 
   return (
     <>
       {showTabs && (
         <nav className="w-full border-b border-gray-100">
           <div className="mx-auto max-w-6xl px-6 sm:px-10 flex gap-2 sm:gap-8 overflow-x-auto">
+            {showListTab && (
+              <button
+                type="button"
+                onClick={() => setActiveCode(LIST_TAB)}
+                aria-current={listActive ? "page" : undefined}
+                className={`relative shrink-0 py-4 px-2 text-sm font-medium transition-colors ${
+                  listActive
+                    ? "text-gray-900"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                List
+                {listActive && (
+                  <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-gray-900" />
+                )}
+              </button>
+            )}
             {showMapTab && (
               <button
                 type="button"
@@ -129,7 +154,14 @@ export default function DashboardTabs({
         </nav>
       )}
 
-      {mapActive ? (
+      {listActive ? (
+        <BeachList
+          beaches={beaches}
+          binaryVerdict={features.binaryVerdict}
+          hidePercent={features.hidePercentSign}
+          onSelect={setActiveCode}
+        />
+      ) : mapActive ? (
         <section className="w-full">
           <OverviewMapClient
             beaches={beaches}

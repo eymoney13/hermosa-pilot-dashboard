@@ -33,6 +33,10 @@ export interface FeatureFlags {
   // and why (see lib/summary.ts). Carries the probability as prose for boards
   // that hide the number itself.
   predictionSummary: boolean;
+  // Add a List tab, left of Map: every beach as a row, name on the left and its
+  // day strip on the right. Earns its place on a board with enough beaches that
+  // reading the week off the map would mean hovering each pin in turn.
+  listTab: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -42,6 +46,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   hideExceedanceReadout: false,
   binaryVerdict: false,
   predictionSummary: false,
+  listTab: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
@@ -61,6 +66,9 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
   boston: {
     binaryVerdict: true,
     predictionSummary: true,
+    // 13 beaches is past the point where the map alone answers "how does the
+    // whole coast look this week".
+    listTab: true,
   },
 };
 

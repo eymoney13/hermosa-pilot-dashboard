@@ -7,25 +7,24 @@ import {
   riskTier,
   VERDICT_AS_STATUS,
   type BeachData,
-  type ForecastDay,
   type Status,
   type Verdict,
 } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import { buildSummary } from "@/lib/summary";
+import {
+  buildWindowCells,
+  VERDICT_CELL_COLOR,
+  VERDICT_CELL_TEXT,
+  weekdayShort,
+  type WindowCell,
+} from "@/lib/window";
 import InfoTooltip from "./InfoTooltip";
 import WhyPrediction from "./WhyPrediction";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function weekdayShort(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  if (!y || !m || !d) return iso;
-  const date = new Date(Date.UTC(y, m - 1, d));
-  return date.toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short" });
-}
 
 function weekdayLong(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -60,21 +59,6 @@ function tierColorForCell(prob: number): string {
 
 // Day-cell fills for the binary boards, drawn from the same green/red the tier
 // scale uses at its ends.
-const VERDICT_CELL_COLOR: Record<Verdict, string> = {
-  Good: "#97C459",
-  Poor: "#E24B4A",
-};
-
-// Text colour for the verdict written inside a day cell. Dark on the light
-// green, white on the saturated red — each is the higher-contrast direction for
-// its own background, so the label stays legible at 11px without needing a
-// different cell colour. Colour alone never carries the meaning here: the word
-// is the read, and the fill reinforces it.
-const VERDICT_CELL_TEXT: Record<Verdict, string> = {
-  Good: "#1F3D07",
-  Poor: "#FFFFFF",
-};
-
 const SCALE_GRADIENT =
   "linear-gradient(to right, #97C459 0%, #97C459 25%, #EF9F27 40%, #EF9F27 55%, #E24B4A 65%, #A32D2D 100%)";
 
@@ -359,41 +343,6 @@ function PredictionSummary({ paragraphs }: { paragraphs: string[] }) {
 // ---------------------------------------------------------------------------
 // 4. 7-day window
 // ---------------------------------------------------------------------------
-
-type CellType = "past" | "today" | "forecast";
-
-interface WindowCell {
-  day: ForecastDay;
-  type: CellType;
-}
-
-function buildWindowCells(beach: BeachData): WindowCell[] {
-  const todayCell: WindowCell = {
-    day: {
-      date: beach.predictionDate,
-      probability: beach.probability,
-      mpnLabel: beach.mpnLabel,
-      status: beach.status,
-      threshold: beach.threshold,
-      verdict: beach.verdict,
-      // Carry today's full snapshot so it behaves like the clickable past days.
-      factors: beach.factors,
-      insight: beach.insight,
-      lastResult: beach.lastResult,
-      daysSinceSample: beach.daysSinceSample,
-    },
-    type: "today",
-  };
-  const pastCells: WindowCell[] = beach.pastDays.map((d) => ({
-    day: d,
-    type: "past",
-  }));
-  const forecastCells: WindowCell[] = beach.forecast.map((d) => ({
-    day: d,
-    type: "forecast",
-  }));
-  return [...pastCells, todayCell, ...forecastCells].slice(0, 7);
-}
 
 function SevenDayWindow({
   cells,
