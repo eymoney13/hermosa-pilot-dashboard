@@ -123,11 +123,43 @@ export function getLocation(slug: string): LocationConfig | undefined {
 
 export type Status = "Normal" | "Slightly elevated" | "Not recommended";
 
-// The binary read used by boards whose model publishes a straight Safe/Unsafe
-// call against a per-beach probability cutoff (see verdictFor). Locations opt
-// into showing it via the `binaryVerdict` feature flag; `Status` stays the
-// internal 3-tier value every board computes, so nothing keyed to it changes.
-export type Verdict = "Good" | "Poor";
+// The read used by boards whose model publishes a straight Safe/Unsafe call
+// against a per-beach probability cutoff (see verdictFor). Locations opt into
+// showing it via the `binaryVerdict` feature flag; `Status` stays the internal
+// 3-tier value every board computes, so nothing keyed to it changes.
+//
+// "Moderate" sits below the model's own cutoff, so it never contradicts the
+// backend's Safe/Unsafe call - it subdivides what the backend already called
+// Safe. See MODERATE_BAND_RATIO.
+export type Verdict = "Good" | "Moderate" | "Poor";
+
+// Where the Moderate band opens, as a fraction of the beach's own cutoff.
+//
+// 0.75 is measured, not chosen for looks. Across the Boston roster's full
+// sampling record, among days the model did NOT flag, the actual lab-exceedance
+// rate is flat at 0.2-0.5% all the way up to 75% of the cutoff and then steps up
+// 4-6x:
+//
+//     p / threshold     days   exceedances   rate
+//     < 50%             6322            12   0.2%
+//     50-60%            1364             7   0.5%
+//     60-70%            1075             3   0.3%
+//     70-75%            1071             2   0.2%
+//     75-80%             447             7   1.6%
+//     80-90%             948             8   0.9%
+//     95-100%            889            21   2.4%
+//
+// So below 0.75 the model is not distinguishing anything: those days exceed at
+// the same rate as a quiet one. Above it, exceedances become several times more
+// likely while still being far short of a flagged day (~1.5% in the band, vs
+// 11.8% overall and 31% on flagged days) - which is what "elevated, usually
+// still fine" should mean.
+//
+// The CA tiers imply 0.6 (their 30/50 split). That was carried over here purely
+// so a differently-calibrated board kept familiar proportions, and it lands
+// inside the flat region - flagging days that exceed at 0.3%, indistinguishable
+// from clean. Do not revert it to match CA without re-running the numbers.
+export const MODERATE_BAND_RATIO = 0.75;
 
 // EPA single-sample safe-swimming standard for ocean water (MPN/100mL).
 // A lab result above this is classified as an exceedance ("actually unsafe").
@@ -230,7 +262,7 @@ export interface ForecastDay {
   // a day must be scored against its own value, not the nowcast's. Backends
   // that publish one fixed cutoff leave this equal to BeachData.threshold.
   threshold?: number;
-  // The binary Good/Poor call for this day, resolved at load time — the
+  // The Good/Moderate/Poor call for this day, resolved at load time — the
   // backend's published decision where it ships one, otherwise derived. Only
   // meaningful on boards that render it (see the `binaryVerdict` flag).
   verdict?: Verdict | null;
@@ -265,7 +297,7 @@ export interface BeachData {
   conditions: Conditions;
   status: Status;
   threshold: number;
-  // Today's binary Good/Poor call — see ForecastDay.verdict.
+  // Today's Good/Moderate/Poor call — see ForecastDay.verdict.
   verdict: Verdict | null;
   // The model had no recent lab sample to anchor this beach's prediction, so it
   // leans entirely on environmental signal. Surfaced as a caveat in the summary.
@@ -310,12 +342,6 @@ export function statusFromProb(
   return "Normal";
 }
 
-// The fixed tiers above place "Slightly elevated" at 30 and "Not recommended"
-// at 50 — the elevated band opens at 60% of the unsafe cutoff. We keep that
-// same shape when classifying against a location's own threshold, so a board
-// calibrated to a different cutoff still reads with familiar proportions.
-const ELEVATED_BAND_RATIO = 30 / 50;
-
 // Status for locations whose backend publishes its own Safe/Unsafe call against
 // a per-station threshold (LocationConfig.statusFromThreshold). "Not
 // recommended" starts exactly at that threshold, so the banner can never
@@ -332,13 +358,17 @@ export function statusFromThreshold(
   const pct = Math.round(prob * 100);
   const unsafePct = Math.round(threshold * 100);
   if (pct >= unsafePct) return "Not recommended";
-  if (pct >= Math.round(unsafePct * ELEVATED_BAND_RATIO)) {
+  // Same band as the Moderate verdict, deliberately: this function and
+  // verdictFor classify the same beach off the same threshold, and the only
+  // board using it is the same one showing Moderate. Two different ratios would
+  // let a beach read "Slightly elevated" internally while showing Good.
+  if (pct >= Math.round(unsafePct * MODERATE_BAND_RATIO)) {
     return "Slightly elevated";
   }
   return "Normal";
 }
 
-// Fallback binary call, derived from a probability and its cutoff. Only used
+// Fallback call, derived from a probability and its cutoff. Only used
 // when the backend does not publish its own decision for the row — prefer
 // verdictFromPrediction, which cannot drift from the model.
 //
@@ -349,7 +379,35 @@ export function verdictFor(
   threshold: number
 ): Verdict | null {
   if (prob == null || Number.isNaN(prob)) return null;
-  return Math.round(prob * 100) >= Math.round(threshold * 100) ? "Poor" : "Good";
+  const pct = Math.round(prob * 100);
+  const cutoff = Math.round(threshold * 100);
+  if (pct >= cutoff) return "Poor";
+  return pct >= Math.round(cutoff * MODERATE_BAND_RATIO) ? "Moderate" : "Good";
+}
+
+/**
+ * Subdivide a Safe call into Good or Moderate.
+ *
+ * Kept separate from verdictFor because the backend's own Safe/Unsafe decision
+ * is authoritative for the Poor boundary and must not be recomputed: the model
+ * compares raw fractions where everything here is rounded to whole percent, so
+ * 13.8% against a 14% cutoff is Safe to the model but reads as "14 >= 14" to us.
+ * Inside that half-point band the model wins.
+ *
+ * So Moderate is purely additive detail BELOW the cutoff. A day the backend
+ * called Unsafe can never come out as Moderate, and a day it called Safe can
+ * never come out as Poor.
+ */
+export function refineSafeVerdict(
+  verdict: Verdict | null,
+  prob: number | null | undefined,
+  threshold: number
+): Verdict | null {
+  if (verdict !== "Good") return verdict;
+  if (prob == null || Number.isNaN(prob)) return verdict;
+  const pct = Math.round(prob * 100);
+  const cutoff = Math.round(threshold * 100);
+  return pct >= Math.round(cutoff * MODERATE_BAND_RATIO) ? "Moderate" : "Good";
 }
 
 // The model's own Safe/Unsafe decision for a row, as published in the
@@ -372,6 +430,7 @@ export function verdictFromPrediction(raw: unknown): Verdict | null {
 // mapping it through this.
 export const VERDICT_AS_STATUS: Record<Verdict, Status> = {
   Good: "Normal",
+  Moderate: "Slightly elevated",
   Poor: "Not recommended",
 };
 
