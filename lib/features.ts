@@ -42,6 +42,10 @@ export interface FeatureFlags {
   // where they are a worse way to reach a beach than the List or the Map. The
   // cards stay reachable from both; only the tabs go.
   hideBeachTabs: boolean;
+  // Move the day window above the status read instead of below the summary, so
+  // the week is the first thing on a beach's card rather than the last thing
+  // before the fold.
+  forecastWindowFirst: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -53,6 +57,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   predictionSummary: false,
   listTab: false,
   hideBeachTabs: false,
+  forecastWindowFirst: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
@@ -78,6 +83,8 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
     // ...and past the point where 13 tabs are a usable way to pick one. They
     // overflow into a horizontal scroller, so most are off-screen anyway.
     hideBeachTabs: true,
+    // The week is what a reader came for; today's call is one cell of it.
+    forecastWindowFirst: true,
   },
 };
 
