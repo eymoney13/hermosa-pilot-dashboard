@@ -43,6 +43,7 @@ export default function WhyPrediction({
   predictionDate,
   accuracy,
   hidePercent,
+  binaryVerdict,
   hideContributingFactors = false,
 }: {
   factors: string[];
@@ -51,6 +52,9 @@ export default function WhyPrediction({
   predictionDate: string;
   accuracy: Accuracy;
   hidePercent: boolean;
+  // Boards that show a Good/Moderate/Poor call rather than a percentage. Only
+  // reaches the accuracy panel, which names our past call the same way.
+  binaryVerdict: boolean;
   // Boards whose written summary already explains the drivers in prose, where a
   // ranked list of the same feature names underneath adds nothing.
   hideContributingFactors?: boolean;
@@ -68,7 +72,11 @@ export default function WhyPrediction({
   if (hideContributingFactors && !insight) {
     return (
       <div className="border-t border-gray-100 pt-6">
-        <ForecastAccuracy accuracy={accuracy} hidePercent={hidePercent} />
+        <ForecastAccuracy
+          accuracy={accuracy}
+          hidePercent={hidePercent}
+          binaryVerdict={binaryVerdict}
+        />
       </div>
     );
   }
@@ -135,7 +143,11 @@ export default function WhyPrediction({
               </div>
             )}
 
-            <ForecastAccuracy accuracy={accuracy} hidePercent={hidePercent} />
+            <ForecastAccuracy
+          accuracy={accuracy}
+          hidePercent={hidePercent}
+          binaryVerdict={binaryVerdict}
+        />
           </div>
         </div>
       </div>
