@@ -177,6 +177,7 @@ export default function DashboardTabs({
       {listActive ? (
         <BeachList
           beaches={beaches}
+          locationLabel={locationLabel}
           binaryVerdict={features.binaryVerdict}
           hidePercent={features.hidePercentSign}
           onSelect={(code) => openBeach(code, LIST_TAB)}
