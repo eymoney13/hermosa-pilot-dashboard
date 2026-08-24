@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronLeft } from "lucide-react";
 import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import type { NewsItem } from "@/lib/news";
@@ -47,6 +48,18 @@ export default function DashboardTabs({
   const [activeCode, setActiveCode] = useState<string>(
     showListTab ? LIST_TAB : showMapTab ? MAP_TAB : beaches[0]?.code ?? ""
   );
+  // Which view a beach card was opened from, so "back" returns there rather
+  // than to a fixed guess. Both the List and the Map open cards, and being sent
+  // to the other one is the small betrayal that makes a back control feel
+  // broken. Defaults to the List, which is where the board opens.
+  const [cameFrom, setCameFrom] = useState<string>(
+    showListTab ? LIST_TAB : MAP_TAB
+  );
+
+  const openBeach = (code: string, from: string) => {
+    setCameFrom(from);
+    setActiveCode(code);
+  };
 
   if (beaches.length === 0) return null;
 
@@ -107,9 +120,16 @@ export default function DashboardTabs({
                 )}
               </button>
             )}
-            {beaches.map((b) => {
+            {/* Per-beach tabs. Hidden on boards that opt out: with a long
+                roster they overflow into a scroller, so most sit off-screen,
+                and the List and Map are better ways in. A beach card is still
+                reached by clicking a List row or a Map pin, and the List / Map
+                tabs stay visible while one is open so there is always a way
+                back. */}
+            {!features.hideBeachTabs &&
+              beaches.map((b) => {
               const isActive =
-                !mapActive && !newsActive && b.code === active.code;
+                !mapActive && !newsActive && !listActive && b.code === active.code;
               return (
                 <button
                   key={b.code}
@@ -159,7 +179,7 @@ export default function DashboardTabs({
           beaches={beaches}
           binaryVerdict={features.binaryVerdict}
           hidePercent={features.hidePercentSign}
-          onSelect={setActiveCode}
+          onSelect={(code) => openBeach(code, LIST_TAB)}
         />
       ) : mapActive ? (
         <section className="w-full">
@@ -168,13 +188,32 @@ export default function DashboardTabs({
             fallbackCenter={fallbackCenter}
             hidePercent={features.hidePercentSign}
             binaryVerdict={features.binaryVerdict}
-            onSelect={setActiveCode}
+            onSelect={(code) => openBeach(code, MAP_TAB)}
           />
         </section>
       ) : newsActive ? (
         <NewsTab items={news} />
       ) : (
         <>
+          {/* Back to wherever this card was opened from. Only on boards whose
+              per-beach tabs are hidden: everywhere else the tab bar still shows
+              which beach is open and clicking another is the way around, so a
+              back control would be a second, competing idea of "where am I".
+              Matches the card's own container width so it reads as part of it
+              rather than as page furniture. */}
+          {features.hideBeachTabs && (
+            <div className="mx-auto w-full max-w-3xl px-6 sm:px-10 pt-6">
+              <button
+                type="button"
+                onClick={() => setActiveCode(cameFrom)}
+                className="inline-flex items-center gap-1.5 rounded-sm text-sm text-gray-500 transition-colors hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                Back to {cameFrom === MAP_TAB ? "map" : "list"}
+              </button>
+            </div>
+          )}
+
           <BeachCard
             beach={active}
             locationLabel={locationLabel}

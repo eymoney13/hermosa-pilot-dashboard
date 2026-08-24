@@ -37,6 +37,11 @@ export interface FeatureFlags {
   // day strip on the right. Earns its place on a board with enough beaches that
   // reading the week off the map would mean hovering each pin in turn.
   listTab: boolean;
+  // Drop the per-beach tabs from the tab bar, leaving only List / Map / News.
+  // For boards with enough beaches that the tabs overflow into a scroller,
+  // where they are a worse way to reach a beach than the List or the Map. The
+  // cards stay reachable from both; only the tabs go.
+  hideBeachTabs: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -47,6 +52,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   binaryVerdict: false,
   predictionSummary: false,
   listTab: false,
+  hideBeachTabs: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
@@ -69,6 +75,9 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
     // 13 beaches is past the point where the map alone answers "how does the
     // whole coast look this week".
     listTab: true,
+    // ...and past the point where 13 tabs are a usable way to pick one. They
+    // overflow into a horizontal scroller, so most are off-screen anyway.
+    hideBeachTabs: true,
   },
 };
 
