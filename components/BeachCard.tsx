@@ -511,10 +511,27 @@ export default function BeachCard({
       })
     : [];
 
+  const dayWindow = (
+    <SevenDayWindow
+      cells={cells}
+      selectedDate={selectedDate}
+      onSelect={setSelectedDate}
+      hidePercent={features.hidePercentSign}
+      binaryVerdict={features.binaryVerdict}
+    />
+  );
+
   return (
     <div className="mx-auto w-full max-w-3xl px-6 sm:px-10 py-10">
       <div className="space-y-6">
         <LocationHeader beach={beach} locationLabel={locationLabel} />
+
+        {/* Above the status read on boards that opt in. The window is the
+            reason a reader opened the card - today's call is one cell of it,
+            and they can see that cell without scrolling either way. Rendered
+            from one variable so the two orders cannot drift into two different
+            day strips. */}
+        {features.forecastWindowFirst && dayWindow}
 
         <div className="space-y-3">
           <StatusHero
@@ -542,13 +559,7 @@ export default function BeachCard({
 
         <PredictionSummary paragraphs={summary} />
 
-        <SevenDayWindow
-          cells={cells}
-          selectedDate={selectedDate}
-          onSelect={setSelectedDate}
-          hidePercent={features.hidePercentSign}
-          binaryVerdict={features.binaryVerdict}
-        />
+        {!features.forecastWindowFirst && dayWindow}
 
         <WhyPrediction
           factors={activeDay.factors ?? []}
