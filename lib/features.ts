@@ -21,13 +21,17 @@ export interface FeatureFlags {
   // unsafe bacteria levels" label, and the info tooltip — keeping the gradient
   // scale bar above it and the risk-tier legend below it.
   hideExceedanceReadout: boolean;
-  // Replace the 3-tier status read with a straight binary Good / Poor call
-  // against each beach's own probability cutoff, and drop every percentage the
-  // board would otherwise show (the gradient scale and its legend, the day-cell
+  // Replace the 3-tier status read with a Good / Moderate / Poor call against
+  // each beach's own probability cutoff, and drop every percentage the board
+  // would otherwise show (the gradient scale and its legend, the day-cell
   // labels, the map-pin numbers). For boards whose model publishes its own
   // Safe/Unsafe decision and whose cutoffs sit far below the shared 30/50/75
   // tiers, where those tiers would put a flagged beach in the "Normal" band.
   // Requires LocationConfig.statusFromThreshold so the two agree.
+  //
+  // Named for the two-state call it started as. The flag still selects the
+  // model's own verdict over the shared tiers, which is what it has always
+  // meant; Moderate subdivides the Safe side of that same call.
   binaryVerdict: boolean;
   // Show the generated plain-English summary of what the model is predicting
   // and why (see lib/summary.ts). Carries the probability as prose for boards
@@ -75,10 +79,12 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
   manhattan: {}, // stays exactly as today
   southbay: {}, // plain Manhattan-style — all flags default off
   cabrillo: {}, // plain Manhattan-style — all flags default off
-  // Boston reads as a binary Good/Poor board: its model ships its own
+  // Boston reads as a Good/Moderate/Poor board: its model ships its own
   // Safe/Unsafe call against per-beach cutoffs of 10-25%, which the shared
-  // 30/50/75 tiers would collapse into a single "Normal" band. The probability
-  // still drives the page — it just speaks through the written summary.
+  // 30/50/75 tiers would collapse into a single "Normal" band. Moderate splits
+  // the Safe side at 75% of each beach's own cutoff (see MODERATE_BAND_RATIO),
+  // so it never contradicts that call. The probability still drives the page -
+  // it just speaks through the written summary.
   boston: {
     binaryVerdict: true,
     predictionSummary: true,

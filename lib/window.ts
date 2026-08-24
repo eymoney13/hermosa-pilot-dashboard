@@ -19,6 +19,9 @@ export const WINDOW_DAYS = 7;
 
 export const VERDICT_CELL_COLOR: Record<Verdict, string> = {
   Good: "#97C459",
+  // The same yellow the 3-tier palette already uses for "Slightly elevated"
+  // (RISK_TIERS in lib/data.ts), not a second one invented for this band.
+  Moderate: "#D5C82E",
   Poor: "#E24B4A",
 };
 
@@ -29,7 +32,22 @@ export const VERDICT_CELL_COLOR: Record<Verdict, string> = {
 // is the read and the fill reinforces it.
 export const VERDICT_CELL_TEXT: Record<Verdict, string> = {
   Good: "#1F3D07",
+  // Dark olive, matching RISK_TIERS' own textColor for this tier. White on this
+  // yellow is close to unreadable, so Moderate takes the dark direction that
+  // Good does rather than the light one Poor does.
+  Moderate: "#6B5F0E",
   Poor: "#FFFFFF",
+};
+
+// What a day cell says when the full word will not fit. The strip puts seven
+// cells across the width of a phone - about 43px each at 375px - and "Moderate"
+// needs 51px at the cell's own 11px semibold. "Good" and "Poor" fit anywhere, so
+// only the one label is ever shortened, and only below the sm breakpoint; the
+// cell's title and aria-label always carry the full word either way.
+export const VERDICT_CELL_SHORT: Record<Verdict, string> = {
+  Good: "Good",
+  Moderate: "Mod.",
+  Poor: "Poor",
 };
 
 export function weekdayShort(iso: string): string {

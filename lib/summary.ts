@@ -416,18 +416,43 @@ function conditionSentences(
   const rain = rainSentence(c, past);
   const pinned = rain?.valence === "hurts" ? rain : null;
 
-  const wanted: Valence = verdict === "Good" ? "helps" : "hurts";
-  const agreeing: string[] = [];
-  const conflicting: string[] = [];
+  const helps: string[] = [];
+  const hurts: string[] = [];
   for (const topic of candidates) {
     if (topic === "rain" && pinned) continue; // already leading
     const sentence = TOPIC_SENTENCE[topic](c, past);
     if (!sentence) continue;
-    (sentence.valence === wanted ? agreeing : conflicting).push(sentence.text);
+    (sentence.valence === "helps" ? helps : hurts).push(sentence.text);
   }
 
-  const rest = [...agreeing, ...conflicting];
+  // Good and Poor lead with the conditions that agree with the call and let the
+  // rest follow, so the paragraph explains the rating before qualifying it.
+  //
+  // Moderate is the one rating that is genuinely about both at once: something
+  // is pushing bacteria up, and something else is keeping it under the
+  // threshold. Sorting it like Poor would read as a bad day; sorting it like
+  // Good would bury the reason it is not simply good. So it alternates,
+  // starting with what is elevating the water - which is the news - and then
+  // what is holding it down.
+  const rest =
+    verdict === "Good"
+      ? [...helps, ...hurts]
+      : verdict === "Poor"
+        ? [...hurts, ...helps]
+        : interleave(hurts, helps);
+
   return (pinned ? [pinned.text, ...rest] : rest).slice(0, MAX_TOPICS);
+}
+
+/** Alternate two lists, starting with the first, then append whatever is left. */
+function interleave(first: string[], second: string[]): string[] {
+  const out: string[] = [];
+  const n = Math.max(first.length, second.length);
+  for (let i = 0; i < n; i++) {
+    if (first[i]) out.push(first[i]);
+    if (second[i]) out.push(second[i]);
+  }
+  return out;
 }
 
 
@@ -466,7 +491,8 @@ function leadSentence(
   timeframe: SummaryInput["timeframe"],
   date: string
 ): string {
-  const quality = verdict === "Good" ? "good" : "poor";
+  const quality =
+    verdict === "Good" ? "good" : verdict === "Poor" ? "poor" : "moderate";
   if (timeframe === "past") {
     // Past tense, and "was predicted" rather than "had": this is the record of
     // a forecast, not a measurement of what the water actually turned out to be.
@@ -493,23 +519,61 @@ function outlookSentence(
   const one = days.length === 1;
   const span = one ? "Tomorrow" : `The next ${days.length} days`;
   const verb = one ? "is" : "are";
+  const allLook = one ? "tomorrow looks" : `the next ${days.length} days all look`;
   const poor = days.filter((d) => d.verdict === "Poor");
+  const moderate = days.filter((d) => d.verdict === "Moderate");
 
-  if (poor.length === 0) {
-    return todayVerdict === "Good"
-      ? `${span} ${verb} expected to stay good as well.`
-      : `Conditions are expected to improve: ${one ? "tomorrow looks" : `the next ${days.length} days all look`} good.`;
+  // Named days, e.g. "Thursday and Friday are".
+  const naming = (subset: ForecastDay[]) => ({
+    names: joinList(subset.map((d) => weekdayLong(d.date))),
+    subjectVerb: subset.length === 1 ? "is" : "are",
+  });
+  // What the days NOT named are doing. Once there are three ratings, "the other
+  // day holds" is no longer specific enough - the unnamed days could be good or
+  // moderate, and those are different news.
+  const others = (count: number, rating: string) =>
+    count === 1 ? `the other day looks ${rating}` : `the other ${count} days look ${rating}`;
+
+  // A poor day in the window is the headline whatever else is in there.
+  if (poor.length > 0) {
+    if (poor.length === days.length) {
+      return todayVerdict === "Poor"
+        ? `${span} ${verb} expected to stay poor as well.`
+        : `${span} ${verb} all expected to turn poor.`;
+    }
+    const { names, subjectVerb } = naming(poor);
+    const rest = days.length - poor.length;
+    // Name the remainder exactly when it is all one rating. When it is mixed,
+    // "moderate or better" is the honest summary - listing both in a third
+    // clause makes the sentence longer than the information is worth.
+    const restRating =
+      moderate.length === 0
+        ? "good"
+        : moderate.length === rest
+          ? "moderate"
+          : "moderate or better";
+    return `Looking ahead, ${names} ${subjectVerb} expected to turn poor; ${others(rest, restRating)}.`;
   }
-  if (poor.length === days.length) {
-    return todayVerdict === "Poor"
-      ? `${span} ${verb} expected to stay poor as well.`
-      : `${span} ${verb} all expected to turn poor.`;
+
+  // Nothing is flagged, but some days are elevated.
+  if (moderate.length > 0) {
+    if (moderate.length === days.length) {
+      if (todayVerdict === "Moderate") {
+        return `${span} ${verb} expected to stay moderate as well.`;
+      }
+      return todayVerdict === "Poor"
+        ? `Conditions are expected to ease: ${allLook} moderate rather than poor.`
+        : `${span} ${verb} expected to turn moderate.`;
+    }
+    const { names, subjectVerb } = naming(moderate);
+    const rest = days.length - moderate.length;
+    return `Looking ahead, ${names} ${subjectVerb} expected to be moderate; ${others(rest, "good")}.`;
   }
-  const names = joinList(poor.map((d) => weekdayLong(d.date)));
-  const poorVerb = poor.length === 1 ? "is" : "are";
-  const rest = days.length - poor.length;
-  const restPhrase = rest === 1 ? "the other day holds" : `the other ${rest} days hold`;
-  return `Looking ahead, ${names} ${poorVerb} expected to turn poor; ${restPhrase}.`;
+
+  // Everything ahead is good.
+  return todayVerdict === "Good"
+    ? `${span} ${verb} expected to stay good as well.`
+    : `Conditions are expected to improve: ${allLook} good.`;
 }
 
 // Why there is no lab result to point at. Framed as what the forecast IS rather

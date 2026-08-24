@@ -15,6 +15,7 @@ import { buildSummary } from "@/lib/summary";
 import {
   buildWindowCells,
   VERDICT_CELL_COLOR,
+  VERDICT_CELL_SHORT,
   VERDICT_CELL_TEXT,
   weekdayShort,
   type WindowCell,
@@ -122,7 +123,21 @@ const THRESHOLD_TOOLTIP_BODY =
 // `when` names the day being viewed. The CA boards pass nothing and keep their
 // existing "today" wording; the binary board passes the real day so the hero
 // can't say "today" while the summary right beneath it says "on Thursday".
-function predictionSubtitle(status: Status, when = "today"): string {
+function predictionSubtitle(
+  status: Status,
+  when = "today",
+  verdict: Verdict | null = null
+): string {
+  // Moderate has to say two things at once: something is pushing bacteria up,
+  // and it is still expected to stay under the limit. "Predicted to be below
+  // the threshold" alone reads identically to a clean day, which leaves the
+  // yellow doing all the work and the word explaining none of it.
+  //
+  // Keyed to the verdict, not to the equivalent tier, so the 3-tier boards'
+  // "Slightly elevated" subtitle is untouched.
+  if (verdict === "Moderate") {
+    return `Bacteria levels may be elevated but still predicted to be below the EPA swimming threshold ${when}.`;
+  }
   const verb =
     status === "Not recommended"
       ? "Predicted to exceed"
@@ -166,7 +181,7 @@ function StatusHero({
   const toneStatus = verdict ? VERDICT_AS_STATUS[verdict] : status;
   const tint = STATUS_TINT[toneStatus];
   const Icon = toneStatus === "Not recommended" ? AlertTriangle : CircleCheck;
-  const subtitle = predictionSubtitle(toneStatus, when);
+  const subtitle = predictionSubtitle(toneStatus, when, verdict);
 
   // The status + subtitle block, identical in both layouts. When the index is
   // hidden (every non-hermosa location) the box renders exactly as before — no
@@ -412,7 +427,7 @@ function SevenDayWindow({
                 {weekdayShort(day.date)}
               </span>
               <div
-                className={`h-7 w-full rounded-sm flex items-center justify-center transition-all ${opacity} ${selectedOutline} ${
+                className={`h-7 w-full overflow-hidden rounded-sm flex items-center justify-center transition-all ${opacity} ${selectedOutline} ${
                   isSelected ? "" : "hover:outline hover:outline-1 hover:outline-blue-300"
                 }`}
                 style={{
@@ -422,11 +437,18 @@ function SevenDayWindow({
                 }}
               >
                 {verdict ? (
+                  // Two spans rather than one truncated label: a clipped
+                  // "Moderat" would read as a rendering bug, and display:none
+                  // keeps the hidden one out of the accessibility tree so a
+                  // screen reader hears the word once, not twice.
                   <span
                     className="text-[11px] font-semibold"
                     style={{ color: VERDICT_CELL_TEXT[verdict] }}
                   >
-                    {verdict}
+                    <span className="sm:hidden">
+                      {VERDICT_CELL_SHORT[verdict]}
+                    </span>
+                    <span className="hidden sm:inline">{verdict}</span>
                   </span>
                 ) : (
                   <span className="text-[10px] font-medium text-gray-900">

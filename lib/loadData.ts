@@ -8,6 +8,7 @@ import {
   statusFromThreshold,
   thresholdFor,
   verdictFor,
+  refineSafeVerdict,
   verdictFromPrediction,
   type BeachData,
   type Conditions,
@@ -302,7 +303,11 @@ function resolveVerdict(
   prob: number,
   cutoff: number
 ): Verdict | null {
-  return verdictFromPrediction(published) ?? verdictFor(prob, cutoff);
+  // The backend's own call decides Safe vs Unsafe; refineSafeVerdict then splits
+  // Safe into Good/Moderate. Order matters: recomputing the Poor boundary here
+  // would let the dashboard contradict the model on rounding edges.
+  const called = verdictFromPrediction(published) ?? verdictFor(prob, cutoff);
+  return refineSafeVerdict(called, prob, cutoff);
 }
 
 // 1..PUBLISHED_FACTORS, for building the column names. Backends that publish
