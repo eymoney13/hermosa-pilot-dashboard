@@ -18,13 +18,22 @@ const TIER_CELL_COLOR: Record<BeachData["status"], string> = {
   "Not recommended": "#E24B4A",
 };
 
+// "Boston, MA" -> "Boston". The label carries the state so a tab reading
+// "Boston, MA" is unambiguous next to "Hermosa Beach, CA", but as a heading over
+// the list the state is noise: the reader already knows which board they opened.
+function placeName(label: string): string {
+  return label.split(",")[0].trim() || label;
+}
+
 export default function BeachList({
   beaches,
+  locationLabel,
   binaryVerdict,
   hidePercent,
   onSelect,
 }: {
   beaches: BeachData[];
+  locationLabel: string;
   // Boards whose model publishes its own Safe/Unsafe call read Good/Poor here,
   // and show no number, exactly as the card and map do.
   binaryVerdict: boolean;
@@ -41,6 +50,14 @@ export default function BeachList({
 
   return (
     <section className="mx-auto w-full max-w-3xl px-6 sm:px-10 py-8">
+      {/* Names the place the list is for. The tab bar above says List, not
+          where, and the wordmark says the product rather than the location.
+          Same teal as the wordmark and its subtitle (ProjectNeptuneLogo's fill)
+          so the two headings read as one voice rather than two. */}
+      <h2 className="pb-4 text-3xl font-bold" style={{ color: "#2C8487" }}>
+        {placeName(locationLabel)}
+      </h2>
+
       {date && (
         // Right-aligned across the row rather than boxed into the reading
         // column: the column is only as wide as "Good", and constraining a full
