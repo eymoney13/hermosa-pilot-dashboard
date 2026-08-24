@@ -568,6 +568,7 @@ export default function BeachCard({
           predictionDate={activeDay.date}
           accuracy={beach.accuracy}
           hidePercent={features.hidePercentSign}
+          hideContributingFactors={features.hideContributingFactors}
         />
       </div>
     </div>

@@ -46,6 +46,10 @@ export interface FeatureFlags {
   // the week is the first thing on a beach's card rather than the last thing
   // before the fold.
   forecastWindowFirst: boolean;
+  // Drop the numbered "Top contributing factors" list. With it gone there is no
+  // detail left to hide, so the forecast-accuracy panel stands on its own
+  // instead of behind the "Behind the Prediction" disclosure.
+  hideContributingFactors: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -58,6 +62,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   listTab: false,
   hideBeachTabs: false,
   forecastWindowFirst: false,
+  hideContributingFactors: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
@@ -85,6 +90,9 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
     hideBeachTabs: true,
     // The week is what a reader came for; today's call is one cell of it.
     forecastWindowFirst: true,
+    // The written summary already explains the drivers in prose. A ranked list
+    // of the same feature names underneath is the model talking about itself.
+    hideContributingFactors: true,
   },
 };
 
