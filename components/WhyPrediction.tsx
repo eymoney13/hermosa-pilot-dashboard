@@ -43,6 +43,7 @@ export default function WhyPrediction({
   predictionDate,
   accuracy,
   hidePercent,
+  hideContributingFactors = false,
 }: {
   factors: string[];
   insight: string;
@@ -50,9 +51,27 @@ export default function WhyPrediction({
   predictionDate: string;
   accuracy: Accuracy;
   hidePercent: boolean;
+  // Boards whose written summary already explains the drivers in prose, where a
+  // ranked list of the same feature names underneath adds nothing.
+  hideContributingFactors?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const sampleMeta = sampleMetadataFor(daysSinceSample, predictionDate);
+
+  // With the factors hidden and no lab-sample insight, the disclosure would be
+  // a toggle guarding a single card, under a heading describing content that is
+  // no longer there. So the accuracy panel stands on its own.
+  //
+  // Note this deliberately does NOT fall through to the early return below.
+  // That return exists for days with nothing to show, and reaching it here would
+  // take the accuracy panel out with the factors — the opposite of the intent.
+  if (hideContributingFactors && !insight) {
+    return (
+      <div className="border-t border-gray-100 pt-6">
+        <ForecastAccuracy accuracy={accuracy} hidePercent={hidePercent} />
+      </div>
+    );
+  }
 
   // Forecast/future days have no saved factors or lab sample — nothing to show.
   if (factors.length === 0 && !insight) return null;
@@ -84,7 +103,7 @@ export default function WhyPrediction({
             being clipped (a fixed max-height could not accommodate it). */}
         <div className="overflow-hidden">
           <div className="pb-5 space-y-6">
-            {factors.length > 0 && (
+            {!hideContributingFactors && factors.length > 0 && (
               <div>
                 <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
                   Top contributing factors
