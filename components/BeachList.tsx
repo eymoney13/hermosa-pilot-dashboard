@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import { formatMonthDayYear, VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import { VERDICT_CELL_COLOR, VERDICT_CELL_TEXT } from "@/lib/window";
 
@@ -78,12 +79,18 @@ export default function BeachList({
           return (
             <li key={beach.code}>
               {/* The whole row is the target, not just the name: a reader aiming
-                  at a beach should not have to hit the text exactly. */}
+                  at a beach should not have to hit the text exactly.
+
+                  active: alongside hover: on purpose, and the first active:
+                  variant in this codebase. Tailwind v4 compiles hover: to
+                  @media (hover: hover), so on a touch screen the hover rule
+                  never fires and a tap got no response at all. active: is not
+                  gated that way, so it is what gives a finger any feedback. */}
               <button
                 type="button"
                 onClick={() => onSelect(beach.code)}
                 aria-label={`${beach.name}: ${label}`}
-                className="flex w-full items-center gap-4 py-3 text-left transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                className="group flex w-full items-center gap-3 py-3 text-left transition-colors hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 {/* No truncation. The name is the row's whole identity, and a
                     clipped one ("Constitution Beach - East Bos...") is the one
@@ -106,6 +113,24 @@ export default function BeachList({
                 >
                   {label}
                 </span>
+
+                {/* The row leads somewhere, and on a touch screen nothing else
+                    says so: hover is unavailable and a pressed state only
+                    answers after the reader has already decided the list is
+                    static. The muted grey at rest is what does that work; the
+                    teal is a desktop nicety.
+
+                    group-active as well as group-hover for the same reason as
+                    the row background above - group-hover is hover-gated too,
+                    so on its own the chevron would never react to a finger.
+
+                    aria-hidden because the row's aria-label already carries the
+                    beach and its reading; a screen reader gains nothing from
+                    hearing an icon as well. */}
+                <ChevronRight
+                  aria-hidden="true"
+                  className="h-4 w-4 shrink-0 text-gray-300 transition-colors group-hover:text-[#2C8487] group-active:text-[#2C8487]"
+                />
               </button>
             </li>
           );
