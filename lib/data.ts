@@ -65,20 +65,55 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       "abc7.com",
     ],
   },
-  // South Bay overview: one dashboard spanning Manhattan, Hermosa (two stations),
-  // and Redondo. Tab order follows the coast north → south. Plain Manhattan-style
-  // UI (no feature flags — see lib/features.ts).
+  // South Bay overview: one dashboard spanning Dockweiler (seven stations),
+  // Manhattan, Hermosa (two stations), and Redondo. Tab order follows the coast
+  // north → south. Plain Manhattan-style UI (no feature flags — see
+  // lib/features.ts).
+  //
+  // Dockweiler runs ~4.6 km from Culver Blvd. down to the south jetty and is
+  // sampled by two overlapping programs — LA County's DHS110-112B and the Santa
+  // Monica Bay SMB-2-* shoreline stations — so the two families interleave down
+  // the coast rather than sitting in separate blocks. Neither program publishes
+  // a display name, so every Dockweiler label below is ours. The storm-drain and
+  // Culver Blvd. names are the sampling landmarks; (North)/(Central)/(South)/
+  // (South Jetty) are positional, assigned by latitude, and do not correspond to
+  // any posted sign at the beach.
+  //
+  // SMB-2-11 and DHS110 sit 468 m apart and agreed on the exceedance call on all
+  // 75 days both were sampled — near-duplicate pins by design, kept because each
+  // program samples on its own schedule.
   southbay: {
     slug: "southbay",
     displayName: "South Bay, CA",
-    stations: ["DHS113", "DHS114", "DHS115", "DHS116"],
+    stations: [
+      "SMB-2-10",
+      "SMB-2-11",
+      "DHS110",
+      "SMB-2-13",
+      "DHS111",
+      "DHS112",
+      "DHS112B",
+      "DHS113",
+      "DHS114",
+      "DHS115",
+      "DHS116",
+    ],
     beachNames: {
+      "SMB-2-10": "Dockweiler State Beach (Culver Blvd.)",
+      "SMB-2-11": "Dockweiler State Beach (Westchester Storm Drain)",
+      DHS110: "Dockweiler State Beach (North)",
+      "SMB-2-13": "Dockweiler State Beach (Imperial HWY Storm Drain)",
+      DHS111: "Dockweiler State Beach (Central)",
+      DHS112: "Dockweiler State Beach (South)",
+      DHS112B: "Dockweiler State Beach (South Jetty)",
       DHS113: "Manhattan Beach - 28th st",
       DHS114: "Hermosa Beach - 26th St",
       DHS115: "Hermosa Beach - Herondo St",
       DHS116: "Redondo Beach - Topaz",
     },
-    mapFallbackCenter: [33.85, -118.4],
+    // Recentered for the Dockweiler additions: the roster now spans 33.8321
+    // (Redondo) to 33.9570 (Culver Blvd.). Only used when no beaches load.
+    mapFallbackCenter: [33.895, -118.42],
   },
   // Cabrillo Beach (San Pedro) overview: three stations. Multi-beach, so the
   // dashboard opens to the all-locations Map tab (like South Bay). Station
