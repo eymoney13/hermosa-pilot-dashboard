@@ -85,13 +85,29 @@ export const LOCATIONS: Record<string, LocationConfig> = {
   southbay: {
     slug: "southbay",
     displayName: "South Bay, CA",
+    //
+    // HIDDEN, NOT RETIRED. Two stations are deliberately absent from `stations`
+    // below while the backend keeps publishing them:
+    //
+    //   DHS110  "Dockweiler State Beach (North)"
+    //   DHS112  "Dockweiler State Beach (South)"
+    //
+    // Their BEACH_FILTER entries in project-neptune's daily-refresh-southbay.yml
+    // are untouched on purpose, so nowcast/forecast/history/accuracy rows keep
+    // accruing and either can be shown again by re-adding it here — no backfill,
+    // no waiting for history to rebuild. resolveRoster drives the display off
+    // `stations`, so a published station that is not listed simply never renders
+    // (see loadData.ts).
+    //
+    // Neither leaves a coverage gap: each has a near-twin that stays on the
+    // board and agrees with it on nearly every lab sample — DHS110 with SMB-2-11
+    // (468 m, agreed on all 75 co-sampled days) and DHS112 with DHS112B (114 m,
+    // agreed on 97.6% of 745 co-sampled days).
     stations: [
       "SMB-2-10",
       "SMB-2-11",
-      "DHS110",
       "SMB-2-13",
       "DHS111",
-      "DHS112",
       "DHS112B",
       "DHS113",
       "DHS114",
@@ -101,10 +117,8 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     beachNames: {
       "SMB-2-10": "Dockweiler State Beach (Culver Blvd.)",
       "SMB-2-11": "Dockweiler State Beach (Westchester Storm Drain)",
-      DHS110: "Dockweiler State Beach (North)",
       "SMB-2-13": "Dockweiler State Beach (Imperial HWY Storm Drain)",
       DHS111: "Dockweiler State Beach (Central)",
-      DHS112: "Dockweiler State Beach (South)",
       DHS112B: "Dockweiler State Beach (South Jetty)",
       DHS113: "Manhattan Beach - 28th st",
       DHS114: "Hermosa Beach - 26th St",
