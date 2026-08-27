@@ -77,7 +77,18 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
     hideExceedanceReadout: true,
   },
   manhattan: {}, // stays exactly as today
-  southbay: {}, // plain Manhattan-style — all flags default off
+  // Nine beaches is past the point where the map alone answers "how does the
+  // whole coast look today" — five of them are Dockweiler pins within 2 km of
+  // each other, so telling them apart on the map means hovering each in turn.
+  // Everything else stays Manhattan-style: BeachList falls back to the shared
+  // 30/50/75 tiers and shows the percentage when binaryVerdict is off, so the
+  // rows read exactly like the cards and the map already do.
+  //
+  // Note this also makes List the landing tab (see DashboardTabs), where the
+  // board previously opened on the Map.
+  southbay: {
+    listTab: true,
+  },
   cabrillo: {}, // plain Manhattan-style — all flags default off
   // Boston reads as a Good/Moderate/Poor board: its model ships its own
   // Safe/Unsafe call against per-beach cutoffs of 10-25%, which the shared
