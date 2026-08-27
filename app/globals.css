@@ -60,15 +60,19 @@ body {
 
 .nb-map-label {
   display: inline-block;
-  padding: 3px 6px;
+  padding: 3px 5px;
   border-radius: 4px;
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
   color: #1f2937;
-  font-size: 11px;
+  /* Fallbacks only. OverviewMap sets font-size, padding and line-height inline
+     from the live zoom (see labelMetrics), so those three are overridden on
+     every label; these values are what a label would render at if that ever
+     failed to run. Keep them in step with LABEL_MIN_FONT. */
+  font-size: 9px;
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.15;
   white-space: nowrap;
   cursor: pointer;
   pointer-events: auto;
