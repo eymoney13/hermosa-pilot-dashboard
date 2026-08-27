@@ -31,9 +31,11 @@ function monthAbbr(iso: string): string {
 function SampleDetail({
   sample,
   hidePercent,
+  binaryVerdict,
 }: {
   sample: AccuracySample;
   hidePercent: boolean;
+  binaryVerdict: boolean;
 }) {
   const actualUnsafe = sample.labMpn > EPA_MPN_THRESHOLD;
   return (
@@ -65,9 +67,21 @@ function SampleDetail({
         <div className="flex justify-between gap-3">
           <dt className="text-gray-500">Our forecast</dt>
           <dd className="text-right text-gray-800">
-            {sample.predictedExceedance}
-            {hidePercent ? "" : "%"} ·{" "}
-            {riskTierLabel(sample.predictedExceedance)}
+            {/* A board with its own per-beach cutoff names the call in its own
+                words. riskTierLabel below reads the shared 30/50 scale, which is
+                calibrated to a different threshold entirely — on a beach whose
+                cutoff is 14% it would print a day we called Poor as "Normal".
+                The percentage goes with it: these boards keep the probability
+                back-end everywhere else. */}
+            {binaryVerdict && sample.verdict ? (
+              sample.verdict
+            ) : (
+              <>
+                {sample.predictedExceedance}
+                {hidePercent ? "" : "%"} ·{" "}
+                {riskTierLabel(sample.predictedExceedance)}
+              </>
+            )}
           </dd>
         </div>
       </dl>
@@ -78,9 +92,13 @@ function SampleDetail({
 export default function ForecastAccuracy({
   accuracy,
   hidePercent,
+  binaryVerdict,
 }: {
   accuracy: Accuracy;
   hidePercent: boolean;
+  // Boards showing a Good/Moderate/Poor call rather than a probability. Only
+  // changes how a tapped sample names our forecast — never how it is scored.
+  binaryVerdict: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -187,6 +205,7 @@ export default function ForecastAccuracy({
                   <SampleDetail
                     sample={selectedSample}
                     hidePercent={hidePercent}
+                    binaryVerdict={binaryVerdict}
                   />
                 ) : (
                   <p className="mt-2 text-xs text-gray-400">
@@ -215,8 +234,13 @@ export default function ForecastAccuracy({
               </div>
 
               <p className="text-[11px] text-gray-400 leading-relaxed">
-                A match means our risk call agreed with whether the lab result
-                was above or below the EPA threshold of 104 MPN/100mL.
+                {/* Poor is the only call that predicts an exceedance — Good and
+                    Moderate both sit below the beach's cutoff — so saying
+                    "flagged the day" is exactly what is scored, without
+                    implying Moderate counts as a warning. */}
+                {binaryVerdict
+                  ? "A match means we flagged the day as Poor when the lab result came back above the EPA threshold of 104 MPN/100mL, or did not flag it when the result came back below."
+                  : "A match means our risk call agreed with whether the lab result was above or below the EPA threshold of 104 MPN/100mL."}
               </p>
             </div>
           ) : (

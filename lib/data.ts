@@ -264,6 +264,12 @@ export interface AccuracySample {
   date: string; // ISO date the lab sample was taken
   predictedExceedance: number; // our exceedance probability that day, as a percent (0-100)
   predictedUnsafe: boolean; // our call: prob >= threshold (stored, not re-derived from the rounded percent)
+  // The same Good/Moderate/Poor word the rest of a binaryVerdict board shows,
+  // for the day this sample was taken. Scoring does not use it — a match is
+  // still predictedUnsafe vs the lab — it exists so the panel can name our call
+  // in the board's own vocabulary instead of quoting a percent and a tier from
+  // the shared scale, which is calibrated to a different cutoff entirely.
+  verdict: Verdict | null;
   labMpn: number; // the lab result, MPN/100mL
   match: boolean; // predicted class === actual class (both safe or both unsafe)
 }
@@ -523,6 +529,10 @@ export function computeAccuracy(
       date: s.date,
       predictedExceedance,
       predictedUnsafe,
+      // Derived from the same probability and threshold as predictedUnsafe, so
+      // the word and the match can never disagree: a "Poor" sample is exactly a
+      // predictedUnsafe one.
+      verdict: verdictFor(s.excProbability, threshold),
       labMpn: s.labMpn,
       match: predictedUnsafe === actualUnsafe,
     };
