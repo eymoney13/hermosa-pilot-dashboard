@@ -54,6 +54,11 @@ export interface FeatureFlags {
   // detail left to hide, so the forecast-accuracy panel stands on its own
   // instead of behind the "Behind the Prediction" disclosure.
   hideContributingFactors: boolean;
+  // Open the board on the Map even when the List tab is showing. Without this,
+  // the List is the landing tab wherever it appears. For boards that want the
+  // List available as a way to read the whole coast at once, but whose readers
+  // arrive asking "which of these is near me" first.
+  openOnMap: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -67,6 +72,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   hideBeachTabs: false,
   forecastWindowFirst: false,
   hideContributingFactors: false,
+  openOnMap: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
@@ -84,10 +90,11 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
   // 30/50/75 tiers and shows the percentage when binaryVerdict is off, so the
   // rows read exactly like the cards and the map already do.
   //
-  // Note this also makes List the landing tab (see DashboardTabs), where the
-  // board previously opened on the Map.
+  // The Map stays the landing tab. The List is a second way in, not a
+  // replacement for the view the board has always opened on.
   southbay: {
     listTab: true,
+    openOnMap: true,
   },
   cabrillo: {}, // plain Manhattan-style — all flags default off
   // Boston reads as a Good/Moderate/Poor board: its model ships its own

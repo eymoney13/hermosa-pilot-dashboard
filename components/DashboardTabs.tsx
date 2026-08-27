@@ -44,16 +44,18 @@ export default function DashboardTabs({
   const showListTab = features.listTab && beaches.length > 1;
   // The list opens the board when present. It answers the first question a
   // reader arrives with - how is the coast this week - where the map answers
-  // the second, which of these is near me.
+  // the second, which of these is near me. Boards that opt into openOnMap keep
+  // the Map as the way in and treat the List as the second view.
+  const listIsLanding = showListTab && !features.openOnMap;
   const [activeCode, setActiveCode] = useState<string>(
-    showListTab ? LIST_TAB : showMapTab ? MAP_TAB : beaches[0]?.code ?? ""
+    listIsLanding ? LIST_TAB : showMapTab ? MAP_TAB : beaches[0]?.code ?? ""
   );
   // Which view a beach card was opened from, so "back" returns there rather
   // than to a fixed guess. Both the List and the Map open cards, and being sent
   // to the other one is the small betrayal that makes a back control feel
-  // broken. Defaults to the List, which is where the board opens.
+  // broken. Defaults to whichever view the board opens on.
   const [cameFrom, setCameFrom] = useState<string>(
-    showListTab ? LIST_TAB : MAP_TAB
+    listIsLanding ? LIST_TAB : MAP_TAB
   );
 
   const openBeach = (code: string, from: string) => {
