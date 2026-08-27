@@ -62,13 +62,55 @@ function dotIcon(
 // that disagrees with the tab above it is its own small confusion. Placement
 // absorbs the extra width instead.
 
-const LABEL_FONT = "600 11px ui-sans-serif, system-ui, -apple-system, sans-serif";
-const LABEL_PAD_X = 6;
-const LABEL_PAD_Y = 3;
-const LABEL_HEIGHT = 18;
+// Label size follows the zoom. Zoomed out, the names exist to say "a beach is
+// here" and which one, so they are kept small enough to sit against their dot
+// without swamping the coastline. Zooming in spreads the dots apart and buys
+// back the room, so the text grows into it and becomes something you read
+// rather than glance at.
+//
+// Clamped at both ends: below MIN the text stops being legible at all, and
+// above MAX the labels start competing with the map underneath them.
+const LABEL_MIN_FONT = 9;
+const LABEL_MAX_FONT = 15;
+// The zoom the overview opens on (see MapContainer). At or below it, labels sit
+// at MIN.
+const LABEL_BASE_ZOOM = 13;
+const LABEL_FONT_PER_ZOOM = 1.2;
 // The 1px border on each side of .nb-map-label. Small, but it is the difference
 // between a label placed flush against the map edge fitting and overflowing it.
 const LABEL_BORDER = 2;
+
+interface LabelMetrics {
+  fontSize: number;
+  padX: number;
+  padY: number;
+  lineHeight: number;
+  /** Full box height, matching what the DOM will actually render. */
+  h: number;
+  /** Canvas shorthand, so measurement uses the size we are about to draw at. */
+  font: string;
+}
+
+// Padding and line height are derived from the font rather than fixed, so a
+// label keeps its proportions at every size instead of getting airier as the
+// text shrinks.
+function labelMetrics(zoom: number): LabelMetrics {
+  const raw = LABEL_MIN_FONT + (zoom - LABEL_BASE_ZOOM) * LABEL_FONT_PER_ZOOM;
+  const fontSize = Math.round(
+    Math.min(LABEL_MAX_FONT, Math.max(LABEL_MIN_FONT, raw))
+  );
+  const padX = Math.round(fontSize * 0.55);
+  const padY = Math.round(fontSize * 0.28);
+  const lineHeight = Math.round(fontSize * 1.15);
+  return {
+    fontSize,
+    padX,
+    padY,
+    lineHeight,
+    h: lineHeight + padY * 2 + LABEL_BORDER,
+    font: `600 ${fontSize}px ui-sans-serif, system-ui, -apple-system, sans-serif`,
+  };
+}
 // Keep labels this far off the map edge. Flush against it is technically inside
 // and still reads as clipped.
 const EDGE_MARGIN = 2;
@@ -79,13 +121,17 @@ const LABEL_GAP = 2;
 // count: "M Street Beach" and "Malibu Beach" are the same length and noticeably
 // different widths, and guessing wrong here means either overlap or wasted space.
 let measureCtx: CanvasRenderingContext2D | null = null;
-function textWidth(text: string): number {
-  if (typeof document === "undefined") return text.length * 6.2;
+function textWidth(text: string, m: LabelMetrics): number {
+  const estimate = text.length * m.fontSize * 0.56;
+  if (typeof document === "undefined") return estimate;
   if (!measureCtx) {
     measureCtx = document.createElement("canvas").getContext("2d");
-    if (measureCtx) measureCtx.font = LABEL_FONT;
   }
-  return measureCtx ? measureCtx.measureText(text).width : text.length * 6.2;
+  if (!measureCtx) return estimate;
+  // Reassigned every call: the font size moves with the zoom, and measuring at
+  // the previous size would size every box for the wrong text.
+  measureCtx.font = m.font;
+  return measureCtx.measureText(text).width;
 }
 
 interface Rect {
@@ -114,9 +160,12 @@ const CANDIDATE_DIRECTIONS: Array<[number, number]> = [
   [-1, -1], [1, -1], [-1, 1], [1, 1],
 ];
 
-// Rings to try, in pixels. Later rings push a crowded label further out; the
-// connector line drawn for anything past the first ring keeps it attributable.
-const CANDIDATE_RINGS = [1, 1.7, 2.6, 3.8];
+// How far past the dot a crowded label may be pushed, as a multiple of the gap
+// beside the dot. Deliberately shallow: a label that travels far enough to be
+// unambiguous has usually travelled far enough to stop looking like it belongs
+// to that dot at all. When nothing fits, overlapping slightly beats drifting —
+// zooming in is what actually resolves a crowded stretch of coast.
+const CANDIDATE_RINGS = [1, 1.6, 2.2, 3];
 
 export interface LabelPlacement {
   code: string;
@@ -127,6 +176,8 @@ export interface LabelPlacement {
   w: number;
   /** True when the label sits far enough out to need a connector line. */
   tethered: boolean;
+  /** The metrics this placement was measured at, so the DOM matches the box. */
+  m: LabelMetrics;
   /** Which candidate produced this, so the next pass can prefer it again. */
   dir: number;
   ring: number;
@@ -149,6 +200,7 @@ function placeLabels(
   dotRadius: number,
   previous: Map<string, { dir: number; ring: number }>
 ): LabelPlacement[] {
+  const m = labelMetrics(map.getZoom());
   const points = beaches.map((b) => ({
     beach: b,
     pt: map.latLngToContainerPoint([b.latitude, b.longitude]),
@@ -213,23 +265,23 @@ function placeLabels(
     if (!visible[i]) {
       // Off-screen: park it beside the dot and move on. No collision
       // bookkeeping, so it cannot displace anything that is actually in view.
-      const w = textWidth(text) + LABEL_PAD_X * 2 + LABEL_BORDER;
-      const h = LABEL_HEIGHT + LABEL_PAD_Y + LABEL_BORDER;
+      const w = textWidth(text, m) + m.padX * 2 + LABEL_BORDER;
       out.push({
         code: beach.code,
         text,
         dx: -(dotRadius + 6 + w),
-        dy: -h / 2,
+        dy: -m.h / 2,
         w,
         tethered: false,
+        m,
         dir: 0,
         ring: 0,
       });
       continue;
     }
 
-    const w = textWidth(text) + LABEL_PAD_X * 2 + LABEL_BORDER;
-    const h = LABEL_HEIGHT + LABEL_PAD_Y + LABEL_BORDER;
+    const w = textWidth(text, m) + m.padX * 2 + LABEL_BORDER;
+    const h = m.h;
 
     // Candidates in preference order, with one exception: whatever this label
     // used last time is tried FIRST. Zoom changes the pixel distances between
@@ -254,9 +306,13 @@ function placeLabels(
     const reach = dotRadius + 6;
     for (const [r, d] of candidates) {
       const [ux, uy] = CANDIDATE_DIRECTIONS[d];
-      // Offset the label centre far enough that its own box clears the dot.
-      const cx = pt.x + ux * (reach + (w / 2) * Math.abs(ux)) * CANDIDATE_RINGS[r];
-      const cy = pt.y + uy * (reach + (h / 2) * Math.abs(uy)) * CANDIDATE_RINGS[r];
+      // Only the gap scales with the ring. Clearing the dot costs half the
+      // label's own box and that cost is fixed, so multiplying it too made wide
+      // labels fly off: at ring 3.8 a 200px name sat ~490px from its dot,
+      // stranded against the far edge of the map while its dot stayed put.
+      // Scaling the gap alone keeps a pushed label beside the dot it names.
+      const cx = pt.x + ux * (reach * CANDIDATE_RINGS[r] + (w / 2) * Math.abs(ux));
+      const cy = pt.y + uy * (reach * CANDIDATE_RINGS[r] + (h / 2) * Math.abs(uy));
       const rect: Rect = { x: cx - w / 2, y: cy - h / 2, w, h };
       if (fits(rect)) {
         best = { dx: rect.x - pt.x, dy: rect.y - pt.y, ring: r, dir: d };
@@ -287,6 +343,7 @@ function placeLabels(
       dy: best.dy,
       w,
       tethered: best.ring > 0,
+      m,
       dir: best.dir,
       ring: best.ring,
     });
@@ -360,7 +417,7 @@ function BeachLabels({
       {placements.map((p) => {
         const beach = byCode.get(p.code);
         if (!beach) return null;
-        const h = LABEL_HEIGHT + LABEL_PAD_Y;
+        const h = p.m.h;
         // A connector for labels pushed past the first ring, so a reader can
         // still tell which dot a displaced label belongs to.
         const tether = p.tethered
@@ -369,7 +426,9 @@ function BeachLabels({
         const icon = L.divIcon({
           className: "nb-map-label-icon",
           html:
-            `${tether}<span class="nb-map-label">${escapeHtml(p.text)}</span>`,
+            `${tether}<span class="nb-map-label" style="font-size:${p.m.fontSize}px;` +
+            `padding:${p.m.padY}px ${p.m.padX}px;line-height:${p.m.lineHeight}px">` +
+            `${escapeHtml(p.text)}</span>`,
           iconSize: [p.w, h],
           // iconAnchor is the icon point that sits on the marker's location, so
           // negating the offset puts the label's top-left at (dot + offset).
