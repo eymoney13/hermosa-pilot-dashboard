@@ -54,6 +54,12 @@ export interface FeatureFlags {
   // detail left to hide, so the forecast-accuracy panel stands on its own
   // instead of behind the "Behind the Prediction" disclosure.
   hideContributingFactors: boolean;
+  // Headline each site's forecast-accuracy panel with a percentage scored over
+  // every lab sample on record for that station, rather than only the "matched
+  // X of the last 7" line. Earns its place on a board whose sites have enough
+  // sampling history behind them for a percentage to mean something; on a young
+  // board it would read as precision the record cannot support.
+  siteAccuracyPercent: boolean;
   // Open the board on the Map even when the List tab is showing. Without this,
   // the List is the landing tab wherever it appears. For boards that want the
   // List available as a way to read the whole coast at once, but whose readers
@@ -72,6 +78,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   hideBeachTabs: false,
   forecastWindowFirst: false,
   hideContributingFactors: false,
+  siteAccuracyPercent: false,
   openOnMap: false,
 };
 
@@ -95,6 +102,10 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
   southbay: {
     listTab: true,
     openOnMap: true,
+    // Every station on this board has been sampled at least eleven times, and
+    // the two Manhattan/Hermosa stations 88 times each, so a per-site accuracy
+    // percentage rests on a real record rather than on a handful of samples.
+    siteAccuracyPercent: true,
   },
   cabrillo: {}, // plain Manhattan-style — all flags default off
   // Boston reads as a Good/Moderate/Poor board: its model ships its own

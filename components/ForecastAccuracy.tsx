@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, ChevronDown, Target, X } from "lucide-react";
 import {
   ACCURACY_MIN_SAMPLES,
+  accuracyPercent,
   EPA_MPN_THRESHOLD,
   formatMonthDayYear,
   riskTierLabel,
@@ -78,20 +79,37 @@ function SampleDetail({
 export default function ForecastAccuracy({
   accuracy,
   hidePercent,
+  showOverallPercent = false,
 }: {
   accuracy: Accuracy;
   hidePercent: boolean;
+  // Headline the panel with this site's accuracy over its whole sampling
+  // record, instead of describing only the last seven samples.
+  showOverallPercent?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const { windowSize, matches, samples } = accuracy;
+  const { windowSize, matches, samples, totalSamples } = accuracy;
   const selectedSample = samples.find((s) => s.date === selectedDate) ?? null;
-  const enough = windowSize >= ACCURACY_MIN_SAMPLES;
+  // Null unless the record is long enough to report a percentage, and only when
+  // the board asked for one — so this stays a single condition the whole
+  // component reads, rather than two that can drift apart.
+  const overallPct = showOverallPercent ? accuracyPercent(accuracy) : null;
+  const enough =
+    overallPct !== null || (!showOverallPercent && windowSize >= ACCURACY_MIN_SAMPLES);
   const misses = windowSize - matches;
 
-  const summaryLine = enough
-    ? `Matched lab results in ${matches} of ${windowSize} recent samples`
-    : "Not enough lab samples yet to report accuracy";
+  // On boards carrying the whole-record figure the title states it inline
+  // ("Forecast confidence: 86%") and the line beneath gives the size of the
+  // record behind it. Elsewhere the title is the bare label it has always been.
+  const title =
+    overallPct !== null ? `Forecast confidence: ${overallPct}%` : "Forecast accuracy";
+
+  const summaryLine = !enough
+    ? "Not enough lab samples yet to report accuracy"
+    : overallPct !== null
+    ? `Based on ${totalSamples.toLocaleString()} historical observations.`
+    : `Matched lab results in ${matches} of ${windowSize} recent samples`;
 
   // Primary signal for screen readers — never color alone.
   const stripAriaLabel = `${windowSize} recent lab samples: ${matches} matched the forecast, ${misses} did not.`;
@@ -111,9 +129,7 @@ export default function ForecastAccuracy({
             aria-hidden="true"
           />
           <span className="min-w-0">
-            <span className="block text-sm text-gray-700">
-              Forecast accuracy
-            </span>
+            <span className="block text-sm text-gray-700">{title}</span>
             <span className="block text-xs text-gray-500">{summaryLine}</span>
           </span>
         </span>
@@ -133,15 +149,30 @@ export default function ForecastAccuracy({
         <div className="overflow-hidden">
           {enough ? (
             <div className="px-3 pb-3 pt-1 space-y-3">
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Our daily forecast matched the official lab result in{" "}
-                <strong className="font-semibold text-gray-900">
-                  {matches} of the last {windowSize}
-                </strong>{" "}
-                samples.
-              </p>
+              {/* Nothing restating the headline here. The button above already
+                  carries the figure and the size of the record behind it, and
+                  the first thing an opened panel did was say both again. What
+                  the panel is for is the detail the header cannot hold: the
+                  recent samples, and what a match means. */}
+              {overallPct === null && (
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Our daily forecast matched the official lab result in{" "}
+                  <strong className="font-semibold text-gray-900">
+                    {matches} of the last {windowSize}
+                  </strong>{" "}
+                  samples.
+                </p>
+              )}
 
               <div>
+                {/* With a whole-record percentage above, the strip needs to say
+                    which samples it is — otherwise its seven dots read as the
+                    evidence for a figure scored over far more than seven. */}
+                {overallPct !== null && (
+                  <p className="mb-1.5 text-xs text-gray-500">
+                    The {windowSize} most recent samples
+                  </p>
+                )}
                 <div
                   role="group"
                   aria-label={stripAriaLabel}
