@@ -591,6 +591,7 @@ export default function BeachCard({
           accuracy={beach.accuracy}
           hidePercent={features.hidePercentSign}
           hideContributingFactors={features.hideContributingFactors}
+          showAccuracyPercent={features.siteAccuracyPercent}
         />
       </div>
     </div>

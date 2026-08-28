@@ -272,6 +272,20 @@ export interface Accuracy {
   windowSize: number; // number of samples scored (= samples.length)
   matches: number; // how many of them matched
   samples: AccuracySample[]; // chronological, oldest → newest
+  // The same scoring run over EVERY paired lab sample on record for this
+  // station, not just the last ACCURACY_WINDOW. The dot strip stays short
+  // because a reader can only take in so many dots; the site's headline
+  // accuracy percentage is drawn from the full record, where one miss doesn't
+  // swing the figure fourteen points.
+  totalSamples: number; // every scored sample on record
+  totalMatches: number; // how many of those matched
+}
+
+// A site's accuracy as a whole percent, or null when there are too few samples
+// to report one. Rounded for display only — never re-derive matches from it.
+export function accuracyPercent(accuracy: Accuracy): number | null {
+  if (accuracy.totalSamples < ACCURACY_MIN_SAMPLES) return null;
+  return Math.round((accuracy.totalMatches / accuracy.totalSamples) * 100);
 }
 
 // Which way a contributing factor pushed the model's risk estimate. Published
@@ -508,14 +522,15 @@ export function computeAccuracy(
   threshold: number,
   windowN: number = ACCURACY_WINDOW
 ): Accuracy {
-  // rawSamples arrive chronological (oldest → newest); score the last N.
-  const recent = rawSamples.slice(-windowN);
   // Classify on the same rounded percent the dashboard displays (see
   // statusFromProb), never the raw fraction. Otherwise a probability like 0.497
   // shows on screen as "50% — Not recommended" but scores as "predicted safe",
   // so a genuine miss reads as "Matched".
   const thresholdPct = Math.round(threshold * 100);
-  const samples: AccuracySample[] = recent.map((s) => {
+  // Score every sample on record, then take the last N for the dot strip — one
+  // scoring rule, so the site's percentage and its recent dots can never
+  // disagree about whether a given day matched.
+  const scored: AccuracySample[] = rawSamples.map((s) => {
     const predictedExceedance = Math.round(s.excProbability * 100);
     const predictedUnsafe = predictedExceedance >= thresholdPct;
     const actualUnsafe = s.labMpn > EPA_MPN_THRESHOLD;
@@ -527,8 +542,16 @@ export function computeAccuracy(
       match: predictedUnsafe === actualUnsafe,
     };
   });
+  // rawSamples arrive chronological (oldest → newest); the strip shows the last N.
+  const samples = scored.slice(-windowN);
   const matches = samples.filter((s) => s.match).length;
-  return { windowSize: samples.length, matches, samples };
+  return {
+    windowSize: samples.length,
+    matches,
+    samples,
+    totalSamples: scored.length,
+    totalMatches: scored.filter((s) => s.match).length,
+  };
 }
 
 export function formatLongDate(iso: string): string {

@@ -44,6 +44,7 @@ export default function WhyPrediction({
   accuracy,
   hidePercent,
   hideContributingFactors = false,
+  showAccuracyPercent = false,
 }: {
   factors: string[];
   insight: string;
@@ -51,6 +52,9 @@ export default function WhyPrediction({
   predictionDate: string;
   accuracy: Accuracy;
   hidePercent: boolean;
+  // Passed straight through: whether the accuracy panel leads with this site's
+  // whole-record percentage (see FeatureFlags.siteAccuracyPercent).
+  showAccuracyPercent?: boolean;
   // Boards whose written summary already explains the drivers in prose, where a
   // ranked list of the same feature names underneath adds nothing.
   hideContributingFactors?: boolean;
@@ -68,7 +72,11 @@ export default function WhyPrediction({
   if (hideContributingFactors && !insight) {
     return (
       <div className="border-t border-gray-100 pt-6">
-        <ForecastAccuracy accuracy={accuracy} hidePercent={hidePercent} />
+        <ForecastAccuracy
+          accuracy={accuracy}
+          hidePercent={hidePercent}
+          showOverallPercent={showAccuracyPercent}
+        />
       </div>
     );
   }
@@ -135,7 +143,11 @@ export default function WhyPrediction({
               </div>
             )}
 
-            <ForecastAccuracy accuracy={accuracy} hidePercent={hidePercent} />
+            <ForecastAccuracy
+          accuracy={accuracy}
+          hidePercent={hidePercent}
+          showOverallPercent={showAccuracyPercent}
+        />
           </div>
         </div>
       </div>
