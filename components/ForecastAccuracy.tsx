@@ -89,7 +89,7 @@ export default function ForecastAccuracy({
 }) {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const { windowSize, matches, samples, totalSamples, totalMatches } = accuracy;
+  const { windowSize, matches, samples, totalSamples } = accuracy;
   const selectedSample = samples.find((s) => s.date === selectedDate) ?? null;
   // Null unless the record is long enough to report a percentage, and only when
   // the board asked for one — so this stays a single condition the whole
@@ -99,10 +99,16 @@ export default function ForecastAccuracy({
     overallPct !== null || (!showOverallPercent && windowSize >= ACCURACY_MIN_SAMPLES);
   const misses = windowSize - matches;
 
+  // On boards carrying the whole-record figure the title states it inline
+  // ("Forecast confidence: 86%") and the line beneath gives the size of the
+  // record behind it. Elsewhere the title is the bare label it has always been.
+  const title =
+    overallPct !== null ? `Forecast confidence: ${overallPct}%` : "Forecast accuracy";
+
   const summaryLine = !enough
     ? "Not enough lab samples yet to report accuracy"
     : overallPct !== null
-    ? `Matched ${totalMatches} of ${totalSamples} lab samples at this site`
+    ? `Based on ${totalSamples.toLocaleString()} historical observations.`
     : `Matched lab results in ${matches} of ${windowSize} recent samples`;
 
   // Primary signal for screen readers — never color alone.
@@ -123,32 +129,15 @@ export default function ForecastAccuracy({
             aria-hidden="true"
           />
           <span className="min-w-0">
-            <span className="block text-sm text-gray-700">
-              Forecast accuracy
-            </span>
+            <span className="block text-sm text-gray-700">{title}</span>
             <span className="block text-xs text-gray-500">{summaryLine}</span>
           </span>
         </span>
-        <span className="flex shrink-0 items-center gap-2">
-          {/* The site's headline figure, readable without opening the panel —
-              the one number a reader wants from this card. Always carries its
-              "%" sign: hidePercent governs exceedance readings, which are what
-              that board renders as a bare index, and an accuracy score is a
-              different quantity that would be unreadable without it. */}
-          {overallPct !== null && (
-            <span
-              className="text-base font-semibold tabular-nums text-gray-900"
-              aria-hidden="true"
-            >
-              {overallPct}%
-            </span>
-          )}
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${
-              open ? "rotate-180" : ""
-            }`}
-          />
-        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
       </button>
 
       <div
@@ -160,19 +149,12 @@ export default function ForecastAccuracy({
         <div className="overflow-hidden">
           {enough ? (
             <div className="px-3 pb-3 pt-1 space-y-3">
-              {overallPct !== null ? (
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  Our daily forecast matched the official lab result in{" "}
-                  <strong className="font-semibold text-gray-900">
-                    {totalMatches} of the {totalSamples} samples
-                  </strong>{" "}
-                  taken at this beach —{" "}
-                  <strong className="font-semibold text-gray-900">
-                    {overallPct}% accurate
-                  </strong>
-                  .
-                </p>
-              ) : (
+              {/* Nothing restating the headline here. The button above already
+                  carries the figure and the size of the record behind it, and
+                  the first thing an opened panel did was say both again. What
+                  the panel is for is the detail the header cannot hold: the
+                  recent samples, and what a match means. */}
+              {overallPct === null && (
                 <p className="text-sm text-gray-700 leading-relaxed">
                   Our daily forecast matched the official lab result in{" "}
                   <strong className="font-semibold text-gray-900">
