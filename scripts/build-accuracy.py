@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Build public/data/<city>/accuracy.csv from project-neptune's
-mpn_comparison_all_beaches.csv.
+mpn_comparison_all_beaches.csv, optionally extended with a backfilled record.
 
 Emits one row per lab sample — a date where a real Actual_MPN was measured —
 carrying the model's exceedance probability for that date. The dashboard then
@@ -12,6 +12,27 @@ threshold the dashboard uses for its risk language.
 Mirrors build-history.py's env interface: BEACH_FILTER selects the stations and
 ACCURACY_OUTPUT_DIR chooses where accuracy.csv lands, so the daily-refresh
 workflow can invoke it once per city.
+
+TWO SOURCES
+-----------
+mpn_comparison_all_beaches.csv is stitched from the daily snapshots in
+outputs/nowcast_history/, so it reaches back only as far as a station has been
+publishing — mid-April 2026 for most of South Bay. That is a truthful record of
+what the dashboard actually showed, but far too short a window to say how a site
+performs: it covers one clean summer and nothing else.
+
+ACCURACY_BACKFILL_FILE (optional) names a second source covering the years
+before the snapshots begin — project-neptune's
+outputs/southbay/backfill_predictions_2024on.csv, which re-scores every lab
+sample from 2024-01-01 using the shipped model. That date is train_model.py's
+temporal split, so every backfilled sample is held-out data the model never
+trained on. Its one compromise is feature vintage: it reads the archival values
+in modeling_dataset.csv rather than whatever had arrived by that morning, which
+makes it mildly optimistic against the live record.
+
+Where both sources carry the same (station, date), the LIVE row wins — a
+prediction the dashboard genuinely published outranks a reconstruction of one.
+Leave ACCURACY_BACKFILL_FILE unset and this script behaves exactly as before.
 """
 
 from __future__ import annotations
@@ -37,6 +58,11 @@ SOURCE_FILE = _path_from_env(
     / "outputs"
     / "mpn_comparison_all_beaches.csv",
 )
+# Optional. Unset (the default) means live snapshots only — the behavior every
+# city had before this existed.
+_BACKFILL_RAW = os.environ.get("ACCURACY_BACKFILL_FILE", "").strip()
+BACKFILL_FILE = Path(_BACKFILL_RAW).expanduser() if _BACKFILL_RAW else None
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_FILE = (
     _path_from_env("ACCURACY_OUTPUT_DIR", PROJECT_ROOT / "public" / "data")
@@ -64,15 +90,61 @@ def _to_float(raw: str | None) -> float | None:
         return None
 
 
+def _row(code: str, date: str, prob_fraction: float, actual: float) -> dict[str, str]:
+    return {
+        "StationCode": code,
+        "date": date,
+        "exc_probability": f"{prob_fraction:.4f}",
+        "actual_mpn": f"{actual:g}",
+    }
+
+
+def _read_backfill(path: Path) -> dict[tuple[str, str], dict[str, str]]:
+    """Backfilled samples keyed by (station, date).
+
+    Column names are the backfill's own: `ENT_mpn` for the lab result and an
+    `exc_probability` already expressed as a fraction — unlike the live
+    comparison file, which carries a percent.
+    """
+    rows: dict[tuple[str, str], dict[str, str]] = {}
+    with path.open(newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            code = (row.get("StationCode") or "").strip()
+            if code not in WANTED_STATIONS:
+                continue
+            date = (row.get("date") or "").strip()
+            actual = _to_float(row.get("ENT_mpn"))
+            prob = _to_float(row.get("exc_probability"))
+            if not date or actual is None or prob is None:
+                continue
+            rows[(code, date)] = _row(code, date, prob, actual)
+    return rows
+
+
 def main() -> int:
     print(f"SOURCE_FILE: {SOURCE_FILE}")
+    print(f"BACKFILL_FILE: {BACKFILL_FILE or '(none)'}")
     print(f"OUTPUT_FILE: {OUTPUT_FILE}")
 
     if not SOURCE_FILE.is_file():
         print(f"Source file not found: {SOURCE_FILE}", file=sys.stderr)
         return 1
 
-    out_rows: list[dict[str, str]] = []
+    # Seed with the backfill so the live rows below can overwrite it key-for-key.
+    # A missing backfill file is fatal rather than skipped: it was asked for by
+    # name, and silently publishing a four-month accuracy figure where a
+    # multi-year one was intended is the failure this is most likely to cause.
+    merged: dict[tuple[str, str], dict[str, str]] = {}
+    if BACKFILL_FILE is not None:
+        if not BACKFILL_FILE.is_file():
+            print(f"Backfill file not found: {BACKFILL_FILE}", file=sys.stderr)
+            return 1
+        merged = _read_backfill(BACKFILL_FILE)
+        print(f"Backfill contributed {len(merged)} samples.")
+
+    backfilled_keys = set(merged)
+    live_count = 0
+    superseded = 0
     with SOURCE_FILE.open(newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             code = (row.get("StationCode") or "").strip()
@@ -84,16 +156,19 @@ def main() -> int:
             # Only dates with a real lab result are scorable samples.
             if not date or actual is None or prob is None:
                 continue
-            out_rows.append(
-                {
-                    "StationCode": code,
-                    "date": date,
-                    "exc_probability": f"{prob / 100:.4f}",
-                    "actual_mpn": f"{actual:g}",
-                }
-            )
+            key = (code, date)
+            if key in backfilled_keys:
+                superseded += 1
+            merged[key] = _row(code, date, prob / 100, actual)
+            live_count += 1
 
-    out_rows.sort(key=lambda r: (r["StationCode"], r["date"]))
+    if BACKFILL_FILE is not None:
+        print(
+            f"Live source contributed {live_count} samples "
+            f"({superseded} of which superseded a backfilled row)."
+        )
+
+    out_rows = sorted(merged.values(), key=lambda r: (r["StationCode"], r["date"]))
 
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     with OUTPUT_FILE.open("w", newline="", encoding="utf-8") as f:
