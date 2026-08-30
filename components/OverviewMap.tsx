@@ -4,6 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
+import {
+  BASEMAP_ATTRIBUTION,
+  BASEMAP_MAX_ZOOM,
+  BASEMAP_SUBDOMAINS,
+  BASEMAP_URL,
+} from "@/lib/basemap";
 
 function colorFor(status: BeachData["status"]) {
   if (status === "Not recommended") return "#cc3333";
@@ -499,10 +505,10 @@ export default function OverviewMap({
       style={{ height: "100%", width: "100%" }}
     >
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        subdomains="abcd"
-        maxZoom={19}
+        url={BASEMAP_URL}
+        attribution={BASEMAP_ATTRIBUTION}
+        subdomains={BASEMAP_SUBDOMAINS}
+        maxZoom={BASEMAP_MAX_ZOOM}
       />
       <FitAll beaches={beaches} />
       {beaches.map((b) => (
