@@ -92,24 +92,19 @@ export default function BeachAlertSignup({
   return (
     <>
       <div className="mx-auto w-full max-w-6xl px-6 sm:px-10 pt-2 pb-8">
-        <div className="flex flex-col items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-800">
-              Don&apos;t check every day.
-            </p>
-            <p className="mt-0.5 text-sm text-slate-500">
-              We&apos;ll tell you when the beaches you swim at are forecast to
-              have elevated bacteria levels.
-            </p>
-          </div>
+        <div className="flex flex-col items-center gap-5 rounded-lg border border-gray-200 bg-gray-50 px-6 py-8 text-center">
+          <p className="max-w-2xl text-lg text-slate-600 sm:text-xl">
+            We&apos;ll tell you when the beaches you swim at are forecast to
+            have elevated bacteria levels.
+          </p>
           <button
             ref={triggerRef}
             type="button"
             onClick={openDialog}
             aria-haspopup="dialog"
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#2C8487] px-4 py-2.5 text-left text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#236a6c] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2C8487] focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-2.5 rounded-full bg-[#2C8487] px-6 py-3 text-base font-medium text-white shadow-sm transition-colors hover:bg-[#236a6c] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2C8487] focus-visible:ring-offset-2 sm:text-lg"
           >
-            <Mail className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <Mail className="h-5 w-5 shrink-0" aria-hidden="true" />
             Email me when my beach has elevated bacteria levels
           </button>
         </div>
