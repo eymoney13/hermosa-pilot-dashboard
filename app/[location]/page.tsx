@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import DashboardTabs from "@/components/DashboardTabs";
 import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
-import SurveyButton from "@/components/SurveyButton";
+import BeachAlertSignup from "@/components/BeachAlertSignup";
 import { loadDashboardData } from "@/lib/loadData";
+import { isAlertsConfigured } from "@/lib/alerts";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
 import { featuresFor } from "@/lib/features";
 import {
@@ -50,6 +51,9 @@ export default async function LocationPage({
   if (!config) notFound();
 
   const features = featuresFor(location);
+  // A signup form we cannot record anything from is worse than no form, so the
+  // card hides itself when the database isn't wired up (see lib/alerts.ts).
+  const alertsEnabled = features.beachAlerts && isAlertsConfigured();
   const newsEnabled = isNewsEnabled();
   const newsFilterTerms = resolveNewsFilterTerms(
     config.slug,
@@ -127,6 +131,13 @@ export default async function LocationPage({
         </div>
       )}
 
+      {alertsEnabled && beaches.length > 0 && (
+        <BeachAlertSignup
+          beaches={beaches.map((b) => ({ code: b.code, name: b.name }))}
+          location={config.slug}
+        />
+      )}
+
       <footer className="w-full py-10">
         <div className="mx-auto max-w-6xl px-6 sm:px-10 text-xs text-gray-400">
           Forecasts are estimates based on environmental data. For official
@@ -142,8 +153,6 @@ export default async function LocationPage({
           .
         </div>
       </footer>
-
-      <SurveyButton />
     </main>
   );
 }
