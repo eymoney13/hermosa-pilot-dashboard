@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import DashboardTabs from "@/components/DashboardTabs";
 import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
-import SurveyButton from "@/components/SurveyButton";
 import BeachAlertSignup from "@/components/BeachAlertSignup";
 import { loadDashboardData } from "@/lib/loadData";
 import { isAlertsConfigured } from "@/lib/alerts";
@@ -154,8 +153,6 @@ export default async function LocationPage({
           .
         </div>
       </footer>
-
-      <SurveyButton />
     </main>
   );
 }

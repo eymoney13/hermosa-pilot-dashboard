@@ -14,9 +14,6 @@ export interface AlertBeach {
 // on it with a checkbox, plus an address field; submitting records the
 // selection (see lib/alerts.ts). Nothing is sent from here — this is the
 // signup half.
-//
-// The dialog is modeled on SurveyButton's: same scrim, same Escape/scroll-lock/
-// focus handling, so the two overlays on the board behave identically.
 export default function BeachAlertSignup({
   beaches,
   location,
