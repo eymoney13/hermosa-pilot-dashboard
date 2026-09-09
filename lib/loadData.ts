@@ -536,3 +536,13 @@ export async function loadDashboardData(
 
   return { beaches, predictionDate };
 }
+
+// The station codes a location currently renders — the same roster
+// loadDashboardData drives the board off. Exported so a server action can check
+// a submitted station list against the live board instead of trusting the
+// client's copy of it.
+export async function loadStationCodes(
+  config: LocationConfig
+): Promise<string[]> {
+  return (await resolveRoster(config)).map((b) => b.code);
+}

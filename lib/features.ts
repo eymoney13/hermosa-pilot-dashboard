@@ -65,6 +65,12 @@ export interface FeatureFlags {
   // List available as a way to read the whole coast at once, but whose readers
   // arrive asking "which of these is near me" first.
   openOnMap: boolean;
+  // Offer email alerts: a signup card below the board where a reader picks the
+  // beaches they care about and leaves an address, so they hear when one comes
+  // back elevated instead of having to check. Needs a database to write to
+  // (DATABASE_URL) — without one the card hides itself rather than taking a
+  // signup it cannot keep. See lib/alerts.ts.
+  beachAlerts: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -80,6 +86,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   hideContributingFactors: false,
   siteAccuracyPercent: false,
   openOnMap: false,
+  beachAlerts: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
@@ -106,6 +113,10 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
     // the two Manhattan/Hermosa stations 88 times each, so a per-site accuracy
     // percentage rests on a real record rather than on a handful of samples.
     siteAccuracyPercent: true,
+    // Eight beaches spread over 14 km of coast: most readers care about one or
+    // two of them and have no reason to open the board on the days those are
+    // fine. Alerts are how they hear about the days they are not.
+    beachAlerts: true,
   },
   cabrillo: {}, // plain Manhattan-style — all flags default off
   // Boston reads as a Good/Moderate/Poor board: its model ships its own
