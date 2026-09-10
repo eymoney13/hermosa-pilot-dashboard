@@ -14,8 +14,13 @@ import { composeAlertEmail, type AlertedBeach } from "./alertMail";
 //
 //  1. ONLY "Not recommended" (the 50%+ tier) counts as elevated. The yellow
 //     "Slightly elevated" tier fires far too often to stay meaningful.
-//  2. A beach is only worth an email the day it BECOMES elevated. Staying
-//     elevated for a week is one email, not seven (see isNewlyElevated).
+//  2. A beach elevated today is worth an email today, whether or not it was
+//     elevated yesterday. This is a daily "is my beach safe this morning"
+//     read, not a notification about a change of state: someone deciding
+//     whether to swim needs telling on day three of a bad stretch as much as
+//     on day one. What stops it becoming repetitive is the dedupe below, which
+//     is keyed on the PREDICTION DATE - so a stretch sends one email per day,
+//     and re-running a day's refresh sends nothing extra.
 //  3. A subscriber gets ONE email covering all of their elevated beaches, not
 //     one per beach.
 
@@ -48,7 +53,6 @@ export interface SendSummary {
   location: string;
   predictionDate: string | null;
   elevated: string[]; // station codes elevated today
-  newlyElevated: string[]; // ...of those, the ones that just crossed over
   recipients: number;
   sent: number;
   failed: number;
@@ -67,22 +71,6 @@ function db() {
 
 export function isAlertSendingConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL && process.env.GMAIL_APP_PASSWORD);
-}
-
-/**
- * Did this beach just cross into "Not recommended", or was it already there?
- *
- * Read off the day before this run in the beach's own history, which the board
- * already loads. A beach with no history behind it counts as newly elevated:
- * on a board's first run everything is new, and staying quiet then would mean
- * the alerts never start.
- */
-export function isNewlyElevated(beach: BeachData): boolean {
-  if (beach.status !== "Not recommended") return false;
-  // pastDays is chronological, so the last entry is the day before today's run.
-  const yesterday = beach.pastDays.at(-1);
-  if (!yesterday) return true;
-  return yesterday.status !== "Not recommended";
 }
 
 // One SMTP connection reused across a run, rather than a fresh handshake per
@@ -152,7 +140,6 @@ export async function sendAlertsForLocation(
     location: config.slug,
     predictionDate: null,
     elevated: [],
-    newlyElevated: [],
     recipients: 0,
     sent: 0,
     failed: 0,
@@ -175,14 +162,12 @@ export async function sendAlertsForLocation(
   const elevated = beaches.filter((b) => b.status === "Not recommended");
   base.elevated = elevated.map((b) => b.code);
 
-  const newly = elevated.filter(isNewlyElevated);
-  base.newlyElevated = newly.map((b) => b.code);
-  if (newly.length === 0) return base;
+  if (elevated.length === 0) return base;
 
   const sql = db();
-  const codes = newly.map((b) => b.code);
+  const codes = elevated.map((b) => b.code);
 
-  // Everyone subscribed to at least one newly elevated beach here, and which of
+  // Everyone subscribed to at least one elevated beach here, and which of
   // those beaches they have NOT already been told about for this date. The
   // date check is what makes a second run of the job on the same day a no-op.
   const rows = await sql`
@@ -214,7 +199,7 @@ export async function sendAlertsForLocation(
   }
   base.recipients = bySubscriber.size;
 
-  const beachByCode = new Map(newly.map((b) => [b.code, b]));
+  const beachByCode = new Map(elevated.map((b) => [b.code, b]));
 
   for (const [subscriberId, entry] of bySubscriber) {
     const alerted: AlertedBeach[] = entry.stations
@@ -245,7 +230,7 @@ export async function sendAlertsForLocation(
 
     if (dryRun) {
       // Everything above this line is the real thing: the roster read, the
-      // staleness check, the newly-elevated rule and the join that excludes
+      // staleness check, the elevated-tier rule and the join that excludes
       // anyone already told. Only the two actions with consequences are
       // skipped - the send, and the alert_notifications write below. Recording
       // a rehearsal would mark people as notified and silently cancel the real

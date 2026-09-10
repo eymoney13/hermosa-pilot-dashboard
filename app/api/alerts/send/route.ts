@@ -21,7 +21,7 @@ import { isAlertSendingConfigured, sendAllAlerts } from "@/lib/alertSend";
 //     limited to one run per day, so this cannot poll for late data - which is
 //     exactly why path 1 is the primary.
 //
-// A run where no beach newly crossed sends nothing, and a run where the day's
+// A run where no beach is elevated sends nothing, and a run where the day's
 // predictions have not been published yet sends nothing and waits. There is no
 // catch-up: yesterday's exceedance is not mailed out today.
 
