@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   }
 
   if (!isAlertSendingConfigured()) {
-    console.error("[cron/alerts] DATABASE_URL or RESEND_API_KEY not configured");
+    console.error("[cron/alerts] DATABASE_URL or GMAIL_APP_PASSWORD not configured");
     return new Response("Alert sending is not configured", { status: 500 });
   }
 

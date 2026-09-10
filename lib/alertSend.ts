@@ -1,4 +1,5 @@
 import "server-only";
+import nodemailer, { type Transporter } from "nodemailer";
 import { neon } from "@neondatabase/serverless";
 import { LOCATIONS, type BeachData, type LocationConfig } from "./data";
 import { featuresFor } from "./features";
@@ -21,9 +22,15 @@ import { composeAlertEmail, type AlertedBeach } from "./alertMail";
 // Where the unsubscribe links point.
 const SITE_ORIGIN = "https://dashboard.projectneptune.co";
 
-const FROM = "Project Neptune <alerts@projectneptune.co>";
-// Replies reach a person rather than a send-only mailbox nobody reads.
-const REPLY_TO = "ethan@projectneptune.co";
+// Sent through the Google Workspace mailbox that already owns this domain, so
+// no new DNS is needed - Google's own SPF and DKIM already cover it.
+//
+// Google will only accept a From that is the authenticated account itself or an
+// alias verified under Gmail's "Send mail as", which is why this is ethan@ and
+// not alerts@. Adding alerts@ as a Workspace alias and verifying it in Gmail is
+// all it would take to change this one line.
+const GMAIL_USER = process.env.GMAIL_USER ?? "ethan@projectneptune.co";
+const FROM = `Project Neptune <${GMAIL_USER}>`;
 
 export interface SendSummary {
   location: string;
@@ -43,7 +50,7 @@ function db() {
 }
 
 export function isAlertSendingConfigured(): boolean {
-  return Boolean(process.env.DATABASE_URL && process.env.RESEND_API_KEY);
+  return Boolean(process.env.DATABASE_URL && process.env.GMAIL_APP_PASSWORD);
 }
 
 /**
@@ -62,7 +69,27 @@ export function isNewlyElevated(beach: BeachData): boolean {
   return yesterday.status !== "Not recommended";
 }
 
-// Send one message through Resend. Returns true when Resend accepted it.
+// One SMTP connection reused across a run, rather than a fresh handshake per
+// recipient. Built lazily so importing this module never opens a socket.
+let transport: Transporter | null = null;
+
+function mailer(): Transporter {
+  if (transport) return transport;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!pass) throw new Error("GMAIL_APP_PASSWORD is not configured");
+  transport = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: GMAIL_USER,
+      // A Google app password, not the account password. Shown with spaces in
+      // Google's UI and pasted that way often enough to be worth stripping.
+      pass: pass.replace(/\s+/g, ""),
+    },
+  });
+  return transport;
+}
+
+// Send one message. Returns true when the SMTP server accepted it.
 async function sendEmail(
   to: string,
   subject: string,
@@ -70,32 +97,25 @@ async function sendEmail(
   text: string,
   oneClickUrl: string
 ): Promise<boolean> {
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  try {
+    await mailer().sendMail({
       from: FROM,
-      reply_to: REPLY_TO,
-      to: [to],
+      to,
       subject,
       html,
       text,
-      // Gmail and Outlook render their own one-click unsubscribe from these,
-      // which is what keeps a list off the spam-complaint path. RFC 8058.
       headers: {
+        // Gmail and Outlook render their own one-click unsubscribe from these,
+        // which is what keeps a list off the spam-complaint path. RFC 8058.
         "List-Unsubscribe": `<${oneClickUrl}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
       },
-    }),
-  });
-  if (!res.ok) {
-    console.error("[alerts/send] resend rejected", res.status, await res.text());
+    });
+    return true;
+  } catch (err) {
+    console.error("[alerts/send] smtp rejected", err);
     return false;
   }
-  return true;
 }
 
 /**
@@ -211,7 +231,7 @@ export async function sendAlertsForLocation(
     }
     base.sent += 1;
 
-    // Recorded only after Resend accepts it, so a failed send is retried by the
+    // Recorded only after the mail server accepts it, so a failed send is retried by the
     // next run rather than being silently marked as delivered.
     for (const code of entry.stations) {
       await sql`
