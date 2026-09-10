@@ -15,6 +15,14 @@ import { formatMonthDayYear, type Status } from "./data";
 // The dashboard a "see the full forecast" link points at.
 const SITE_ORIGIN = "https://dashboard.projectneptune.co";
 
+// LA County's per-beach grade listing. Note this is NOT the same page as the
+// advisory link in the site footer (which points at the press-release feed);
+// this one lands a reader on the official grade for the beach they just read
+// about, which is what someone holding an alert actually wants.
+const ADVISORY_URL =
+  "http://publichealth.lacounty.gov/phcommon/public/eh/water_quality/beach_grades.cfm";
+const ADVISORY_LABEL = "LA County Department of Public Health";
+
 // One beach worth telling somebody about.
 export interface AlertedBeach {
   code: string;
@@ -70,8 +78,8 @@ export function composeAlertEmail(
   const boardUrl = `${SITE_ORIGIN}/${locationPath}`;
   const lead =
     beaches.length === 1
-      ? `Our forecast for ${when} puts one of the beaches you follow above the level where we would not recommend swimming.`
-      : `Our forecast for ${when} puts ${beaches.length} of the beaches you follow above the level where we would not recommend swimming.`;
+      ? `Our forecast for ${when} predicts one of the beaches you follow may have high levels of bacteria.`
+      : `Our forecast for ${when} predicts ${beaches.length} of the beaches you follow may have high levels of bacteria.`;
 
   const rows = beaches
     .map(
@@ -86,20 +94,20 @@ export function composeAlertEmail(
 <html>
 <body style="margin:0;padding:24px;background:#f6f7f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;padding:28px;">
-    <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#2C8487;letter-spacing:.02em;">PROJECT NEPTUNE</p>
-    <h1 style="margin:0 0 14px;font-size:20px;line-height:1.3;color:#0f172a;">Elevated bacteria forecast</h1>
+    <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#2C8487;letter-spacing:.02em;">PROJECT NEPTUNE (The Neptune Index)</p>
+    <h1 style="margin:0 0 14px;font-size:20px;line-height:1.3;color:#0f172a;">Beach Water Quality</h1>
     <p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:#475569;">${esc(lead)}</p>
     <table style="width:100%;border-collapse:collapse;margin:0 0 20px;">
 ${rows}
     </table>
     <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#475569;">
-      The percentage is our estimated chance that bacteria exceed the EPA safe-swimming limit. It is a forecast, not a measurement.
+      The percentage is our estimated chance that bacteria exceed the EPA safe-swimming limit. It is a forecast, not an actual test result.
     </p>
     <a href="${esc(boardUrl)}" style="display:inline-block;background:#2C8487;color:#ffffff;text-decoration:none;font-size:15px;font-weight:500;padding:11px 20px;border-radius:6px;">See the full forecast</a>
     <p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #eee;font-size:12px;line-height:1.6;color:#94a3b8;">
-      You asked us to email you when these beaches show elevated bacteria levels.
+      You receive these alerts when these beaches show elevated bacteria levels.
       For official beach advisories, consult the
-      <a href="http://publichealth.lacounty.gov/phcommon/public/media/mediapubOdisplay.cfm" style="color:#94a3b8;">LA County Department of Public Health</a>.
+      <a href="${ADVISORY_URL}" style="color:#94a3b8;">${ADVISORY_LABEL}</a>.
       <br><br>
       <a href="${esc(unsubscribeUrl)}" style="color:#94a3b8;">Unsubscribe</a>
     </p>
@@ -108,22 +116,22 @@ ${rows}
 </html>`;
 
   const text = [
-    "PROJECT NEPTUNE",
-    "Elevated bacteria forecast",
+    "PROJECT NEPTUNE (The Neptune Index)",
+    "Beach Water Quality",
     "",
     lead,
     "",
     ...beaches.map((b) => `  ${b.name}: ${pct(b.probability)}%`),
     "",
     "The percentage is our estimated chance that bacteria exceed the EPA",
-    "safe-swimming limit. It is a forecast, not a measurement.",
+    "safe-swimming limit. It is a forecast, not an actual test result.",
     "",
     `See the full forecast: ${boardUrl}`,
     "",
     "---",
-    "You asked us to email you when these beaches show elevated bacteria",
-    "levels. For official beach advisories, consult the LA County Department",
-    "of Public Health.",
+    "You receive these alerts when these beaches show elevated bacteria",
+    `levels. For official beach advisories, consult the ${ADVISORY_LABEL}:`,
+    ADVISORY_URL,
     "",
     `Unsubscribe: ${unsubscribeUrl}`,
   ].join("\n");
