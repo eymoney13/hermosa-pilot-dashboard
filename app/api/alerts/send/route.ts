@@ -52,14 +52,28 @@ export async function GET(request: Request) {
     return new Response("Alert sending is not configured", { status: 500 });
   }
 
+  // A rehearsal: run the whole selection and report who WOULD be mailed,
+  // without sending or recording anything. Stays behind the same auth as a
+  // real run, because the response names subscribers.
+  //
+  // Note the workflow that triggers this must never pass it: a dry-run
+  // response looks like a successful run to a caller checking for results, so
+  // a dry-run URL in the workflow would report success while sending nothing.
+  const params = new URL(request.url).searchParams;
+  const dryRunParam = params.get("dryRun");
+  const dryRun = dryRunParam === "1" || dryRunParam === "true";
+
   const today = todayUtc();
   try {
-    const results = await sendAllAlerts(today);
+    const results = await sendAllAlerts(today, dryRun);
     // Surfaces in Vercel function logs, so a morning with no mail can be told
     // apart from a morning the job never ran.
-    console.log("[cron/alerts]", JSON.stringify({ today, results }));
+    console.log("[cron/alerts]", JSON.stringify({ today, dryRun, results }));
     const failed = results.reduce((n, r) => n + r.failed, 0);
-    return Response.json({ today, results }, { status: failed > 0 ? 502 : 200 });
+    return Response.json(
+      { today, dryRun, results },
+      { status: failed > 0 ? 502 : 200 }
+    );
   } catch (err) {
     console.error("[cron/alerts] run failed", err);
     return new Response("Alert run failed", { status: 500 });

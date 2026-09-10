@@ -41,6 +41,11 @@ function pct(probability: number): number {
   return Math.round(probability * 100);
 }
 
+// Every beach in an alert is there because it crossed into the top tier, so the
+// reading is always "High" - it is a label for the number beside it, not a
+// varying grade. If a lower tier ever becomes mailable this has to become
+// conditional, or it will call a 31% beach High.
+
 // Escape anything interpolated into the HTML body. Beach names come from our
 // own config today, but this function must stay safe if a name ever arrives
 // from a backend-published roster file.
@@ -85,7 +90,7 @@ export function composeAlertEmail(
     .map(
       (b) => `      <tr>
         <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:15px;color:#0f172a;">${esc(b.name)}</td>
-        <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:15px;color:#7A1F1F;font-weight:600;text-align:right;white-space:nowrap;">${pct(b.probability)}%</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:15px;color:#7A1F1F;font-weight:600;text-align:right;white-space:nowrap;">High ${pct(b.probability)}%</td>
       </tr>`
     )
     .join("\n");
@@ -121,7 +126,7 @@ ${rows}
     "",
     lead,
     "",
-    ...beaches.map((b) => `  ${b.name}: ${pct(b.probability)}%`),
+    ...beaches.map((b) => `  ${b.name}: High ${pct(b.probability)}%`),
     "",
     "The percentage is our estimated chance that bacteria exceed the EPA",
     "safe-swimming limit. It is a forecast, not an actual test result.",

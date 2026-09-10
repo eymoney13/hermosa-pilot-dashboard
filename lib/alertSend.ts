@@ -53,6 +53,10 @@ export interface SendSummary {
   sent: number;
   failed: number;
   skipped?: string; // set when the location was skipped, with the reason
+  // Set on a rehearsal. `sent` stays 0 and wouldNotify carries who a real run
+  // would have mailed, so a dry run can never be mistaken for a send.
+  dryRun?: boolean;
+  wouldNotify?: { email: string; stations: string[] }[];
 }
 
 function db() {
@@ -141,7 +145,8 @@ async function sendEmail(
  */
 export async function sendAlertsForLocation(
   config: LocationConfig,
-  today: string
+  today: string,
+  dryRun = false
 ): Promise<SendSummary> {
   const base: SendSummary = {
     location: config.slug,
@@ -151,6 +156,7 @@ export async function sendAlertsForLocation(
     recipients: 0,
     sent: 0,
     failed: 0,
+    ...(dryRun ? { dryRun: true, wouldNotify: [] } : {}),
   };
 
   const { beaches, predictionDate } = await loadDashboardData(config);
@@ -237,6 +243,17 @@ export async function sendAlertsForLocation(
       unsubscribeUrl
     );
 
+    if (dryRun) {
+      // Everything above this line is the real thing: the roster read, the
+      // staleness check, the newly-elevated rule and the join that excludes
+      // anyone already told. Only the two actions with consequences are
+      // skipped - the send, and the alert_notifications write below. Recording
+      // a rehearsal would mark people as notified and silently cancel the real
+      // alert that follows.
+      base.wouldNotify?.push({ email: entry.email, stations: alerted.map((b) => b.code) });
+      continue;
+    }
+
     const ok = await sendEmail(entry.email, subject, html, text, oneClickUrl);
     if (!ok) {
       base.failed += 1;
@@ -266,10 +283,13 @@ export function alertEnabledLocations(): LocationConfig[] {
   return Object.values(LOCATIONS).filter((c) => featuresFor(c.slug).beachAlerts);
 }
 
-export async function sendAllAlerts(today: string): Promise<SendSummary[]> {
+export async function sendAllAlerts(
+  today: string,
+  dryRun = false
+): Promise<SendSummary[]> {
   const summaries: SendSummary[] = [];
   for (const config of alertEnabledLocations()) {
-    summaries.push(await sendAlertsForLocation(config, today));
+    summaries.push(await sendAlertsForLocation(config, today, dryRun));
   }
   return summaries;
 }
