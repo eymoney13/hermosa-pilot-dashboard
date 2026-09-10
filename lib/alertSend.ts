@@ -30,7 +30,19 @@ const SITE_ORIGIN = "https://dashboard.projectneptune.co";
 // not alerts@. Adding alerts@ as a Workspace alias and verifying it in Gmail is
 // all it would take to change this one line.
 const GMAIL_USER = process.env.GMAIL_USER ?? "ethan@projectneptune.co";
-const FROM = `Project Neptune <${GMAIL_USER}>`;
+
+// The visible sender, which is NOT necessarily the account that authenticates.
+// Google accepts a From that is either the authenticated account or an address
+// registered under Gmail's "Send mail as"; alerts@ is a Workspace alias set up
+// that way, so it can front the mail while ethan@ does the logging in.
+//
+// If the alias is ever removed from "Send mail as", Google silently rewrites
+// the From back to GMAIL_USER rather than failing, so a test send is the only
+// way to confirm this is actually taking effect.
+const FROM_ADDRESS = process.env.GMAIL_FROM ?? GMAIL_USER;
+const FROM = `Project Neptune <${FROM_ADDRESS}>`;
+// Replies go to a mailbox a person actually reads, not the alias.
+const REPLY_TO = process.env.GMAIL_REPLY_TO ?? "ethan@projectneptune.co";
 
 export interface SendSummary {
   location: string;
@@ -100,6 +112,7 @@ async function sendEmail(
   try {
     await mailer().sendMail({
       from: FROM,
+      replyTo: REPLY_TO,
       to,
       subject,
       html,
