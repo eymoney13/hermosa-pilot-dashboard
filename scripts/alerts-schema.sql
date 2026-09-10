@@ -36,3 +36,20 @@ CREATE TABLE IF NOT EXISTS alert_subscriptions (
 -- asked to hear about it.
 CREATE INDEX IF NOT EXISTS alert_subscriptions_station_idx
   ON alert_subscriptions (station_code);
+
+-- What we have already told each subscriber about, so a beach that stays
+-- elevated for a week is one email rather than seven.
+--
+-- Keyed per (subscriber, station) rather than per send: we only ever need the
+-- most recent notification for a beach, and keeping one row per pair means the
+-- table stays the size of the subscriber list instead of growing without bound.
+CREATE TABLE IF NOT EXISTS alert_notifications (
+  subscriber_id      BIGINT      NOT NULL REFERENCES alert_subscribers(id) ON DELETE CASCADE,
+  station_code       TEXT        NOT NULL,
+  -- The prediction date of the run we last emailed about — NOT the wall clock
+  -- time we sent it. Comparing prediction dates is what makes a re-run of the
+  -- job on the same day a no-op instead of a second copy.
+  last_notified_date DATE        NOT NULL,
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (subscriber_id, station_code)
+);
