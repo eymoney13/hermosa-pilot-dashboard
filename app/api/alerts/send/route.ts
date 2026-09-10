@@ -1,12 +1,29 @@
 import { isAlertSendingConfigured, sendAllAlerts } from "@/lib/alertSend";
 
-// Vercel Cron entrypoint for the daily alert pass. Runs after the morning
-// refresh has published, and mails everyone whose beaches turned today.
+// The daily alert pass: mails everyone whose beaches turned elevated today.
 //
-// Deliberately separate from /api/trigger: that one only dispatches the
-// GitHub workflows that GENERATE the day's data, and this one reads the result.
+// Deliberately separate from /api/trigger: that one only dispatches the GitHub
+// workflows that GENERATE the day's data, and this one reads the result.
 // Running them from one route would mean sending alerts off whatever data
 // happened to be committed before the workflows finished.
+//
+// TWO WAYS IN, and both are safe to fire because alert_notifications makes a
+// repeat run a no-op:
+//
+//  1. project-neptune's daily-refresh workflow curls this endpoint as its last
+//     step, once the day's predictions are published. This is the one that
+//     matters: it fires the moment the data exists rather than at a guessed
+//     hour, and it covers a MANUALLY re-run refresh too, which a clock-based
+//     cron cannot.
+//
+//  2. A once-daily Vercel Cron, as a backstop for a workflow that published but
+//     never called in. This project is on the Hobby plan, where crons are
+//     limited to one run per day, so this cannot poll for late data - which is
+//     exactly why path 1 is the primary.
+//
+// A run where no beach newly crossed sends nothing, and a run where the day's
+// predictions have not been published yet sends nothing and waits. There is no
+// catch-up: yesterday's exceedance is not mailed out today.
 
 export const dynamic = "force-dynamic";
 // One fetch to Resend per recipient, plus a write each. Well inside the

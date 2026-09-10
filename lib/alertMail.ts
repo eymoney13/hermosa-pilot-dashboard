@@ -44,11 +44,14 @@ function esc(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+// "may have", not "has". These are model output, not a lab result, and the
+// subject line is the part most people read without opening anything - it is
+// the one place the hedge has to be carried explicitly.
 export function subjectFor(beaches: AlertedBeach[]): string {
   if (beaches.length === 1) {
-    return `${beaches[0].name}: elevated bacteria forecast`;
+    return `${beaches[0].name} may have elevated bacteria levels`;
   }
-  return `${beaches.length} of your beaches have elevated bacteria levels`;
+  return `${beaches.length} of your beaches may have elevated bacteria levels`;
 }
 
 /**
