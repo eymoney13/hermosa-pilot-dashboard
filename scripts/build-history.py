@@ -103,6 +103,15 @@ def find_recent_dates() -> list[str]:
     return found
 
 
+# The CA pipeline used to name slot 1's direction with no number, so archived
+# snapshots carry "shap_direction" where every later slot is "shap_direction_N".
+# Left alone it reads as a missing slot 1: the dashboard asks for
+# shap_direction_1, finds nothing, and drops the strongest driver of the day.
+# Renaming it on the way in means the ~3 days of pre-change snapshots still in
+# the window replay with their top driver intact.
+LEGACY_DIRECTION_COLUMN = "shap_direction"
+
+
 def load_station_rows(file_path: Path) -> dict[str, dict[str, str]]:
     """Return {StationCode: row_dict} for WANTED_STATIONS in a snapshot file."""
     out: dict[str, dict[str, str]] = {}
@@ -110,25 +119,26 @@ def load_station_rows(file_path: Path) -> dict[str, dict[str, str]]:
         reader = csv.DictReader(f)
         for row in reader:
             code = row.get("StationCode")
-            if code in WANTED_STATIONS:
-                out[code] = row
+            if code not in WANTED_STATIONS:
+                continue
+            legacy = row.pop(LEGACY_DIRECTION_COLUMN, None)
+            if legacy and not row.get("shap_direction_1"):
+                row["shap_direction_1"] = legacy
+            out[code] = row
     return out
-
-
-# A snapshot is a region snapshot if it carries these. Both come from
-# generate_nowcast_region.py and neither exists in a CA snapshot, so the pair is
-# an unambiguous marker.
-REGION_MARKER_COLUMNS = {"threshold", "no_recent_sample"}
 
 
 def detect_optional_columns(rows_by_date: dict[str, dict[str, dict[str, str]]]) -> list[str]:
     """Which OPTIONAL_SOURCE_COLUMNS these snapshots actually carry.
 
-    Gated on REGION_MARKER_COLUMNS rather than picking up whatever happens to
-    match. CA snapshots publish shap_direction_2 and shap_direction_3 (with no
-    _1), which would otherwise be swept in and quietly change the schema of a
-    live CA file to no purpose — the CA boards render no written summary. So CA
-    output stays exactly as it was, and only a region snapshot gets the extras.
+    Presence is the whole test: a column the snapshots publish is a column the
+    dashboard can use. This was previously gated on a pair of region-only marker
+    columns, to keep CA files byte-identical back when a CA snapshot's only
+    matching columns were an orphaned shap_direction_2/_3 pair that would have
+    changed the schema to no purpose. Both halves of that have since stopped
+    being true — CA publishes a full ranked set with numbered directions, and
+    the CA boards render the same written summary the region ones do — so the
+    gate now only withholds data the dashboard is asking for.
 
     Read off the rows rather than the file header so an empty or partially
     written archive degrades to "nothing optional" instead of raising.
@@ -137,8 +147,6 @@ def detect_optional_columns(rows_by_date: dict[str, dict[str, dict[str, str]]]) 
     for by_station in rows_by_date.values():
         for row in by_station.values():
             seen.update(row.keys())
-    if not REGION_MARKER_COLUMNS.issubset(seen):
-        return []
     return [c for c in OPTIONAL_SOURCE_COLUMNS if c in seen]
 
 
@@ -174,7 +182,7 @@ def main() -> int:
 
     optional = detect_optional_columns(rows_by_date)
     if optional:
-        print(f"Region snapshot columns detected: {len(optional)} extra per day")
+        print(f"Optional snapshot columns detected: {len(optional)} extra per day")
     header = build_header(optional)
 
     out_rows: list[dict[str, str]] = []
