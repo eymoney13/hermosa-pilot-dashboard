@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { subtractDays, type Accuracy } from "@/lib/data";
+import { subtractDays, type Accuracy, type Driver } from "@/lib/data";
+import { directionsByFactor, factorEffect } from "@/lib/factorEffects";
+import { labSampleSentence } from "@/lib/insight";
 import ForecastAccuracy from "./ForecastAccuracy";
 
 // "May 7, 2026" style. lib/data's formatLongDate includes the weekday;
@@ -20,7 +22,7 @@ function formatSampleDate(iso: string): string {
 
 // "Taken N days ago · <date>" relative to the day being viewed. predictionDate
 // is the selected day's date, so a past day shows the sample that was latest
-// as of that date — not a future one.
+// as of that date, not a future one.
 function sampleMetadataFor(
   daysSinceSample: number | null,
   predictionDate: string
@@ -38,7 +40,8 @@ function sampleMetadataFor(
 
 export default function WhyPrediction({
   factors,
-  insight,
+  drivers,
+  lastResult,
   daysSinceSample,
   predictionDate,
   accuracy,
@@ -47,7 +50,10 @@ export default function WhyPrediction({
   showAccuracyPercent = false,
 }: {
   factors: string[];
-  insight: string;
+  // The same ranking as `factors`, carrying the direction the model gave each
+  // one. Supplies the "how" under each listed factor.
+  drivers: Driver[];
+  lastResult: number | string | null;
   daysSinceSample: number | null;
   predictionDate: string;
   accuracy: Accuracy;
@@ -61,15 +67,17 @@ export default function WhyPrediction({
 }) {
   const [open, setOpen] = useState(false);
   const sampleMeta = sampleMetadataFor(daysSinceSample, predictionDate);
+  const labSentence = labSampleSentence(lastResult);
+  const directions = directionsByFactor(drivers);
 
-  // With the factors hidden and no lab-sample insight, the disclosure would be
-  // a toggle guarding a single card, under a heading describing content that is
-  // no longer there. So the accuracy panel stands on its own.
+  // With the factors hidden and no lab sample to report, the disclosure would
+  // be a toggle guarding a single card, under a heading describing content that
+  // is no longer there. So the accuracy panel stands on its own.
   //
   // Note this deliberately does NOT fall through to the early return below.
   // That return exists for days with nothing to show, and reaching it here would
-  // take the accuracy panel out with the factors — the opposite of the intent.
-  if (hideContributingFactors && !insight) {
+  // take the accuracy panel out with the factors, the opposite of the intent.
+  if (hideContributingFactors && !labSentence) {
     return (
       <div className="border-t border-gray-100 pt-6">
         <ForecastAccuracy
@@ -81,8 +89,8 @@ export default function WhyPrediction({
     );
   }
 
-  // Forecast/future days have no saved factors or lab sample — nothing to show.
-  if (factors.length === 0 && !insight) return null;
+  // Forecast/future days have no saved factors or lab sample, so nothing to show.
+  if (factors.length === 0 && !labSentence) return null;
 
   return (
     <div className="border-t border-gray-100">
@@ -116,26 +124,40 @@ export default function WhyPrediction({
                 <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
                   Top contributing factors
                 </p>
-                <ol className="space-y-1.5 text-sm text-gray-700">
-                  {factors.map((factor, i) => (
-                    <li key={`${factor}-${i}`} className="flex gap-3">
-                      <span className="text-gray-400 tabular-nums">
-                        {i + 1}.
-                      </span>
-                      <span>{factor}</span>
-                    </li>
-                  ))}
+                <ol className="space-y-3 text-sm text-gray-700">
+                  {factors.map((factor, i) => {
+                    // Explanation sits under its own factor rather than in one
+                    // list further down, so a reader never has to count rows to
+                    // work out which line belongs to which name.
+                    const effect = factorEffect(factor, directions.get(factor));
+                    return (
+                      <li key={`${factor}-${i}`} className="flex gap-3">
+                        <span className="text-gray-400 tabular-nums">
+                          {i + 1}.
+                        </span>
+                        <span>
+                          {factor}
+                          {effect && (
+                            <span className="mt-1 flex gap-2 text-gray-500">
+                              <span aria-hidden="true">&bull;</span>
+                              <span>{effect}</span>
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ol>
               </div>
             )}
 
-            {insight && (
+            {labSentence && (
               <div>
                 <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
                   Latest Lab Sample Result
                 </p>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  {insight}
+                  {labSentence}
                 </p>
                 {sampleMeta && (
                   <p className="text-xs text-gray-400 mt-1">{sampleMeta}</p>

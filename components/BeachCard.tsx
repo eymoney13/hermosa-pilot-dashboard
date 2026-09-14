@@ -239,7 +239,7 @@ function exceedanceBody(pct: number): string {
 
   // Tier 1: Generally safe (0-29%)
   if (pct < 30) {
-    return `Less is better — under 30% means low risk. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
+    return `Less is better: under 30% means low risk. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
   }
 
   // Tier 2: Caution (30-49%)
@@ -249,7 +249,7 @@ function exceedanceBody(pct: number): string {
 
   // Tier 3: Not recommended (50-74%)
   if (pct < 75) {
-    return `Bacteria levels are likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria — most samples in this range test above the EPA safe-swimming threshold.`;
+    return `Bacteria levels are likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, and most samples in this range test above the EPA safe-swimming threshold.`;
   }
 
   // Tier 4: Strongly not recommended (75-100%)
@@ -598,7 +598,8 @@ export default function BeachCard({
 
         <WhyPrediction
           factors={activeDay.factors ?? []}
-          insight={activeDay.insight ?? ""}
+          drivers={activeDay.drivers ?? beach.drivers}
+          lastResult={activeDay.lastResult ?? null}
           daysSinceSample={activeDay.daysSinceSample ?? null}
           predictionDate={activeDay.date}
           accuracy={beach.accuracy}
