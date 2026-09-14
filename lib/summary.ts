@@ -1,4 +1,4 @@
-import type { Conditions, Driver, ForecastDay, Verdict } from "./data";
+import type { Conditions, Driver, ForecastDay, Status, Verdict } from "./data";
 
 // Generates the "What we're seeing" summary shown on boards that hide the raw
 // probability (see the `predictionSummary` / `binaryVerdict` flags in
@@ -480,26 +480,89 @@ export interface SummaryInput {
   drivers: Driver[];
   /** The selected day's measured conditions. */
   conditions: Conditions;
+  /**
+   * The risk tier the card is displaying, on boards that show the shared
+   * 30/50/75 tiers rather than the model's own verdict. Supplying it switches
+   * the prose into tier vocabulary AND makes every rating in the summary — the
+   * lead, the valence ordering, the outlook — derive from the same tiers the
+   * reader can see, so the paragraph cannot contradict the label above it.
+   *
+   * Omit on a binaryVerdict board: there the card shows the verdict itself and
+   * `verdict` is already the thing on screen.
+   */
+  status?: Status | null;
+  /** The tiers for `forecast`, index-matched, when `status` is supplied. */
+  forecastStatuses?: (Status | null)[];
   /** Upcoming days. Only described when the selected day is today. */
   forecast: ForecastDay[];
 }
+
+// The summary has to describe a day in the same terms the card does, because it
+// sits directly beneath the card's own label. Two boards label a day two ways:
+// a binaryVerdict board shows the model's Good/Moderate/Poor call against the
+// beach's own cutoff, and every other board shows the shared 30/50/75 risk
+// tiers. Those disagree — a 34% day is "Good" against a 50% cutoff and
+// "Slightly elevated" on the shared scale — so a summary that always spoke in
+// verdicts would open "expected to have good water quality" directly under a
+// card reading "Slightly elevated". On South Bay's record that lands on 8% of
+// scored beach-days.
+//
+// So the vocabulary is chosen by the caller, which is the only party that knows
+// which label it rendered. Nothing about the underlying call changes: the tier
+// board still ranks and orders exactly as before, it just says "normal bacteria
+// levels" where the verdict board says "good water quality".
+interface Vocabulary {
+  /** "<subject> is expected to have <this>" — the noun phrase for a rating. */
+  phrase: Record<Verdict, string>;
+  /** The bare adjective the outlook uses ("stay good as well"). */
+  word: Record<Verdict, string>;
+}
+
+const VERDICT_VOCAB: Vocabulary = {
+  phrase: {
+    Good: "good water quality",
+    Moderate: "moderate water quality",
+    Poor: "poor water quality",
+  },
+  word: { Good: "good", Moderate: "moderate", Poor: "poor" },
+};
+
+const TIER_VOCAB: Vocabulary = {
+  phrase: {
+    Good: "normal bacteria levels",
+    Moderate: "slightly elevated bacteria levels",
+    Poor: "elevated bacteria levels",
+  },
+  word: { Good: "normal", Moderate: "slightly elevated", Poor: "elevated" },
+};
+
+// The shared risk tiers onto the three ratings the prose is built around. The
+// mapping is 1:1 — Status is the internal 3-tier value; the "Strongly not
+// recommended" label BeachCard shows above 75% is a display refinement of "Not
+// recommended" and needs no separate word here, because the card states that
+// advice immediately above the paragraph.
+const VERDICT_OF_STATUS: Record<Status, Verdict> = {
+  Normal: "Good",
+  "Slightly elevated": "Moderate",
+  "Not recommended": "Poor",
+};
 
 // Sentence 1: the call, in words.
 function leadSentence(
   short: string,
   verdict: Verdict,
   timeframe: SummaryInput["timeframe"],
-  date: string
+  date: string,
+  vocab: Vocabulary
 ): string {
-  const quality =
-    verdict === "Good" ? "good" : verdict === "Poor" ? "poor" : "moderate";
+  const quality = vocab.phrase[verdict];
   if (timeframe === "past") {
     // Past tense, and "was predicted" rather than "had": this is the record of
     // a forecast, not a measurement of what the water actually turned out to be.
-    return `${short} was predicted to have ${quality} water quality on ${weekdayLong(date)}.`;
+    return `${short} was predicted to have ${quality} on ${weekdayLong(date)}.`;
   }
   const when = timeframe === "today" ? "today" : `on ${weekdayLong(date)}`;
-  return `${short} is expected to have ${quality} water quality ${when}.`;
+  return `${short} is expected to have ${quality} ${when}.`;
 }
 
 // The next few days, described by how they are called rather than by any
@@ -511,17 +574,21 @@ function leadSentence(
 // the more useful thing to tell someone.
 function outlookSentence(
   forecast: ForecastDay[],
-  todayVerdict: Verdict
+  todayVerdict: Verdict,
+  vocab: Vocabulary,
+  ratingOf: (d: ForecastDay) => Verdict | null
 ): string | null {
-  const days = forecast.filter((d) => d.verdict);
+  const days = forecast.filter((d) => ratingOf(d));
   if (days.length === 0) return null;
+
+  const w = vocab.word;
 
   const one = days.length === 1;
   const span = one ? "Tomorrow" : `The next ${days.length} days`;
   const verb = one ? "is" : "are";
   const allLook = one ? "tomorrow looks" : `the next ${days.length} days all look`;
-  const poor = days.filter((d) => d.verdict === "Poor");
-  const moderate = days.filter((d) => d.verdict === "Moderate");
+  const poor = days.filter((d) => ratingOf(d) === "Poor");
+  const moderate = days.filter((d) => ratingOf(d) === "Moderate");
 
   // Named days, e.g. "Thursday and Friday are".
   const naming = (subset: ForecastDay[]) => ({
@@ -538,8 +605,8 @@ function outlookSentence(
   if (poor.length > 0) {
     if (poor.length === days.length) {
       return todayVerdict === "Poor"
-        ? `${span} ${verb} expected to stay poor as well.`
-        : `${span} ${verb} all expected to turn poor.`;
+        ? `${span} ${verb} expected to stay ${w.Poor} as well.`
+        : `${span} ${verb} all expected to turn ${w.Poor}.`;
     }
     const { names, subjectVerb } = naming(poor);
     const rest = days.length - poor.length;
@@ -548,32 +615,32 @@ function outlookSentence(
     // clause makes the sentence longer than the information is worth.
     const restRating =
       moderate.length === 0
-        ? "good"
+        ? w.Good
         : moderate.length === rest
-          ? "moderate"
-          : "moderate or better";
-    return `Looking ahead, ${names} ${subjectVerb} expected to turn poor; ${others(rest, restRating)}.`;
+          ? w.Moderate
+          : `${w.Moderate} or better`;
+    return `Looking ahead, ${names} ${subjectVerb} expected to turn ${w.Poor}; ${others(rest, restRating)}.`;
   }
 
   // Nothing is flagged, but some days are elevated.
   if (moderate.length > 0) {
     if (moderate.length === days.length) {
       if (todayVerdict === "Moderate") {
-        return `${span} ${verb} expected to stay moderate as well.`;
+        return `${span} ${verb} expected to stay ${w.Moderate} as well.`;
       }
       return todayVerdict === "Poor"
-        ? `Conditions are expected to ease: ${allLook} moderate rather than poor.`
-        : `${span} ${verb} expected to turn moderate.`;
+        ? `Conditions are expected to ease: ${allLook} ${w.Moderate} rather than ${w.Poor}.`
+        : `${span} ${verb} expected to turn ${w.Moderate}.`;
     }
     const { names, subjectVerb } = naming(moderate);
     const rest = days.length - moderate.length;
-    return `Looking ahead, ${names} ${subjectVerb} expected to be moderate; ${others(rest, "good")}.`;
+    return `Looking ahead, ${names} ${subjectVerb} expected to be ${w.Moderate}; ${others(rest, w.Good)}.`;
   }
 
   // Everything ahead is good.
   return todayVerdict === "Good"
-    ? `${span} ${verb} expected to stay good as well.`
-    : `Conditions are expected to improve: ${allLook} good.`;
+    ? `${span} ${verb} expected to stay ${w.Good} as well.`
+    : `Conditions are expected to improve: ${allLook} ${w.Good}.`;
 }
 
 // Why there is no lab result to point at. Framed as what the forecast IS rather
@@ -592,22 +659,40 @@ function noSampleNote(past: boolean): string {
  * which the caller renders as nothing rather than a half-written sentence.
  */
 export function buildSummary(input: SummaryInput): string[] {
-  const verdict = input.verdict;
+  // On a tier board the tier IS the rating — deriving it here rather than
+  // reading input.verdict is what keeps the lead, the sentence ordering and the
+  // outlook all agreeing with the card. On a verdict board nothing changes.
+  const tierMode = input.status != null;
+  const vocab = tierMode ? TIER_VOCAB : VERDICT_VOCAB;
+  const verdict = tierMode
+    ? VERDICT_OF_STATUS[input.status as Status]
+    : input.verdict;
   if (!verdict) return [];
+
+  // Forecast days are rated the same way as today, so a run of days never
+  // reads as "stay normal as well" off one scale and "good" off another.
+  const ratingOf = tierMode
+    ? (d: ForecastDay) => {
+        const st = input.forecastStatuses?.[input.forecast.indexOf(d)] ?? d.status;
+        return st ? VERDICT_OF_STATUS[st] ?? null : null;
+      }
+    : (d: ForecastDay) => d.verdict ?? null;
 
   const short = shortName(input.name);
 
   const past = input.timeframe === "past";
 
   const first = [
-    leadSentence(short, verdict, input.timeframe, input.date),
+    leadSentence(short, verdict, input.timeframe, input.date, vocab),
     ...conditionSentences(input.drivers ?? [], input.conditions ?? {}, verdict, past),
   ].join(" ");
 
   // The outlook describes days *after* today, so it only belongs on today's
   // view — from a forecast day it would be describing the past.
   const second = [
-    input.timeframe === "today" ? outlookSentence(input.forecast, verdict) : null,
+    input.timeframe === "today"
+      ? outlookSentence(input.forecast, verdict, vocab, ratingOf)
+      : null,
     input.noRecentSample ? noSampleNote(past) : null,
   ]
     .filter(Boolean)

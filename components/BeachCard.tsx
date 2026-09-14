@@ -530,6 +530,13 @@ export default function BeachCard({
         drivers: activeDay.drivers ?? beach.drivers,
         conditions: activeDay.conditions ?? beach.conditions,
         forecast: beach.forecast,
+        // Speak in whichever read this card actually rendered. `verdict` above
+        // is null unless binaryVerdict is on, so on every other board the
+        // summary would otherwise describe a Good/Moderate/Poor call the reader
+        // cannot see and which disagrees with the tier they can — a 34% day is
+        // "Good" against a 50% cutoff but "Slightly elevated" on the shared
+        // scale. Passing the tier keeps the paragraph and the label agreeing.
+        status: features.binaryVerdict ? null : activeDay.status,
       })
     : [];
 
@@ -579,9 +586,15 @@ export default function BeachCard({
           )}
         </div>
 
-        <PredictionSummary paragraphs={summary} />
-
         {!features.forecastWindowFirst && dayWindow}
+
+        {/* Below the window on purpose. The window is the shape of the week and
+            the thing a reader scans first; the summary explains the day they
+            land on, so it reads as a caption to the selection rather than as a
+            preamble to it. On a forecastWindowFirst board the window is already
+            above the status read, so this is where the summary sits either
+            way. */}
+        <PredictionSummary paragraphs={summary} />
 
         <WhyPrediction
           factors={activeDay.factors ?? []}
