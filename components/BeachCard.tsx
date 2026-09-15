@@ -61,14 +61,6 @@ const BAND_CELL_TEXT: Record<Status, string> = {
   "Not recommended": "#ffffff",
 };
 
-function tierColorForCell(prob: number): string {
-  const pct = prob * 100;
-  if (pct < 30) return "#97C459";
-  if (pct < 50) return "#D5C82E";
-  if (pct < 75) return "#E24B4A";
-  return "#A32D2D";
-}
-
 // Day-cell fills for the binary boards, drawn from the same green/red the tier
 // scale uses at its ends.
 const SCALE_GRADIENT =
@@ -478,7 +470,14 @@ function SevenDayWindow({
                 style={{
                   backgroundColor: verdict
                     ? VERDICT_CELL_COLOR[verdict]
-                    : tierColorForCell(day.probability),
+                    : // Rounded, like every other classification on the
+                      // board. This used to compare the raw fraction against
+                      // the same boundaries, so a day at 0.2968 was "30%" in
+                      // the tooltip and "Moderate" in the word, while 29.68
+                      // fell under 30 here and painted the cell green. Reusing
+                      // riskTier also drops a second copy of the palette that
+                      // had to agree with RISK_TIERS by hand.
+                      riskTier(pct).color,
                 }}
               >
                 {verdict ? (
