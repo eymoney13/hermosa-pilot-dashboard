@@ -518,7 +518,10 @@ export default function BeachCard({
 
   const summary = features.predictionSummary
     ? buildSummary({
-        name: beach.name,
+        // proseName, not name: on a board whose roster appends a town to keep
+        // tab labels apart, the sentence drops it; on one whose names carry the
+        // street, the sentence keeps it.
+        name: beach.proseName,
         verdict: activeDay.verdict ?? null,
         date: activeDay.date,
         // "past" | "today" | "forecast" — the cell type already carries it, and

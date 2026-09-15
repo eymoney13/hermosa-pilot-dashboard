@@ -351,6 +351,12 @@ export interface ForecastDay {
 export interface BeachData {
   code: string;
   name: string;
+  /**
+   * The name the written summary says out loud. Usually identical to `name`;
+   * it differs only on a board whose roster appends a disambiguator meant for
+   * tab labels rather than for sentences (see resolveRoster).
+   */
+  proseName: string;
   latitude: number;
   longitude: number;
   predictionDate: string;

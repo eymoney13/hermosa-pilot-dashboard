@@ -20,17 +20,6 @@ import type { Conditions, Driver, ForecastDay, Status, Verdict } from "./data";
 // backend that publishes no conditions at all — the sentence that needed it is
 // dropped rather than softened into a guess.
 
-// "Carson Beach - South Boston" -> "Carson Beach". The roster appends the town
-// to disambiguate tab labels; prose reads better without it.
-//
-// Only called for boards rendering this summary (Boston, via predictionSummary).
-// Worth knowing before it is used more widely: the separator is now a plain
-// hyphen, which also appears inside CA names like "Hermosa Beach - 26th St", so
-// elsewhere this would trim the street rather than a town.
-function shortName(name: string): string {
-  return name.split(" - ")[0].trim() || name;
-}
-
 function weekdayLong(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return iso;
@@ -461,7 +450,12 @@ function interleave(first: string[], second: string[]): string[] {
 // ---------------------------------------------------------------------------
 
 export interface SummaryInput {
-  /** Roster display name, town suffix and all. */
+  /**
+   * The beach's name as it should be said in a sentence, already stripped of
+   * any tab-label disambiguator (BeachData.proseName). Passed ready to print:
+   * only the roster knows which part of a name is a place and which is a
+   * suffix bolted on to tell two rows apart.
+   */
   name: string;
   /** The resolved Good/Poor call for the selected day. */
   verdict: Verdict | null;
@@ -678,7 +672,14 @@ export function buildSummary(input: SummaryInput): string[] {
       }
     : (d: ForecastDay) => d.verdict ?? null;
 
-  const short = shortName(input.name);
+  // Already trimmed for prose upstream, where the roster knows which part of a
+  // name is a disambiguator and which is the place itself. This used to split
+  // on " - " here, which worked on Boston's "Carson Beach - South Boston" and
+  // silently wrecked South Bay's "Hermosa Beach - Herondo St": both Hermosa
+  // stations came out as plain "Hermosa Beach", so the two cards introduced
+  // themselves identically and the street, the only thing telling them apart,
+  // was the part thrown away.
+  const short = input.name;
 
   const past = input.timeframe === "past";
 
