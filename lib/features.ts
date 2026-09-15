@@ -107,6 +107,12 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
   // The Map stays the landing tab. The List is a second way in, not a
   // replacement for the view the board has always opened on.
   southbay: {
+    // The CA pipeline now publishes the same ranked drivers and measured
+    // conditions the region one does (project-neptune's generate_nowcast.py /
+    // generate_forecast.py), which is what the summary is written from — before
+    // that it had the topics but none of the values, and collapsed to two
+    // generic lines.
+    predictionSummary: true,
     listTab: true,
     openOnMap: true,
     // Every station on this board has been sampled at least eleven times, and

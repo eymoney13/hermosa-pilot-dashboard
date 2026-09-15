@@ -323,6 +323,17 @@ function dayDirections(row: ForecastRow, i: number): unknown[] {
   return factorSlots.map((n) => row[`day${i}_shap_direction_${n}`]);
 }
 
+// Slot 1's direction, tolerating the pre-2026-09 CA column name. That pipeline
+// called the first direction a bare `shap_direction` and numbered only slots 2
+// and 3, so asking for `shap_direction_1` came back empty and buildDrivers
+// discarded the day's STRONGEST driver — the one most worth writing about.
+// Both names are read so an unrefreshed CSV still explains itself.
+function nowcastDirections(row: Record<string, unknown>): unknown[] {
+  return factorSlots.map((n) =>
+    n === 1 ? row.shap_direction_1 ?? row.shap_direction : row[`shap_direction_${n}`]
+  );
+}
+
 // The cutoff a forecast/history day was classified against. Backends that
 // re-tune per horizon publish day{i}_threshold; everyone else falls back to the
 // beach's single nowcast threshold.
@@ -429,10 +440,7 @@ export async function loadDashboardData(
 
     const rawFactors = factorSlots.map((n) => now[`top_factor_${n}`]);
     const factors = buildFactors(rawFactors);
-    const drivers = buildDrivers(
-      rawFactors,
-      factorSlots.map((n) => now[`shap_direction_${n}`])
-    );
+    const drivers = buildDrivers(rawFactors, nowcastDirections(now));
     const conditions = buildConditions(now);
 
     const days = parseDaysSince(now.days_since_sample);
