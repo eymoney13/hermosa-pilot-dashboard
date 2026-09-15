@@ -111,10 +111,12 @@ export default function BeachList({
                   {beach.name}
                 </span>
 
-                {/* The number says how close to the line this beach is; the
-                    word says what that means. Stacked rather than side by side
-                    because the column is 80px wide and the two together read as
-                    one reading, not two columns to compare across rows.
+                {/* The word leads and the number supports it. Scanning a list
+                    of thirteen beaches, "Moderate" is the answer and 37% is the
+                    working behind it, so the word takes the larger type and the
+                    top line. Stacked rather than side by side because the
+                    column is 80px wide and the two together read as one
+                    reading, not two columns to compare across rows.
 
                     The word takes the same colour treatment as the card's day
                     cells, which draw the same word on the same fill. */}
@@ -136,11 +138,11 @@ export default function BeachList({
                     <span className="text-[11px] font-semibold">{verdict}</span>
                   ) : (
                     <>
-                      <span className="text-xs font-semibold leading-none tabular-nums">
-                        {pctText}
-                      </span>
-                      <span className="mt-0.5 text-[10px] font-medium leading-none">
+                      <span className="text-xs font-semibold leading-none">
                         {STATUS_BAND[status].short}
+                      </span>
+                      <span className="mt-0.5 text-[10px] font-medium leading-none tabular-nums">
+                        {pctText}
                       </span>
                     </>
                   )}
