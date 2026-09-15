@@ -23,6 +23,7 @@ import {
   weekdayShort,
   type WindowCell,
 } from "@/lib/window";
+import { faqHref, FAQ_LINKS } from "@/lib/faq";
 import InfoTooltip from "./InfoTooltip";
 import WhyPrediction from "./WhyPrediction";
 
@@ -323,6 +324,12 @@ function ExceedanceDetail({
               title="Probability of unsafe bacteria levels"
               body={exceedanceBody(pct)}
               ariaLabel="About the probability of unsafe bacteria levels"
+              // The readout says "bacteria" without saying which. This is where
+              // a reader wonders, so this is where the answer is offered.
+              link={{
+                href: faqHref(FAQ_LINKS.whatWeMeasure),
+                text: "What bacteria do you measure?",
+              }}
             />
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
 import { Info } from "lucide-react";
 
 interface InfoTooltipProps {
@@ -17,6 +18,13 @@ interface InfoTooltipProps {
   tooltipId?: string;
   /** Accessible label for the icon button. */
   ariaLabel?: string;
+  /**
+   * An optional "read more" link under the body. For tooltips that answer a
+   * question the FAQ answers at length: the tooltip is where the question
+   * occurs to a reader, so it is the one place a link to the longer answer is
+   * worth offering.
+   */
+  link?: { href: string; text: string };
 }
 
 export default function InfoTooltip({
@@ -26,6 +34,7 @@ export default function InfoTooltip({
   iconClassName = "h-4 w-4",
   tooltipId,
   ariaLabel = "More information",
+  link,
 }: InfoTooltipProps) {
   const autoId = useId();
   const id = tooltipId ?? autoId;
@@ -127,6 +136,17 @@ export default function InfoTooltip({
         <span className="block text-xs leading-relaxed text-gray-600">
           {body}
         </span>
+        {link && (
+          // Inside the wrapper the outside-click handler watches, so the click
+          // that follows the link does not first close the tooltip out from
+          // under it.
+          <Link
+            href={link.href}
+            className="mt-2 block text-xs text-[#2C8487] underline hover:text-[#1f6366]"
+          >
+            {link.text}
+          </Link>
+        )}
       </span>
     </span>
   );

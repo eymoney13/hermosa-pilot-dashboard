@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import DashboardTabs from "@/components/DashboardTabs";
 import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
 import BeachAlertSignup from "@/components/BeachAlertSignup";
+import FaqAccordion from "@/components/FaqAccordion";
 import { loadDashboardData } from "@/lib/loadData";
 import { isAlertsConfigured } from "@/lib/alerts";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
+import { faqHref, FAQ_LINKS } from "@/lib/faq";
 import { featuresFor } from "@/lib/features";
 import {
   fetchNewsAlerts,
@@ -138,6 +141,12 @@ export default async function LocationPage({
         />
       )}
 
+      {/* After the data and the signup, before the disclaimer. A reader reaches
+          it having already seen a forecast, which is when "how do they know
+          this" occurs to them; the footer's one-line caveat directly below is
+          the short version of two of these answers. */}
+      <FaqAccordion />
+
       <footer className="w-full py-10">
         <div className="mx-auto max-w-6xl px-6 sm:px-10 text-xs text-gray-400">
           Forecasts are estimates based on environmental data. For official
@@ -150,6 +159,13 @@ export default async function LocationPage({
           >
             {(config.advisory ?? DEFAULT_ADVISORY).label}
           </a>
+          .{" "}
+          <Link
+            href={faqHref(FAQ_LINKS.officialAdvisories)}
+            className="underline hover:text-gray-600"
+          >
+            How this relates to official advisories
+          </Link>
           .
         </div>
       </footer>
