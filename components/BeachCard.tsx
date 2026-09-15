@@ -231,9 +231,14 @@ function StatusHero({
 function exceedanceBody(pct: number): string {
   const article = articleFor(pct);
 
-  // Tier 1: Generally safe (0-29%)
+  // Tier 1: Low (0-29%)
   if (pct < 30) {
-    return `Less is better: under 30% means low risk. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
+    // "and the large majority", not the moderate band's "though most". "Though"
+    // marks a contrast this band has nothing to contrast, and reusing "most"
+    // would make the cleanest days sound exactly as reassuring as the middle
+    // ones: at least 71% of this band tests below the threshold against the
+    // moderate band's 51-70%.
+    return `Bacteria levels are likely low. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, and the large majority of samples in this range test below the EPA threshold.`;
   }
 
   // Tier 2: Moderate (30-49%)
