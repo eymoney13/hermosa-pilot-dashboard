@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
 import {
   RISK_TIERS,
+  STATUS_LABEL,
   riskTier,
   VERDICT_AS_STATUS,
   type BeachData,
@@ -128,15 +129,21 @@ function predictionSubtitle(
   when = "today",
   verdict: Verdict | null = null
 ): string {
-  // Moderate has to say two things at once: something is pushing bacteria up,
-  // and it is still expected to stay under the limit. "Predicted to be below
-  // the threshold" alone reads identically to a clean day, which leaves the
-  // yellow doing all the work and the word explaining none of it.
+  // A middle day has to say two things at once: something is pushing bacteria
+  // up, and it is still expected to stay under the limit. "Predicted to be
+  // below the threshold" alone reads identically to a clean day, which leaves
+  // the yellow doing all the work and the words explaining none of it.
   //
-  // Keyed to the verdict, not to the equivalent tier, so the 3-tier boards'
-  // "Slightly elevated" subtitle is untouched.
+  // Both boards need that, but each says it in its own vocabulary: the binary
+  // board is describing its Moderate verdict, the 3-tier boards the middle
+  // band of the key.
   if (verdict === "Moderate") {
     return `Bacteria levels may be elevated but still predicted to be below the EPA swimming threshold ${when}.`;
+  }
+  // Guarded on the absence of a verdict, not on the tier alone: Boston can pair
+  // a Good verdict with this tier, and that day should keep reading as Good.
+  if (!verdict && status === "Slightly elevated") {
+    return `Predicted to be slightly elevated but still below the EPA swimming threshold ${when}.`;
   }
   const verb =
     status === "Not recommended"
@@ -191,7 +198,7 @@ function StatusHero({
       <div className="flex items-center gap-3">
         <Icon className={`h-6 w-6 ${tint.deep}`} aria-hidden="true" />
         <p className={`text-xl font-medium ${tint.deep}`}>
-          {verdict ?? status}
+          {verdict ?? STATUS_LABEL[status]}
         </p>
       </div>
       <p className={`mt-2 ml-9 text-sm ${tint.mid}`}>
@@ -242,18 +249,18 @@ function exceedanceBody(pct: number): string {
     return `Less is better: under 30% means low risk. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
   }
 
-  // Tier 2: Caution (30-49%)
+  // Tier 2: Moderate (30-49%)
   if (pct < 50) {
-    return `Bacteria levels may be slightly elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, though most samples in this range still test below the EPA threshold.`;
+    return `Bacteria levels are likely moderate. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, though most samples in this range still test below the EPA threshold.`;
   }
 
-  // Tier 3: Not recommended (50-74%)
+  // Tier 3: High (50-74%)
   if (pct < 75) {
-    return `Bacteria levels are likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, and most samples in this range test above the EPA safe-swimming threshold.`;
+    return `Bacteria levels are likely high. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, and most samples in this range test above the EPA safe-swimming threshold.`;
   }
 
-  // Tier 4: Strongly not recommended (75-100%)
-  return `Bacteria levels are very likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, well above the EPA safe-swimming threshold.`;
+  // Tier 4: Very high (75-100%)
+  return `Bacteria levels are very likely high. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, well above the EPA safe-swimming threshold.`;
 }
 
 function ExceedanceScale({
@@ -411,7 +418,7 @@ function SevenDayWindow({
           // Each day is scored against its own cutoff — Boston's model re-tunes
           // the threshold per forecast horizon.
           const verdict = binaryVerdict ? day.verdict ?? null : null;
-          const readout = verdict ?? `${day.status} · ${pct}%`;
+          const readout = verdict ?? `${STATUS_LABEL[day.status]} · ${pct}%`;
 
           return (
             <button
