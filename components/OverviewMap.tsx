@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
-import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
+import { STATUS_BAND, VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import {
   BASEMAP_ATTRIBUTION,
   BASEMAP_MAX_ZOOM,
@@ -28,28 +28,30 @@ function textColorFor(status: BeachData["status"]) {
 //
 // Binary boards show no number: the marker is a plain coloured dot, and the
 // beach name already sits beside it in a permanent tooltip.
-function dotIcon(
-  beach: BeachData,
-  hidePercent: boolean,
-  binaryVerdict: boolean
-): L.DivIcon {
+// Marker footprints, in px. The band pill is sized to hold "Moderate", the
+// longest of the three words, so every pin on a board is the same width and the
+// label placement below has one box to avoid rather than one per beach.
+const BAND_DOT: [number, number] = [64, 22];
+const PLAIN_DOT: [number, number] = [20, 20];
+
+function dotIcon(beach: BeachData, binaryVerdict: boolean): L.DivIcon {
   const verdict = binaryVerdict ? beach.verdict : null;
   const status = verdict ? VERDICT_AS_STATUS[verdict] : beach.status;
   const bg = colorFor(status);
   const fg = textColorFor(status);
-  const label = verdict
-    ? ""
-    : `${Math.round(Math.max(0, Math.min(1, beach.probability)) * 100)}${
-        hidePercent ? "" : "%"
-      }`;
-  const size = verdict ? 20 : 40;
-  const cls = verdict ? "nb-overview-dot nb-overview-dot--plain" : "nb-overview-dot";
+  // The band, not the number. A pin is read at a glance and from a distance,
+  // and "Moderate" answers "should I swim here" without the reader first
+  // having to know where 34% falls on a scale whose key is on another tab.
+  // The exact figure is still a tap away in the popup.
+  const label = verdict ? "" : STATUS_BAND[status].short;
+  const [w, h] = verdict ? PLAIN_DOT : BAND_DOT;
+  const cls = verdict ? "nb-overview-dot nb-overview-dot--plain" : "nb-overview-dot nb-overview-dot--band";
   const html = `<div class="${cls}" style="background:${bg};color:${fg}">${label}</div>`;
   return L.divIcon({
     html,
     className: "nb-overview-icon",
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    iconSize: [w, h],
+    iconAnchor: [w / 2, h / 2],
   });
 }
 
@@ -203,7 +205,11 @@ export interface LabelPlacement {
 function placeLabels(
   map: L.Map,
   beaches: BeachData[],
-  dotRadius: number,
+  // Half the marker's width and height. A scalar radius until the pins started
+  // carrying words: a band pill is three times as wide as it is tall, and
+  // treating it as a circle of one or the other either let labels sit on top of
+  // it or pushed them a pill's width away vertically for no reason.
+  dotHalf: { x: number; y: number },
   previous: Map<string, { dir: number; ring: number }>
 ): LabelPlacement[] {
   const m = labelMetrics(map.getZoom());
@@ -248,10 +254,10 @@ function placeLabels(
   const dotRects: Rect[] = points
     .filter((_, i) => visible[i])
     .map(({ pt }) => ({
-      x: pt.x - dotRadius,
-      y: pt.y - dotRadius,
-      w: dotRadius * 2,
-      h: dotRadius * 2,
+      x: pt.x - dotHalf.x,
+      y: pt.y - dotHalf.y,
+      w: dotHalf.x * 2,
+      h: dotHalf.y * 2,
     }));
 
   const placed: Rect[] = [];
@@ -275,7 +281,7 @@ function placeLabels(
       out.push({
         code: beach.code,
         text,
-        dx: -(dotRadius + 6 + w),
+        dx: -(dotHalf.x + 6 + w),
         dy: -m.h / 2,
         w,
         tethered: false,
@@ -309,7 +315,10 @@ function placeLabels(
     }
 
     let best: { dx: number; dy: number; ring: number; dir: number } | null = null;
-    const reach = dotRadius + 6;
+    // Per-axis, so a wide pill pushes labels sideways without also pushing
+    // them down.
+    const reachX = dotHalf.x + 6;
+    const reachY = dotHalf.y + 6;
     for (const [r, d] of candidates) {
       const [ux, uy] = CANDIDATE_DIRECTIONS[d];
       // Only the gap scales with the ring. Clearing the dot costs half the
@@ -317,8 +326,8 @@ function placeLabels(
       // labels fly off: at ring 3.8 a 200px name sat ~490px from its dot,
       // stranded against the far edge of the map while its dot stayed put.
       // Scaling the gap alone keeps a pushed label beside the dot it names.
-      const cx = pt.x + ux * (reach * CANDIDATE_RINGS[r] + (w / 2) * Math.abs(ux));
-      const cy = pt.y + uy * (reach * CANDIDATE_RINGS[r] + (h / 2) * Math.abs(uy));
+      const cx = pt.x + ux * (reachX * CANDIDATE_RINGS[r] + (w / 2) * Math.abs(ux));
+      const cy = pt.y + uy * (reachY * CANDIDATE_RINGS[r] + (h / 2) * Math.abs(uy));
       const rect: Rect = { x: cx - w / 2, y: cy - h / 2, w, h };
       if (fits(rect)) {
         best = { dx: rect.x - pt.x, dy: rect.y - pt.y, ring: r, dir: d };
@@ -332,7 +341,7 @@ function placeLabels(
       // the overlap — a label you can half-read beats one that isn't there —
       // but still clamp it inside the map, since a label pushed off the edge is
       // not readable at all.
-      const cx = pt.x - (dotRadius + 6 + w / 2);
+      const cx = pt.x - (dotHalf.x + 6 + w / 2);
       const clamp = (v: number, span: number, box: number) =>
         Math.min(Math.max(v, EDGE_MARGIN), Math.max(box - span - EDGE_MARGIN, EDGE_MARGIN));
       const x = clamp(cx - w / 2, w, size.x);
@@ -362,11 +371,11 @@ function placeLabels(
 // made them collide in the first place.
 function BeachLabels({
   beaches,
-  dotRadius,
+  dotHalf,
   onSelect,
 }: {
   beaches: BeachData[];
-  dotRadius: number;
+  dotHalf: { x: number; y: number };
   onSelect: (code: string) => void;
 }) {
   const map = useMap();
@@ -378,10 +387,10 @@ function BeachLabels({
   const previous = useRef(new Map<string, { dir: number; ring: number }>());
 
   const recompute = useCallback(() => {
-    const next = placeLabels(map, beaches, dotRadius, previous.current);
+    const next = placeLabels(map, beaches, dotHalf, previous.current);
     previous.current = new Map(next.map((p) => [p.code, { dir: p.dir, ring: p.ring }]));
     setPlacements(next);
-  }, [map, beaches, dotRadius]);
+  }, [map, beaches, dotHalf]);
 
   useEffect(() => {
     // Deferred rather than called inline: placement reads container pixel
@@ -480,13 +489,11 @@ function FitAll({ beaches }: { beaches: BeachData[] }) {
 export default function OverviewMap({
   beaches,
   fallbackCenter,
-  hidePercent,
   binaryVerdict,
   onSelect,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
-  hidePercent: boolean;
   binaryVerdict: boolean;
   onSelect: (code: string) => void;
 }) {
@@ -515,7 +522,7 @@ export default function OverviewMap({
         <Marker
           key={b.code}
           position={[b.latitude, b.longitude]}
-          icon={dotIcon(b, hidePercent, binaryVerdict)}
+          icon={dotIcon(b, binaryVerdict)}
           eventHandlers={{ click: () => onSelect(b.code) }}
           keyboard
           title={b.name}
@@ -526,7 +533,11 @@ export default function OverviewMap({
           they stack above them. */}
       <BeachLabels
         beaches={beaches}
-        dotRadius={binaryVerdict ? 10 : 20}
+        dotHalf={
+          binaryVerdict
+            ? { x: PLAIN_DOT[0] / 2, y: PLAIN_DOT[1] / 2 }
+            : { x: BAND_DOT[0] / 2, y: BAND_DOT[1] / 2 }
+        }
         onSelect={onSelect}
       />
     </MapContainer>

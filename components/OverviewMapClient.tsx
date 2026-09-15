@@ -13,13 +13,11 @@ const OverviewMap = dynamic(() => import("./OverviewMap"), {
 export default function OverviewMapClient({
   beaches,
   fallbackCenter,
-  hidePercent,
   binaryVerdict,
   onSelect,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
-  hidePercent: boolean;
   binaryVerdict: boolean;
   onSelect: (code: string) => void;
 }) {
@@ -28,7 +26,6 @@ export default function OverviewMapClient({
       <OverviewMap
         beaches={beaches}
         fallbackCenter={fallbackCenter}
-        hidePercent={hidePercent}
         binaryVerdict={binaryVerdict}
         onSelect={onSelect}
       />

@@ -10,7 +10,7 @@ import {
   Popup,
   useMap,
 } from "react-leaflet";
-import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
+import { STATUS_LABEL, VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import {
   BASEMAP_ATTRIBUTION,
   BASEMAP_MAX_ZOOM,
@@ -36,7 +36,12 @@ function readingFor(beach: BeachData, binaryVerdict: boolean) {
       color: colorFor(VERDICT_AS_STATUS[beach.verdict]),
     };
   }
-  return { label: beach.status, color: colorFor(beach.status) };
+  // STATUS_LABEL, not beach.status. Status values are internal identifiers, and
+  // printing them here put the retired names ("Normal", "Not recommended") in
+  // every pin's tooltip and popup while the card beside it said "Low bacteria
+  // levels". The full phrase rather than the pin-sized word: a tooltip has room
+  // for it, and it matches the heading the reader lands on after clicking.
+  return { label: STATUS_LABEL[beach.status], color: colorFor(beach.status) };
 }
 
 function PanTo({ lat, lon }: { lat: number; lon: number }) {
