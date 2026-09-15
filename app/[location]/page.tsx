@@ -91,18 +91,13 @@ export default async function LocationPage({
               Ocean Water Quality
             </p>
           </div>
+          {/* The date, unadorned. The pulsing dot promised live data on a board
+              that publishes once a morning, and "Forecast for" named the thing
+              the whole page already is. What a reader needs from the header is
+              which day they are looking at. */}
           {predictionDate && (
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <span
-                aria-hidden="true"
-                className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
-              />
-              <span>
-                {features.currentConditionsLabel
-                  ? "Current conditions"
-                  : "Forecast"}{" "}
-                for {formatMonthDayYear(predictionDate)}
-              </span>
+            <div className="text-sm text-slate-600">
+              {formatMonthDayYear(predictionDate)}
             </div>
           )}
         </div>
