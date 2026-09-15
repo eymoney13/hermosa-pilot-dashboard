@@ -310,6 +310,17 @@ export const STATUS_BAND: Record<Status, { short: string; abbr: string }> = {
   "Not recommended": TIER_LABEL.high,
 };
 
+// Text colour for a band word laid across its own tier fill, wherever that
+// happens: the card's day cells and the list's reading column. Near-black is
+// fine on the green and the yellow and close to unreadable on the red, so the
+// red takes white. Lives here rather than in either component because the two
+// draw the same word on the same fill and must not drift apart.
+export const STATUS_BAND_TEXT: Record<Status, string> = {
+  Normal: "#173404",
+  "Slightly elevated": "#3f3a05",
+  "Not recommended": "#ffffff",
+};
+
 /**
  * A published run timestamp as a clock time on the board's own coast, e.g.
  * "4:57 AM". Null for anything unparseable, so a malformed cell drops the line
