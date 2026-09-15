@@ -109,6 +109,16 @@ export default async function LocationPage({
           locationLabel={config.displayName}
           fallbackCenter={config.mapFallbackCenter}
           features={features}
+          // Rendered inside the tabs: on a beach it belongs between the card
+          // and the map, and only that component knows which tab is open.
+          alertSignup={
+            alertsEnabled ? (
+              <BeachAlertSignup
+                beaches={beaches.map((b) => ({ code: b.code, name: b.name }))}
+                location={config.slug}
+              />
+            ) : null
+          }
           news={news}
           newsEnabled={newsEnabled}
         />
@@ -127,13 +137,6 @@ export default async function LocationPage({
             </p>
           </div>
         </div>
-      )}
-
-      {alertsEnabled && beaches.length > 0 && (
-        <BeachAlertSignup
-          beaches={beaches.map((b) => ({ code: b.code, name: b.name }))}
-          location={config.slug}
-        />
       )}
 
       {/* After the data and the signup, before the disclaimer. A reader reaches

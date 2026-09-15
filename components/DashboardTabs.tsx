@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
 import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
@@ -27,6 +27,7 @@ export default function DashboardTabs({
   locationLabel,
   fallbackCenter,
   features,
+  alertSignup,
   news,
   newsEnabled,
 }: {
@@ -34,6 +35,11 @@ export default function DashboardTabs({
   locationLabel: string;
   fallbackCenter: [number, number];
   features: FeatureFlags;
+  // The alert signup, passed in rather than built here: it needs the location
+  // slug and the alerts-configured check, both of which are the page's to know.
+  // Rendered here because where it belongs depends on which tab is open, which
+  // is this component's state and nothing the page can see.
+  alertSignup?: ReactNode;
   news: NewsItem[];
   newsEnabled: boolean;
 }) {
@@ -78,6 +84,7 @@ export default function DashboardTabs({
   const mapActive = activeCode === MAP_TAB;
   const listActive = activeCode === LIST_TAB;
   const newsActive = activeCode === NEWS_TAB;
+  const beachActive = !listActive && !mapActive && !newsActive;
   const active = beaches.find((b) => b.code === activeCode) ?? beaches[0];
   // The tab bar earns its keep when there's more than one beach to switch
   // between, or a News tab to reach.
@@ -222,6 +229,13 @@ export default function DashboardTabs({
             features={features}
           />
 
+          {/* Above the map, not below it. A reader who has opened a beach has
+              decided which one they care about, which is the moment the offer
+              to email them about it lands; the map underneath is for finding a
+              different one. Below the map it sat past the fold on a view whose
+              last element is a full-width map. */}
+          {alertSignup}
+
           <section className="w-full">
             <MapClient
               beaches={beaches}
@@ -233,6 +247,10 @@ export default function DashboardTabs({
           </section>
         </>
       )}
+
+      {/* Every other tab keeps it at the foot of the page. There is no single
+          beach in view to attach it to, so it stays where it was. */}
+      {!beachActive && alertSignup}
     </>
   );
 }
