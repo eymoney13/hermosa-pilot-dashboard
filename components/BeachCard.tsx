@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
 import {
   RISK_TIERS,
+  STATUS_LABEL,
   riskTier,
   VERDICT_AS_STATUS,
   type BeachData,
@@ -191,7 +192,7 @@ function StatusHero({
       <div className="flex items-center gap-3">
         <Icon className={`h-6 w-6 ${tint.deep}`} aria-hidden="true" />
         <p className={`text-xl font-medium ${tint.deep}`}>
-          {verdict ?? status}
+          {verdict ?? STATUS_LABEL[status]}
         </p>
       </div>
       <p className={`mt-2 ml-9 text-sm ${tint.mid}`}>
@@ -242,18 +243,18 @@ function exceedanceBody(pct: number): string {
     return `Less is better: under 30% means low risk. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria.`;
   }
 
-  // Tier 2: Caution (30-49%)
+  // Tier 2: Moderate (30-49%)
   if (pct < 50) {
-    return `Bacteria levels may be slightly elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, though most samples in this range still test below the EPA threshold.`;
+    return `Bacteria levels are likely moderate. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, though most samples in this range still test below the EPA threshold.`;
   }
 
-  // Tier 3: Not recommended (50-74%)
+  // Tier 3: High (50-74%)
   if (pct < 75) {
-    return `Bacteria levels are likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, and most samples in this range test above the EPA safe-swimming threshold.`;
+    return `Bacteria levels are likely high. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, and most samples in this range test above the EPA safe-swimming threshold.`;
   }
 
-  // Tier 4: Strongly not recommended (75-100%)
-  return `Bacteria levels are very likely elevated. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, well above the EPA safe-swimming threshold.`;
+  // Tier 4: Very high (75-100%)
+  return `Bacteria levels are very likely high. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, well above the EPA safe-swimming threshold.`;
 }
 
 function ExceedanceScale({
@@ -411,7 +412,7 @@ function SevenDayWindow({
           // Each day is scored against its own cutoff — Boston's model re-tunes
           // the threshold per forecast horizon.
           const verdict = binaryVerdict ? day.verdict ?? null : null;
-          const readout = verdict ?? `${day.status} · ${pct}%`;
+          const readout = verdict ?? `${STATUS_LABEL[day.status]} · ${pct}%`;
 
           return (
             <button

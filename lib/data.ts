@@ -175,6 +175,16 @@ export function getLocation(slug: string): LocationConfig | undefined {
   return LOCATIONS[slug];
 }
 
+/**
+ * The internal 3-tier classification. These values are IDENTIFIERS, not display
+ * text: they key the colour, tint and icon maps, decide which beaches an alert
+ * goes out for, and are compared against in a dozen places. What a reader
+ * actually sees is STATUS_LABEL[status].
+ *
+ * They were the display strings until the key was renamed to describe bacteria
+ * levels. Renaming them too would have meant editing the alert filter and every
+ * palette map to no purpose, so they stayed put and the labels moved out.
+ */
 export type Status = "Normal" | "Slightly elevated" | "Not recommended";
 
 // The read used by boards whose model publishes a straight Safe/Unsafe call
@@ -219,6 +229,21 @@ export const MODERATE_BAND_RATIO = 0.75;
 // A lab result above this is classified as an exceedance ("actually unsafe").
 export const EPA_MPN_THRESHOLD = 104;
 
+// What the dashboard calls each risk band, defined once and referenced by both
+// the legend and the per-status lookup below so the two can never drift.
+//
+// These name the BACTERIA LEVEL, not a swimming recommendation. An earlier set
+// ("Normal", "Not recommended") mixed the two: the first three described a
+// reading and the fourth gave advice, so the key changed subject halfway down.
+// Describing the level throughout leaves the advice to the subtitle, which can
+// say it in a full sentence with the EPA threshold attached.
+export const TIER_LABEL = {
+  low: "Low bacteria levels",
+  moderate: "Moderate bacteria levels",
+  high: "High bacteria levels",
+  veryHigh: "Very high bacteria levels",
+} as const;
+
 // Risk tiers keyed to exceedance percent — the single source of truth shared by
 // the exceedance-scale legend (BeachCard) and the forecast-accuracy detail
 // (ForecastAccuracy), so a sample's tier label always matches the legend.
@@ -231,10 +256,10 @@ export interface RiskTier {
 }
 
 export const RISK_TIERS: RiskTier[] = [
-  { label: "Normal", range: "0–29", color: "#97C459", textColor: "#2D5A0B", maxExclusive: 30 },
-  { label: "Slightly elevated", range: "30–49", color: "#D5C82E", textColor: "#6B5F0E", maxExclusive: 50 },
-  { label: "Not recommended", range: "50–74", color: "#E24B4A", textColor: "#7A1F1F", maxExclusive: 75 },
-  { label: "Strongly not recommended", range: "75–100", color: "#A32D2D", textColor: "#5A1414", maxExclusive: Infinity },
+  { label: TIER_LABEL.low, range: "0–29", color: "#97C459", textColor: "#2D5A0B", maxExclusive: 30 },
+  { label: TIER_LABEL.moderate, range: "30–49", color: "#D5C82E", textColor: "#6B5F0E", maxExclusive: 50 },
+  { label: TIER_LABEL.high, range: "50–74", color: "#E24B4A", textColor: "#7A1F1F", maxExclusive: 75 },
+  { label: TIER_LABEL.veryHigh, range: "75–100", color: "#A32D2D", textColor: "#5A1414", maxExclusive: Infinity },
 ];
 
 // The risk tier for an exceedance percentage (0–100).
@@ -244,6 +269,20 @@ export function riskTier(pct: number): RiskTier {
     RISK_TIERS[RISK_TIERS.length - 1]
   );
 }
+
+// What a reader sees for an internal Status. Drawn from the same TIER_LABEL
+// constants the legend uses, so the hero and the key cannot disagree.
+//
+// Status has three values where the legend shows four: "Not recommended" covers
+// everything from 50% up, while the legend splits that at 75%. So a beach above
+// 75% reads "High bacteria levels" here and the key lists "Very high" as a
+// separate band. That gap predates this rename (Status has always been 3-way
+// and the legend 4-way); the new names only make it easier to notice.
+export const STATUS_LABEL: Record<Status, string> = {
+  Normal: TIER_LABEL.low,
+  "Slightly elevated": TIER_LABEL.moderate,
+  "Not recommended": TIER_LABEL.high,
+};
 
 // The tier label for an exceedance percentage (0–100).
 export function riskTierLabel(pct: number): string {

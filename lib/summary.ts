@@ -495,15 +495,15 @@ export interface SummaryInput {
 // sits directly beneath the card's own label. Two boards label a day two ways:
 // a binaryVerdict board shows the model's Good/Moderate/Poor call against the
 // beach's own cutoff, and every other board shows the shared 30/50/75 risk
-// tiers. Those disagree — a 34% day is "Good" against a 50% cutoff and
-// "Slightly elevated" on the shared scale — so a summary that always spoke in
-// verdicts would open "expected to have good water quality" directly under a
-// card reading "Slightly elevated". On South Bay's record that lands on 8% of
-// scored beach-days.
+// tiers. Those disagree: a 34% day is "Good" against a 50% cutoff and
+// "Moderate bacteria levels" on the shared scale, so a summary that always
+// spoke in verdicts would open "expected to have good water quality" directly
+// under a card reading "Moderate bacteria levels". On South Bay's record that
+// lands on 8% of scored beach-days.
 //
 // So the vocabulary is chosen by the caller, which is the only party that knows
 // which label it rendered. Nothing about the underlying call changes: the tier
-// board still ranks and orders exactly as before, it just says "normal bacteria
+// board still ranks and orders exactly as before, it just says "low bacteria
 // levels" where the verdict board says "good water quality".
 interface Vocabulary {
   /** "<subject> is expected to have <this>" — the noun phrase for a rating. */
@@ -521,20 +521,23 @@ const VERDICT_VOCAB: Vocabulary = {
   word: { Good: "good", Moderate: "moderate", Poor: "poor" },
 };
 
+// The key's own words, lowercased for mid-sentence use. Kept in step with
+// TIER_LABEL in lib/data.ts: the paragraph sits under the card's label and the
+// key sits beside it, so a reader meets the same three words in both places.
 const TIER_VOCAB: Vocabulary = {
   phrase: {
-    Good: "normal bacteria levels",
-    Moderate: "slightly elevated bacteria levels",
-    Poor: "elevated bacteria levels",
+    Good: "low bacteria levels",
+    Moderate: "moderate bacteria levels",
+    Poor: "high bacteria levels",
   },
-  word: { Good: "normal", Moderate: "slightly elevated", Poor: "elevated" },
+  word: { Good: "low", Moderate: "moderate", Poor: "high" },
 };
 
 // The shared risk tiers onto the three ratings the prose is built around. The
-// mapping is 1:1 — Status is the internal 3-tier value; the "Strongly not
-// recommended" label BeachCard shows above 75% is a display refinement of "Not
-// recommended" and needs no separate word here, because the card states that
-// advice immediately above the paragraph.
+// mapping is 1:1, since Status is the internal 3-tier value. The key's fourth
+// band ("Very high bacteria levels", above 75%) needs no separate word here:
+// Status does not distinguish it either, so the paragraph says "high bacteria
+// levels" wherever the card's own label does.
 const VERDICT_OF_STATUS: Record<Status, Verdict> = {
   Normal: "Good",
   "Slightly elevated": "Moderate",
