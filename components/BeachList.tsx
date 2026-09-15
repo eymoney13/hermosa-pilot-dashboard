@@ -1,7 +1,14 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import { formatMonthDayYear, VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
+import {
+  formatMonthDayYear,
+  STATUS_BAND,
+  STATUS_BAND_TEXT,
+  STATUS_LABEL,
+  VERDICT_AS_STATUS,
+  type BeachData,
+} from "@/lib/data";
 import { VERDICT_CELL_COLOR, VERDICT_CELL_TEXT } from "@/lib/window";
 
 // Every beach on one screen: the name on the left, today's call on the right,
@@ -73,8 +80,11 @@ export default function BeachList({
         {beaches.map((beach) => {
           const verdict = binaryVerdict ? beach.verdict : null;
           const pct = Math.round(beach.probability * 100);
-          const label = verdict ?? `${pct}${hidePercent ? "" : "%"}`;
           const status = verdict ? VERDICT_AS_STATUS[verdict] : beach.status;
+          const pctText = `${pct}${hidePercent ? "" : "%"}`;
+          // A binary board's cell is the verdict alone; it publishes no
+          // percentage to stack anything under.
+          const label = verdict ?? `${pctText}, ${STATUS_LABEL[beach.status]}`;
 
           return (
             <li key={beach.code}>
@@ -101,17 +111,41 @@ export default function BeachList({
                   {beach.name}
                 </span>
 
+                {/* The word leads and the number supports it. Scanning a list
+                    of thirteen beaches, "Moderate" is the answer and 37% is the
+                    working behind it, so the word takes the larger type and the
+                    top line. Stacked rather than side by side because the
+                    column is 80px wide and the two together read as one
+                    reading, not two columns to compare across rows.
+
+                    The word takes the same colour treatment as the card's day
+                    cells, which draw the same word on the same fill. */}
                 <span
                   aria-hidden="true"
-                  className="flex h-7 w-20 shrink-0 items-center justify-center rounded-sm text-[11px] font-semibold"
+                  className={`flex w-20 shrink-0 flex-col items-center justify-center rounded-sm ${
+                    verdict ? "h-7" : "h-10"
+                  }`}
                   style={{
                     backgroundColor: verdict
                       ? VERDICT_CELL_COLOR[verdict]
                       : TIER_CELL_COLOR[status],
-                    color: verdict ? VERDICT_CELL_TEXT[verdict] : "#1f2937",
+                    color: verdict
+                      ? VERDICT_CELL_TEXT[verdict]
+                      : STATUS_BAND_TEXT[status],
                   }}
                 >
-                  {label}
+                  {verdict ? (
+                    <span className="text-[11px] font-semibold">{verdict}</span>
+                  ) : (
+                    <>
+                      <span className="text-xs font-semibold leading-none">
+                        {STATUS_BAND[status].short}
+                      </span>
+                      <span className="mt-0.5 text-[10px] font-medium leading-none tabular-nums">
+                        {pctText}
+                      </span>
+                    </>
+                  )}
                 </span>
 
                 {/* The row leads somewhere, and on a touch screen nothing else

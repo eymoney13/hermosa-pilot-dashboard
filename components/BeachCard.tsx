@@ -5,6 +5,7 @@ import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
 import {
   RISK_TIERS,
   STATUS_BAND,
+  STATUS_BAND_TEXT,
   STATUS_LABEL,
   riskTier,
   VERDICT_AS_STATUS,
@@ -50,15 +51,6 @@ const STATUS_TINT: Record<Status, { bg: string; deep: string; mid: string }> = {
     deep: "text-[#412402]",
     mid: "text-[#cc3333]",
   },
-};
-
-// Text colour for a band word sitting on its own tier fill. The percentages
-// have always used near-black, which is legible enough on a two-digit number
-// but not on a word laid across the dark reds.
-const BAND_CELL_TEXT: Record<Status, string> = {
-  Normal: "#173404",
-  "Slightly elevated": "#3f3a05",
-  "Not recommended": "#ffffff",
 };
 
 // Day-cell fills for the binary boards, drawn from the same green/red the tier
@@ -516,7 +508,7 @@ function SevenDayWindow({
                   // tree so a screen reader hears the word once.
                   <span
                     className="text-[10px] font-semibold"
-                    style={{ color: BAND_CELL_TEXT[day.status] }}
+                    style={{ color: STATUS_BAND_TEXT[day.status] }}
                   >
                     <span className="sm:hidden">
                       {STATUS_BAND[day.status].abbr}
