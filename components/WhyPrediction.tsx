@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ChevronDown } from "lucide-react";
 import {
   subtractDays,
@@ -76,6 +76,10 @@ function DirectionArrow({
   );
 }
 
+// Matches the duration-[250ms] on the panel below. Tailwind needs that as a
+// literal class, so the two cannot share one constant; keep them in step.
+const PANEL_TRANSITION_MS = 250;
+
 export default function WhyPrediction({
   figures,
   factors,
@@ -112,6 +116,31 @@ export default function WhyPrediction({
   hideContributingFactors?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  // True only once the expand animation has finished. The panel has to clip
+  // while it is collapsed and while it is moving, or the content spills out of
+  // a row that is still shorter than it is. But clipping a panel that has
+  // finished opening also clips anything trying to escape it, and the
+  // probability readout's tooltip opens upward from the very first row: on
+  // desktop it is absolutely positioned, so it was drawn straight into the
+  // clipped region and never appeared. Mobile pins the same tooltip with
+  // position:fixed, which ignores clipping ancestors, which is why it worked
+  // there and only there.
+  const [expanded, setExpanded] = useState(false);
+
+  // Driven by a timer rather than by transitionend, which only fires if the
+  // transition actually runs. It does not in a backgrounded tab, and not at all
+  // in a browser that cannot interpolate grid-template-rows, and either case
+  // would leave the panel clipped for good and the tooltip invisible with no
+  // way back. A timer always fires, and being early or late by a frame costs
+  // nothing: the worst case is that the clip lifts slightly before the row has
+  // finished growing.
+  // Only ever schedules the unclip. Re-clipping happens in the toggle below,
+  // where it is an event and not a cascading render.
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => setExpanded(true), PANEL_TRANSITION_MS);
+    return () => clearTimeout(t);
+  }, [open]);
   const sampleMeta = sampleMetadataFor(daysSinceSample, predictionDate);
   const labSentence = labSampleSentence(lastResult);
   const directions = directionsByFactor(drivers);
@@ -145,7 +174,11 @@ export default function WhyPrediction({
     <div className="border-t border-gray-100">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          // Clip again the moment a collapse starts, not when it ends.
+          setExpanded(false);
+          setOpen((o) => !o);
+        }}
         aria-expanded={open}
         aria-controls="why-prediction-panel"
         className="w-full py-3 flex justify-between items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
@@ -166,7 +199,7 @@ export default function WhyPrediction({
         {/* grid-rows 0fr/1fr collapse: animates cleanly regardless of content
             height, so the nested Forecast-accuracy card can expand without
             being clipped (a fixed max-height could not accommodate it). */}
-        <div className="overflow-hidden">
+        <div className={expanded ? "overflow-visible" : "overflow-hidden"}>
           <div className="pb-5 space-y-6">
             {figures}
 
