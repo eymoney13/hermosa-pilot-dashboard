@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Check, ChevronDown, Target, X } from "lucide-react";
 import {
@@ -11,6 +12,7 @@ import {
   type Accuracy,
   type AccuracySample,
 } from "@/lib/data";
+import { faqHref, FAQ_LINKS } from "@/lib/faq";
 
 const MATCH_COLOR = "#2d8a4e"; // green — the forecast call agreed with the lab
 const MISS_COLOR = "#cc3333"; // red — the forecast call disagreed with the lab
@@ -249,6 +251,16 @@ export default function ForecastAccuracy({
                 A match means our risk call agreed with whether the lab result
                 was above or below the EPA threshold of 104 MPN/100mL.
               </p>
+
+              {/* A hit rate invites the question it cannot answer: is that
+                  good? The reader is already looking at the number, so the
+                  longer answer is offered here rather than left to be found. */}
+              <Link
+                href={faqHref(FAQ_LINKS.accuracy)}
+                className="text-xs text-[#2C8487] underline hover:text-[#1f6366]"
+              >
+                How accurate is the model?
+              </Link>
             </div>
           ) : (
             <div className="px-3 pb-3 pt-1">
