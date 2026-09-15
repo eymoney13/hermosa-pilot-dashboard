@@ -146,6 +146,11 @@ interface RosterFile {
 interface RosterEntry {
   code: string;
   name: string;
+  /**
+   * The name to use in a sentence. Differs from `name` only where the roster
+   * appends something purely to disambiguate a tab label.
+   */
+  proseName: string;
   latitude?: number;
   longitude?: number;
   excRatePct?: number;
@@ -168,16 +173,24 @@ async function resolveRoster(config: LocationConfig): Promise<RosterEntry[]> {
         code: String(b.primary_station),
         // Town disambiguates the several "Town Beach"-style names in the roster.
         name: b.town ? `${b.name} - ${b.town}` : b.name,
+        // Prose drops it again: "Carson Beach is expected to..." reads better
+        // than "Carson Beach - South Boston is expected to...", and the card
+        // the sentence sits on is already titled with the town.
+        proseName: b.name,
         latitude: Number(b.lat),
         longitude: Number(b.lon),
         excRatePct: numOrUndefined(b.exc_rate_pct),
         nSamples: numOrUndefined(b.n_samples),
       }));
   }
-  return config.stations.map((code) => ({
-    code,
-    name: config.beachNames[code] ?? code,
-  }));
+  // A configured roster has no appended disambiguator to drop. Its names carry
+  // the street or landmark that tells two stations at one beach apart
+  // ("Hermosa Beach - 26th St" vs "Hermosa Beach - Herondo St"), so prose needs
+  // every word of them.
+  return config.stations.map((code) => {
+    const name = config.beachNames[code] ?? code;
+    return { code, name, proseName: name };
+  });
 }
 
 async function loadThresholds(slug: string): Promise<Record<string, number>> {
@@ -513,6 +526,7 @@ export async function loadDashboardData(
     beaches.push({
       code,
       name: entry.name,
+      proseName: entry.proseName,
       // Roster coordinates win when present; the CA boards carry theirs in the
       // nowcast itself.
       latitude: entry.latitude ?? Number(now.Latitude),
