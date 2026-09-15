@@ -129,15 +129,21 @@ function predictionSubtitle(
   when = "today",
   verdict: Verdict | null = null
 ): string {
-  // Moderate has to say two things at once: something is pushing bacteria up,
-  // and it is still expected to stay under the limit. "Predicted to be below
-  // the threshold" alone reads identically to a clean day, which leaves the
-  // yellow doing all the work and the word explaining none of it.
+  // A middle day has to say two things at once: something is pushing bacteria
+  // up, and it is still expected to stay under the limit. "Predicted to be
+  // below the threshold" alone reads identically to a clean day, which leaves
+  // the yellow doing all the work and the words explaining none of it.
   //
-  // Keyed to the verdict, not to the equivalent tier, so the 3-tier boards'
-  // "Slightly elevated" subtitle is untouched.
+  // Both boards need that, but each says it in its own vocabulary: the binary
+  // board is describing its Moderate verdict, the 3-tier boards the middle
+  // band of the key.
   if (verdict === "Moderate") {
     return `Bacteria levels may be elevated but still predicted to be below the EPA swimming threshold ${when}.`;
+  }
+  // Guarded on the absence of a verdict, not on the tier alone: Boston can pair
+  // a Good verdict with this tier, and that day should keep reading as Good.
+  if (!verdict && status === "Slightly elevated") {
+    return `Predicted to be slightly elevated but still below the EPA swimming threshold ${when}.`;
   }
   const verb =
     status === "Not recommended"
