@@ -344,11 +344,21 @@ function ExceedanceDetail({
               style={{ backgroundColor: tier.color }}
               aria-hidden="true"
             />
-            <dt className="text-gray-600">{tier.label}</dt>
-            <dd className="ml-auto tabular-nums text-gray-500">
+            {/* Range first, name second, and the roles swap with them: read
+                this way the percentage is the term and the name is what that
+                band is called, which is the direction a reader actually goes
+                once they have a number in front of them.
+
+                The range gets a fixed column rather than being pushed apart by
+                ml-auto. Widths run from "0-29%" to "75-100%", so left-aligning
+                them without one would start every name at a different x, and
+                right-aligning the names instead would ragged-edge a list whose
+                entries are 19 to 25 characters long. */}
+            <dt className="w-16 shrink-0 tabular-nums text-gray-500">
               {tier.range}
               {hidePercent ? "" : "%"}
-            </dd>
+            </dt>
+            <dd className="text-gray-600">{tier.label}</dd>
           </div>
         ))}
       </dl>
