@@ -196,3 +196,42 @@ export function directionsByFactor(
   }
   return map;
 }
+
+
+/**
+ * How a direction is drawn next to a factor: an arrow, a colour, and the words
+ * a screen reader gets instead.
+ *
+ * The arrow points the way WATER QUALITY is going, not the way the model's risk
+ * number is. Those are opposites, and the reader's question is about the water:
+ * a factor the model scored as "increasing risk" is making the water worse, so
+ * it gets a red arrow up, and one decreasing risk is making it cleaner, so it
+ * gets a green arrow down. Picking the other convention would mean a green
+ * arrow pointing up on a day the beach is getting dirtier.
+ *
+ * `label` is not decoration. Colour and arrow direction are the only things
+ * carrying this meaning visually, which leaves out anyone reading with a screen
+ * reader and anyone who cannot separate the red from the green, so the words go
+ * in the markup too.
+ */
+export interface DirectionStyle {
+  /** Which way the arrow points, following water quality. */
+  arrow: "up" | "down";
+  color: string;
+  label: string;
+}
+
+export const DIRECTION_STYLE: Record<FactorDirection, DirectionStyle> = {
+  "increasing risk": {
+    arrow: "up",
+    // The same pair ForecastAccuracy draws its matched/missed samples in, so
+    // green and red mean one thing across the card.
+    color: "#cc3333",
+    label: "making water quality worse",
+  },
+  "decreasing risk": {
+    arrow: "down",
+    color: "#2d8a4e",
+    label: "making water quality cleaner",
+  },
+};

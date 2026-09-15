@@ -1,9 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { subtractDays, type Accuracy, type Driver } from "@/lib/data";
-import { directionsByFactor, factorEffect } from "@/lib/factorEffects";
+import { ArrowDown, ArrowUp, ChevronDown } from "lucide-react";
+import {
+  subtractDays,
+  type Accuracy,
+  type Driver,
+  type FactorDirection,
+} from "@/lib/data";
+import {
+  DIRECTION_STYLE,
+  directionsByFactor,
+  factorEffect,
+} from "@/lib/factorEffects";
 import { labSampleSentence } from "@/lib/insight";
 import ForecastAccuracy from "./ForecastAccuracy";
 
@@ -36,6 +45,35 @@ function sampleMetadataFor(
   else if (daysSinceSample === 1) prefix = "Taken 1 day ago";
   else prefix = `Taken ${daysSinceSample} days ago`;
   return `${prefix} · ${formatted}`;
+}
+
+// The arrow beside a factor, pointing the way that factor is taking water
+// quality: red up for worse, green down for cleaner. Nothing renders for a
+// factor whose direction the backend did not publish, since the same factor
+// reads both ways on different days and a guessed arrow would be a coin flip
+// drawn as a fact.
+function DirectionArrow({
+  direction,
+}: {
+  direction: FactorDirection | undefined;
+}) {
+  if (!direction) return null;
+  const { arrow, color, label } = DIRECTION_STYLE[direction];
+  const Icon = arrow === "up" ? ArrowUp : ArrowDown;
+  return (
+    <span className="inline-flex items-center">
+      <Icon
+        className="h-3.5 w-3.5 shrink-0"
+        style={{ color }}
+        strokeWidth={2.5}
+        aria-hidden="true"
+      />
+      {/* Colour and arrow direction are the whole of the visual signal, which
+          leaves out screen-reader users and anyone who cannot tell the red from
+          the green. The words carry the same meaning for them. */}
+      <span className="sr-only">{label}</span>
+    </span>
+  );
 }
 
 export default function WhyPrediction({
@@ -129,14 +167,18 @@ export default function WhyPrediction({
                     // Explanation sits under its own factor rather than in one
                     // list further down, so a reader never has to count rows to
                     // work out which line belongs to which name.
-                    const effect = factorEffect(factor, directions.get(factor));
+                    const direction = directions.get(factor);
+                    const effect = factorEffect(factor, direction);
                     return (
                       <li key={`${factor}-${i}`} className="flex gap-3">
                         <span className="text-gray-400 tabular-nums">
                           {i + 1}.
                         </span>
                         <span>
-                          {factor}
+                          <span className="inline-flex items-center gap-1.5">
+                            <span>{factor}</span>
+                            <DirectionArrow direction={direction} />
+                          </span>
                           {effect && (
                             <span className="mt-1 flex gap-2 text-gray-500">
                               <span aria-hidden="true">&bull;</span>
