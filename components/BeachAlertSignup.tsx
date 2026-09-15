@@ -91,8 +91,14 @@ export default function BeachAlertSignup({
 
   return (
     <>
-      <div className="mx-auto w-full max-w-6xl px-6 sm:px-10 pt-2 pb-8">
-        <div className="flex flex-col items-center gap-5 rounded-lg border border-gray-200 bg-gray-50 px-6 py-8 text-center">
+      {/* The button alone. The panel it used to sit in framed one control and
+          a sentence restating it: the button already says it will email you
+          when your beach has elevated bacteria levels, so the line underneath
+          said it a second time at twice the size. With the sentence gone the
+          box had nothing left to group, and a filled teal button needs no
+          grey card behind it to read as the thing to press. */}
+      <div className="mx-auto w-full max-w-6xl px-6 sm:px-10 py-8">
+        <div className="flex justify-center">
           <button
             ref={triggerRef}
             type="button"
@@ -103,10 +109,6 @@ export default function BeachAlertSignup({
             <Mail className="h-5 w-5 shrink-0" aria-hidden="true" />
             Email me when my beach has elevated bacteria levels
           </button>
-          <p className="max-w-2xl text-lg text-slate-600 sm:text-xl">
-            We&apos;ll tell you when the beaches you swim at are forecast to
-            have elevated bacteria levels.
-          </p>
         </div>
       </div>
 
