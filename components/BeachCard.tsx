@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
 import {
   RISK_TIERS,
+  STATUS_BAND,
   STATUS_LABEL,
   riskTier,
   VERDICT_AS_STATUS,
@@ -51,6 +52,15 @@ const STATUS_TINT: Record<Status, { bg: string; deep: string; mid: string }> = {
   },
 };
 
+// Text colour for a band word sitting on its own tier fill. The percentages
+// have always used near-black, which is legible enough on a two-digit number
+// but not on a word laid across the dark reds.
+const BAND_CELL_TEXT: Record<Status, string> = {
+  Normal: "#173404",
+  "Slightly elevated": "#3f3a05",
+  "Not recommended": "#ffffff",
+};
+
 function tierColorForCell(prob: number): string {
   const pct = prob * 100;
   if (pct < 30) return "#97C459";
@@ -63,21 +73,6 @@ function tierColorForCell(prob: number): string {
 // scale uses at its ends.
 const SCALE_GRADIENT =
   "linear-gradient(to right, #97C459 0%, #97C459 25%, #EF9F27 40%, #EF9F27 55%, #E24B4A 65%, #A32D2D 100%)";
-
-const TIER_PILL: Record<string, { bg: string; text: string }> = {
-  "Generally safe": { bg: "#CFE5AC", text: "#2D5A0B" },
-  Caution: { bg: "#E5DA5B", text: "#6B5F0E" },
-  "Not recommended": { bg: "#F4C2C2", text: "#7A1F1F" },
-  "Strongly not recommended": { bg: "#E89B9B", text: "#5A1414" },
-};
-
-function tierFor(prob: number): string {
-  const pct = prob * 100;
-  if (pct < 30) return "Generally safe";
-  if (pct < 50) return "Caution";
-  if (pct < 75) return "Not recommended";
-  return "Strongly not recommended";
-}
 
 function articleFor(num: number): string {
   // "an" before 8, 11, 18, 80-89; "a" otherwise.
@@ -263,17 +258,13 @@ function exceedanceBody(pct: number): string {
   return `Bacteria levels are very likely high. There's ${article} ${pct}% chance the water has an unsafe amount of bacteria, well above the EPA safe-swimming threshold.`;
 }
 
-function ExceedanceScale({
-  probability,
-  hidePercent,
-  hideReadout,
-}: {
-  probability: number;
-  hidePercent: boolean;
-  hideReadout: boolean;
-}) {
+// The gradient bar and its marker: where today sits on the scale, with no
+// numbers on it. Kept next to the status read because it is the picture of the
+// call the heading just made; the figures behind it moved into Behind the
+// Prediction (see ExceedanceDetail), which is what lets the week sit directly
+// underneath the bar.
+function ExceedanceBar({ probability }: { probability: number }) {
   const probClamped = Math.max(0, Math.min(1, probability));
-  const pct = Math.round(probClamped * 100);
   const left = `${probClamped * 100}%`;
 
   return (
@@ -294,31 +285,61 @@ function ExceedanceScale({
           aria-hidden="true"
         />
       </div>
+    </div>
+  );
+}
 
+// The figures behind the bar: the probability itself and the key naming each
+// band. Rendered inside Behind the Prediction rather than on the face of the
+// card, so the card leads with the call, the bar and the week, and a reader who
+// wants the number opens the panel for it.
+function ExceedanceDetail({
+  probability,
+  hidePercent,
+  hideReadout,
+}: {
+  probability: number;
+  hidePercent: boolean;
+  hideReadout: boolean;
+}) {
+  const probClamped = Math.max(0, Math.min(1, probability));
+  const pct = Math.round(probClamped * 100);
+
+  return (
+    <div>
       {!hideReadout && (
-        <div className="mt-4 flex items-center gap-2">
-          <span
-            className="inline-flex items-center rounded-md px-2 py-0.5 text-2xl font-medium tabular-nums"
-            style={{
-              backgroundColor: TIER_PILL[tierFor(probability)].bg,
-              color: TIER_PILL[tierFor(probability)].text,
-            }}
-          >
-            {pct}
-            {hidePercent ? "" : "%"}
-          </span>
-          <span className="text-base text-gray-500">
-            probability of unsafe bacteria levels
-          </span>
-          <InfoTooltip
-            title="Probability of unsafe bacteria levels"
-            body={exceedanceBody(pct)}
-            ariaLabel="About the probability of unsafe bacteria levels"
-          />
+        <div>
+          {/* The number is set in its own tier's saturated colour rather than
+              boxed in a filled pill. The band is already named above the card
+              and drawn along the bar, so a second block of colour was repeating
+              a point that had been made twice; colouring the figure keeps the
+              cue and drops the box.
+
+              The sentence is dark, not grey. It says what the number measures,
+              which is the one thing a reader needs to use it, and setting the
+              only explanation on screen in the lightest tone available argued
+              the opposite. */}
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span
+              className="text-[28px] font-semibold leading-none tracking-tight tabular-nums"
+              style={{ color: riskTier(pct).textColor }}
+            >
+              {pct}
+              {hidePercent ? "" : "%"}
+            </span>
+            <span className="text-[15px] font-medium text-gray-800">
+              chance of unsafe bacteria levels
+            </span>
+            <InfoTooltip
+              title="Probability of unsafe bacteria levels"
+              body={exceedanceBody(pct)}
+              ariaLabel="About the probability of unsafe bacteria levels"
+            />
+          </div>
         </div>
       )}
 
-      <dl className="mt-3 space-y-1">
+      <dl className={`space-y-1 ${hideReadout ? "" : "mt-3"}`}>
         {RISK_TIERS.map((tier) => (
           <div key={tier.label} className="flex items-center gap-2 text-xs">
             <span
@@ -372,11 +393,23 @@ function SevenDayWindow({
   onSelect,
   hidePercent,
   binaryVerdict,
+  readout,
+  title,
 }: {
   cells: WindowCell[];
   selectedDate: string;
   onSelect: (date: string) => void;
   hidePercent: boolean;
+  // What a cell says: its band ("Moderate") or its number ("34%"). The card
+  // shows one of each, the band copy up with the scale bar where the week is
+  // read at a glance, the number copy down in Behind the Prediction. Ignored on
+  // a binary board, which writes its own verdict into every cell.
+  readout: "band" | "percent";
+  // null drops the heading entirely. The copy inside Behind the Prediction
+  // takes that: it sits under the key it is keyed to, in a panel whose own
+  // heading already frames everything in it, so naming it again would caption a
+  // strip the reader is already looking at.
+  title?: string | null;
   // Binary boards write the Good/Poor call into each day cell and colour it to
   // match. No number: a percentage here would contradict a board built to hide
   // it, and a bare coloured bar leaves the reader decoding a legend.
@@ -397,9 +430,11 @@ function SevenDayWindow({
 
   return (
     <div>
-      <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
-        {cells.length}-Day Window
-      </p>
+      {title !== null && (
+        <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
+          {title ?? `${cells.length}-Day Window`}
+        </p>
+      )}
 
       <div style={gridStyle}>
         {cells.map(({ day, type }) => {
@@ -418,7 +453,10 @@ function SevenDayWindow({
           // Each day is scored against its own cutoff — Boston's model re-tunes
           // the threshold per forecast horizon.
           const verdict = binaryVerdict ? day.verdict ?? null : null;
-          const readout = verdict ?? `${STATUS_LABEL[day.status]} · ${pct}%`;
+          // The tooltip and screen-reader text, which name the band AND the
+          // number whichever the cell itself is showing.
+          const cellSummary =
+            verdict ?? `${STATUS_LABEL[day.status]} · ${pct}%`;
 
           return (
             <button
@@ -426,8 +464,8 @@ function SevenDayWindow({
               key={day.date}
               onClick={() => onSelect(day.date)}
               aria-pressed={isSelected}
-              title={`${weekdayShort(day.date)} · ${readout}`}
-              aria-label={`View ${day.date}: ${readout}`}
+              title={`${weekdayShort(day.date)} · ${cellSummary}`}
+              aria-label={`View ${day.date}: ${cellSummary}`}
               className="flex w-full flex-col items-center gap-1 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             >
               <span className={`text-[11px] ${dayLabelClass}`}>
@@ -456,6 +494,22 @@ function SevenDayWindow({
                       {VERDICT_CELL_SHORT[verdict]}
                     </span>
                     <span className="hidden sm:inline">{verdict}</span>
+                  </span>
+                ) : readout === "band" ? (
+                  // Same two-span treatment as the verdict cells above, and for
+                  // the same reason: a clipped "Moderat" reads as a bug, and
+                  // display:none keeps the hidden copy out of the accessibility
+                  // tree so a screen reader hears the word once.
+                  <span
+                    className="text-[10px] font-semibold"
+                    style={{ color: BAND_CELL_TEXT[day.status] }}
+                  >
+                    <span className="sm:hidden">
+                      {STATUS_BAND[day.status].abbr}
+                    </span>
+                    <span className="hidden sm:inline">
+                      {STATUS_BAND[day.status].short}
+                    </span>
                   </span>
                 ) : (
                   <span className="text-[10px] font-medium text-gray-900">
@@ -550,13 +604,28 @@ export default function BeachCard({
       })
     : [];
 
-  const dayWindow = (
+  // Two copies of one week, differing only in what each cell says. Both drive
+  // the same selectedDate, so whichever a reader taps, the other follows and the
+  // card explains the day they picked.
+  //
+  // The split is which question is being asked. Up by the bar, the week is
+  // scanned: bands answer "which days are worth avoiding" in one pass, where a
+  // row of two-digit numbers has to be read and ranked first. In Behind the
+  // Prediction, where a reader has gone looking for the workings, the numbers
+  // are the point.
+  const dayWindowProps = {
+    cells,
+    selectedDate,
+    onSelect: setSelectedDate,
+    hidePercent: features.hidePercentSign,
+    binaryVerdict: features.binaryVerdict,
+  };
+  const bandWindow = <SevenDayWindow {...dayWindowProps} readout="band" />;
+  const percentWindow = (
     <SevenDayWindow
-      cells={cells}
-      selectedDate={selectedDate}
-      onSelect={setSelectedDate}
-      hidePercent={features.hidePercentSign}
-      binaryVerdict={features.binaryVerdict}
+      {...dayWindowProps}
+      readout="percent"
+      title={null}
     />
   );
 
@@ -570,7 +639,7 @@ export default function BeachCard({
             and they can see that cell without scrolling either way. Rendered
             from one variable so the two orders cannot drift into two different
             day strips. */}
-        {features.forecastWindowFirst && dayWindow}
+        {features.forecastWindowFirst && bandWindow}
 
         <div className="space-y-3">
           <StatusHero
@@ -588,15 +657,15 @@ export default function BeachCard({
               board's cutoffs sit well below that, so the bar and its legend
               would describe a scale this beach is not measured on. */}
           {!features.binaryVerdict && (
-            <ExceedanceScale
-              probability={activeDay.probability}
-              hidePercent={features.hidePercentSign}
-              hideReadout={features.hideExceedanceReadout}
-            />
+            <ExceedanceBar probability={activeDay.probability} />
           )}
         </div>
 
-        {!features.forecastWindowFirst && dayWindow}
+        {/* Directly under the bar. The bar shows where today sits on the scale
+            and the week shows the shape either side of it, so the two read as
+            one picture; the figures that used to sit between them are in Behind
+            the Prediction now. */}
+        {!features.forecastWindowFirst && bandWindow}
 
         {/* Below the window on purpose. The window is the shape of the week and
             the thing a reader scans first; the summary explains the day they
@@ -607,6 +676,18 @@ export default function BeachCard({
         <PredictionSummary paragraphs={summary} />
 
         <WhyPrediction
+          figures={
+            features.binaryVerdict ? null : (
+              <div className="space-y-6">
+                <ExceedanceDetail
+                  probability={activeDay.probability}
+                  hidePercent={features.hidePercentSign}
+                  hideReadout={features.hideExceedanceReadout}
+                />
+                {percentWindow}
+              </div>
+            )
+          }
           factors={activeDay.factors ?? []}
           drivers={activeDay.drivers ?? beach.drivers}
           lastResult={activeDay.lastResult ?? null}

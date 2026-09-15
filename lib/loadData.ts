@@ -41,6 +41,7 @@ interface NowcastRow {
   mpn_label?: string;
   last_result?: number | string | null;
   days_since_sample?: number | null;
+  generated_at?: unknown;
   top_factor_1?: string | null;
   top_factor_2?: string | null;
   top_factor_3?: string | null;
@@ -555,8 +556,22 @@ export async function loadDashboardData(
   beaches.sort((a, b) => b.latitude - a.latitude);
 
   const predictionDate = beaches[0]?.predictionDate ?? "";
+  // One run produces every row, so the first that carries a stamp speaks for
+  // the file. Boards whose pipeline does not publish it yield null.
+  //
+  // Normalized back to ISO because dynamicTyping parses the cell into a Date,
+  // and String()-ing that yields a locale string ("Tue Sep 15 2026 10:36:00
+  // GMT-0700..."). That still happens to parse, so the bug would not show on
+  // screen; it would just mean the field never holds what its type promises.
+  const generatedAtRaw = nowcastRows
+    .map((r) => r.generated_at)
+    .find((v) => v != null && v !== "");
+  const generatedAt =
+    generatedAtRaw instanceof Date
+      ? generatedAtRaw.toISOString()
+      : String(generatedAtRaw ?? "").trim() || null;
 
-  return { beaches, predictionDate };
+  return { beaches, predictionDate, generatedAt };
 }
 
 // The station codes a location currently renders — the same roster

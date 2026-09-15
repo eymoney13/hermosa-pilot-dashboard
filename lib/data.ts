@@ -20,6 +20,10 @@ export interface LocationConfig {
   // instead of the shared fixed tiers (see statusFromProb). Opt-in, because the
   // CA locations are calibrated to the fixed 30/50 cutoffs and must not move.
   statusFromThreshold?: boolean;
+  // IANA zone for this board's coast. Dates elsewhere are date-only and format
+  // as UTC, but a run time is a moment: shown in the runner's UTC it would read
+  // hours off, and on an early-morning run it can land on the wrong day.
+  timeZone: string;
   // Official advisory authority linked in the page footer. Defaults to LA County
   // (the CA locations) when omitted.
   advisory?: { label: string; href: string };
@@ -35,6 +39,7 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       DHS115: "Hermosa Beach - TK",
     },
     mapFallbackCenter: [33.862, -118.403],
+    timeZone: "America/Los_Angeles",
   },
   manhattan: {
     slug: "manhattan",
@@ -44,6 +49,7 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       DHS113: "Manhattan Beach - 28th St",
     },
     mapFallbackCenter: [33.8945, -118.418],
+    timeZone: "America/Los_Angeles",
     // News tab shows only Manhattan Beach + LA-area coverage. Includes local
     // place names and LA news domains (matched against the article URL) to
     // catch stories that never spell out the city/state.
@@ -133,6 +139,7 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     // Recentered for the Dockweiler additions: the roster now spans 33.8321
     // (Redondo) to 33.9570 (Culver Blvd.). Only used when no beaches load.
     mapFallbackCenter: [33.895, -118.42],
+    timeZone: "America/Los_Angeles",
   },
   // Cabrillo Beach (San Pedro) overview: three stations. Multi-beach, so the
   // dashboard opens to the all-locations Map tab (like South Bay). Station
@@ -148,6 +155,7 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       "SMB-7-9": "Outer Cabrillo Beach",
     },
     mapFallbackCenter: [33.707, -118.283],
+    timeZone: "America/Los_Angeles",
   },
   // Boston-area beaches (Massachusetts). Unlike the CA locations, the roster is
   // owned by the backend and published as boston_display.json — so `stations`
@@ -163,6 +171,7 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     rosterFile: "boston_display.json",
     statusFromThreshold: true,
     mapFallbackCenter: [42.33, -71.02],
+    timeZone: "America/New_York",
     advisory: {
       label: "Massachusetts Department of Public Health",
       href: "https://www.mass.gov/info-details/interactive-beach-water-quality-dashboard",
@@ -237,11 +246,19 @@ export const EPA_MPN_THRESHOLD = 104;
 // reading and the fourth gave advice, so the key changed subject halfway down.
 // Describing the level throughout leaves the advice to the subtitle, which can
 // say it in a full sentence with the EPA threshold attached.
+// Three lengths of the same name, because the name has to fit three places: the
+// key and the card heading take the full phrase, a day cell takes the bare word,
+// and a day cell on a phone is about 44px wide, where "Moderate" would be
+// clipped mid-word and read as a rendering bug.
 export const TIER_LABEL = {
-  low: "Low bacteria levels",
-  moderate: "Moderate bacteria levels",
-  high: "High bacteria levels",
-  veryHigh: "Very high bacteria levels",
+  low: { full: "Low bacteria levels", short: "Low", abbr: "Low" },
+  moderate: { full: "Moderate bacteria levels", short: "Moderate", abbr: "Mod" },
+  high: { full: "High bacteria levels", short: "High", abbr: "High" },
+  veryHigh: {
+    full: "Very high bacteria levels",
+    short: "Very high",
+    abbr: "V.high",
+  },
 } as const;
 
 // Risk tiers keyed to exceedance percent — the single source of truth shared by
@@ -256,10 +273,10 @@ export interface RiskTier {
 }
 
 export const RISK_TIERS: RiskTier[] = [
-  { label: TIER_LABEL.low, range: "0–29", color: "#97C459", textColor: "#2D5A0B", maxExclusive: 30 },
-  { label: TIER_LABEL.moderate, range: "30–49", color: "#D5C82E", textColor: "#6B5F0E", maxExclusive: 50 },
-  { label: TIER_LABEL.high, range: "50–74", color: "#E24B4A", textColor: "#7A1F1F", maxExclusive: 75 },
-  { label: TIER_LABEL.veryHigh, range: "75–100", color: "#A32D2D", textColor: "#5A1414", maxExclusive: Infinity },
+  { label: TIER_LABEL.low.full, range: "0–29", color: "#97C459", textColor: "#2D5A0B", maxExclusive: 30 },
+  { label: TIER_LABEL.moderate.full, range: "30–49", color: "#D5C82E", textColor: "#6B5F0E", maxExclusive: 50 },
+  { label: TIER_LABEL.high.full, range: "50–74", color: "#E24B4A", textColor: "#7A1F1F", maxExclusive: 75 },
+  { label: TIER_LABEL.veryHigh.full, range: "75–100", color: "#A32D2D", textColor: "#5A1414", maxExclusive: Infinity },
 ];
 
 // The risk tier for an exceedance percentage (0–100).
@@ -279,10 +296,38 @@ export function riskTier(pct: number): RiskTier {
 // separate band. That gap predates this rename (Status has always been 3-way
 // and the legend 4-way); the new names only make it easier to notice.
 export const STATUS_LABEL: Record<Status, string> = {
+  Normal: TIER_LABEL.low.full,
+  "Slightly elevated": TIER_LABEL.moderate.full,
+  "Not recommended": TIER_LABEL.high.full,
+};
+
+// The same three bands at day-cell length. A cell is scored on the internal
+// 3-tier status rather than the key's four bands, so a 90% day reads "High"
+// here while the key still lists "Very high" as its own row.
+export const STATUS_BAND: Record<Status, { short: string; abbr: string }> = {
   Normal: TIER_LABEL.low,
   "Slightly elevated": TIER_LABEL.moderate,
   "Not recommended": TIER_LABEL.high,
 };
+
+/**
+ * A published run timestamp as a clock time on the board's own coast, e.g.
+ * "4:57 AM". Null for anything unparseable, so a malformed cell drops the line
+ * rather than printing "Invalid Date" at a reader.
+ */
+export function formatRunTime(
+  iso: string | null | undefined,
+  timeZone: string
+): string | null {
+  if (!iso) return null;
+  const t = new Date(iso);
+  if (Number.isNaN(t.getTime())) return null;
+  return t.toLocaleTimeString("en-US", {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 // The tier label for an exceedance percentage (0–100).
 export function riskTierLabel(pct: number): string {
@@ -428,6 +473,12 @@ export interface BeachData {
 export interface DashboardData {
   beaches: BeachData[];
   predictionDate: string;
+  /**
+   * When the model run behind these figures finished, as published by the
+   * backend (ISO-8601, UTC). Null on a board whose pipeline does not publish it
+   * yet, which the card renders as no run time rather than a guessed one.
+   */
+  generatedAt: string | null;
 }
 
 export function thresholdFor(
