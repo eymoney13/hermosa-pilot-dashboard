@@ -53,8 +53,13 @@ export function normalizeInsight(insight: string, status: Status): string {
 
 
 /**
- * One sentence about the most recent lab sample, for the "Latest lab sample
- * result" line.
+ * What the most recent lab sample measured, as a phrase rather than a sentence:
+ * "5 MPN/100mL, below the EPA safe swimming limit of 104".
+ *
+ * A phrase because the date leads the line now and this sits beside it. As a
+ * full sentence it opened "The most recent lab sample measured...", which
+ * restated the section heading and the date that now precedes it before
+ * reaching the number.
  *
  * Built here rather than lifted out of the backend's `insight` narrative. That
  * narrative is a paragraph covering the weather, the model's drivers and the
@@ -62,11 +67,10 @@ export function normalizeInsight(insight: string, status: Status): string {
  * one thing. Reading the two published numbers directly is both shorter and
  * steadier than trying to cut one clause out of generated prose.
  *
- * One sentence, and only about the sample. How old it is already appears on the
- * metadata line directly beneath, so repeating it here would spend half the
- * sentence on something the reader can already see. No em dashes.
+ * Says nothing about how old the sample is: that sits on its own line, where it
+ * is the thing this section most wants a reader to notice. No em dashes.
  */
-export function labSampleSentence(
+export function labSampleResult(
   lastResult: number | string | null
 ): string | null {
   if (lastResult == null || lastResult === "") return null;
@@ -81,5 +85,5 @@ export function labSampleSentence(
     mpn > EPA_MPN_THRESHOLD
       ? `above the EPA safe swimming limit of ${EPA_MPN_THRESHOLD}`
       : `below the EPA safe swimming limit of ${EPA_MPN_THRESHOLD}`;
-  return `The most recent lab sample measured ${rounded} MPN/100mL, ${where}.`;
+  return `${rounded} MPN/100mL, ${where}`;
 }

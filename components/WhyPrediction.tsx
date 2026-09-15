@@ -13,7 +13,7 @@ import {
   directionsByFactor,
   factorEffect,
 } from "@/lib/factorEffects";
-import { labSampleSentence } from "@/lib/insight";
+import { labSampleResult } from "@/lib/insight";
 import ForecastAccuracy from "./ForecastAccuracy";
 
 // "May 7, 2026" style. lib/data's formatLongDate includes the weekday;
@@ -29,22 +29,27 @@ function formatSampleDate(iso: string): string {
   });
 }
 
-// "Taken N days ago · <date>" relative to the day being viewed. predictionDate
-// is the selected day's date, so a past day shows the sample that was latest
-// as of that date, not a future one.
-function sampleMetadataFor(
+// The day the sample was taken, relative to the day being viewed.
+// predictionDate is the selected day's date, so a past day shows the sample
+// that was latest as of that date, not a future one.
+function sampleDateFor(
   daysSinceSample: number | null,
   predictionDate: string
 ): string | null {
   if (daysSinceSample == null) return null;
-  const formatted = formatSampleDate(
-    subtractDays(predictionDate, daysSinceSample)
-  );
-  let prefix: string;
-  if (daysSinceSample === 0) prefix = "Taken today";
-  else if (daysSinceSample === 1) prefix = "Taken 1 day ago";
-  else prefix = `Taken ${daysSinceSample} days ago`;
-  return `${prefix} · ${formatted}`;
+  return formatSampleDate(subtractDays(predictionDate, daysSinceSample));
+}
+
+// How long ago that was, on its own so it can carry its own weight on screen.
+// A date alone does not tell a reader whether this reading still describes the
+// water: these beaches are sampled about weekly, so the difference between two
+// days old and three weeks old is the difference between a current measurement
+// and a historical one, and it was previously the faintest text in the section.
+function sampleAgeFor(daysSinceSample: number | null): string | null {
+  if (daysSinceSample == null) return null;
+  if (daysSinceSample === 0) return "Taken today";
+  if (daysSinceSample === 1) return "Taken 1 day ago";
+  return `Taken ${daysSinceSample} days ago`;
 }
 
 // The arrow beside a factor, pointing the way that factor is taking water
@@ -141,8 +146,9 @@ export default function WhyPrediction({
     const t = setTimeout(() => setExpanded(true), PANEL_TRANSITION_MS);
     return () => clearTimeout(t);
   }, [open]);
-  const sampleMeta = sampleMetadataFor(daysSinceSample, predictionDate);
-  const labSentence = labSampleSentence(lastResult);
+  const sampleDate = sampleDateFor(daysSinceSample, predictionDate);
+  const sampleAge = sampleAgeFor(daysSinceSample);
+  const labResult = labSampleResult(lastResult);
   const directions = directionsByFactor(drivers);
 
   // With the factors hidden and no lab sample to report, the disclosure would
@@ -152,7 +158,7 @@ export default function WhyPrediction({
   // Note this deliberately does NOT fall through to the early return below.
   // That return exists for days with nothing to show, and reaching it here would
   // take the accuracy panel out with the factors, the opposite of the intent.
-  if (hideContributingFactors && !labSentence && !figures) {
+  if (hideContributingFactors && !labResult && !figures) {
     return (
       <div className="border-t border-gray-100 pt-6">
         <ForecastAccuracy
@@ -165,10 +171,10 @@ export default function WhyPrediction({
   }
 
   // Forecast/future days have no saved factors or lab sample. The figures still
-  // has something to say about them, though, so it alone keeps the panel alive:
+  // have something to say about them, though, so it alone keeps the panel alive:
   // returning null here would take the probability and the key off a forecast
   // day entirely, which is not a move of the block but a loss of it.
-  if (factors.length === 0 && !labSentence && !figures) return null;
+  if (factors.length === 0 && !labResult && !figures) return null;
 
   return (
     <div className="border-t border-gray-100">
@@ -239,16 +245,28 @@ export default function WhyPrediction({
               </div>
             )}
 
-            {labSentence && (
+            {labResult && (
               <div>
                 <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
                   Latest Lab Sample Result
                 </p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {labSentence}
+                {/* Date first, reading it as "on this day, the water measured
+                    this" rather than as a number whose date is a footnote. The
+                    two wrap together on a narrow card instead of the date
+                    stranding itself on a line of its own. */}
+                <p className="text-sm leading-relaxed text-gray-700">
+                  {sampleDate && (
+                    <span className="font-medium text-gray-900">
+                      {sampleDate}
+                      {" · "}
+                    </span>
+                  )}
+                  {labResult}
                 </p>
-                {sampleMeta && (
-                  <p className="text-xs text-gray-400 mt-1">{sampleMeta}</p>
+                {sampleAge && (
+                  <p className="mt-2 text-sm font-semibold text-gray-900">
+                    {sampleAge}
+                  </p>
                 )}
               </div>
             )}
