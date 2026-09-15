@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ChevronDown } from "lucide-react";
 import {
   subtractDays,
@@ -77,6 +77,7 @@ function DirectionArrow({
 }
 
 export default function WhyPrediction({
+  figures,
   factors,
   drivers,
   lastResult,
@@ -87,6 +88,13 @@ export default function WhyPrediction({
   hideContributingFactors = false,
   showAccuracyPercent = false,
 }: {
+  // Everything that sits above the contributing factors in this panel: the
+  // probability readout, the risk key, and the week by the numbers. Passed as a
+  // node rather than rebuilt here, because the tier palette, the band copy, the
+  // percentage formatting and the day strip all live in BeachCard, and
+  // splitting them across two files to move a block down the page would have
+  // been the expensive way to do it.
+  figures?: ReactNode;
   factors: string[];
   // The same ranking as `factors`, carrying the direction the model gave each
   // one. Supplies the "how" under each listed factor.
@@ -115,7 +123,7 @@ export default function WhyPrediction({
   // Note this deliberately does NOT fall through to the early return below.
   // That return exists for days with nothing to show, and reaching it here would
   // take the accuracy panel out with the factors, the opposite of the intent.
-  if (hideContributingFactors && !labSentence) {
+  if (hideContributingFactors && !labSentence && !figures) {
     return (
       <div className="border-t border-gray-100 pt-6">
         <ForecastAccuracy
@@ -127,8 +135,11 @@ export default function WhyPrediction({
     );
   }
 
-  // Forecast/future days have no saved factors or lab sample, so nothing to show.
-  if (factors.length === 0 && !labSentence) return null;
+  // Forecast/future days have no saved factors or lab sample. The figures still
+  // has something to say about them, though, so it alone keeps the panel alive:
+  // returning null here would take the probability and the key off a forecast
+  // day entirely, which is not a move of the block but a loss of it.
+  if (factors.length === 0 && !labSentence && !figures) return null;
 
   return (
     <div className="border-t border-gray-100">
@@ -157,6 +168,8 @@ export default function WhyPrediction({
             being clipped (a fixed max-height could not accommodate it). */}
         <div className="overflow-hidden">
           <div className="pb-5 space-y-6">
+            {figures}
+
             {!hideContributingFactors && factors.length > 0 && (
               <div>
                 <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
