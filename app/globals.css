@@ -39,6 +39,16 @@ body {
   cursor: pointer;
 }
 
+/* A band word instead of a number, so the marker is a pill rather than a disc.
+   Fixed at the width of "Moderate", the longest of the three, so every pin on a
+   board matches and the label placement has one footprint to work around. */
+.nb-overview-dot--band {
+  width: 64px;
+  height: 22px;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
 /* Binary boards put no number in the marker, so the 40px disc the numeric
    version needs would read as a blank blob. Same colour, tighter footprint. */
 .nb-overview-dot--plain {

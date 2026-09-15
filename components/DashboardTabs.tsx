@@ -189,7 +189,6 @@ export default function DashboardTabs({
           <OverviewMapClient
             beaches={beaches}
             fallbackCenter={fallbackCenter}
-            hidePercent={features.hidePercentSign}
             binaryVerdict={features.binaryVerdict}
             onSelect={(code) => openBeach(code, MAP_TAB)}
           />
