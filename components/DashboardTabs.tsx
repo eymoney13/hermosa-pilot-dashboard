@@ -65,9 +65,22 @@ export default function DashboardTabs({
     listIsLanding ? LIST_TAB : MAP_TAB
   );
 
+  // Swapping the view is a navigation, but React only replaces the content and
+  // the browser keeps the scroll offset across it. A reader clicking the sixth
+  // row of the list was already several hundred pixels down, and landed that
+  // far into the beach page: usually level with its map, past the reading they
+  // had just asked for.
+  //
+  // Only the entry points reachable from a scrolled position need this. The tab
+  // bar is not sticky, so reaching it means being at the top already.
+  const scrollToTop = () => {
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+  };
+
   const openBeach = (code: string, from: string) => {
     setCameFrom(from);
     setActiveCode(code);
+    scrollToTop();
   };
 
   if (beaches.length === 0) return null;
@@ -225,7 +238,10 @@ export default function DashboardTabs({
             <div className="mx-auto w-full max-w-3xl px-6 sm:px-10 pt-6">
               <button
                 type="button"
-                onClick={() => setActiveCode(cameFrom)}
+                onClick={() => {
+                  setActiveCode(cameFrom);
+                  scrollToTop();
+                }}
                 className="inline-flex items-center gap-1.5 rounded-sm text-sm text-gray-500 transition-colors hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 <ChevronLeft className="h-4 w-4" aria-hidden="true" />
