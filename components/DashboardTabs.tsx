@@ -10,6 +10,7 @@ import MapClient from "./MapClient";
 import NewsTab from "./NewsTab";
 import OverviewMapClient from "./OverviewMapClient";
 import BeachList from "./BeachList";
+import BoardHeading from "./BoardHeading";
 
 const STATUS_UNDERLINE: Record<string, string> = {
   Normal: "bg-[#2d8a4e]",
@@ -193,6 +194,16 @@ export default function DashboardTabs({
         />
       ) : mapActive ? (
         <section className="w-full">
+          {/* The map had no heading of its own, so the brand appeared on the
+              List tab and not on this one, and the date vanished with the page
+              header as soon as a reader scrolled. Same block, same words. */}
+          <div className="mx-auto w-full max-w-6xl px-6 sm:px-10 pt-8 pb-4">
+            <BoardHeading
+              locationLabel={locationLabel}
+              date={beaches[0]?.predictionDate}
+              binaryVerdict={features.binaryVerdict}
+            />
+          </div>
           <OverviewMapClient
             beaches={beaches}
             fallbackCenter={fallbackCenter}
