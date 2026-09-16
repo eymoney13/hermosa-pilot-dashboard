@@ -2,7 +2,6 @@
 
 import { ChevronRight } from "lucide-react";
 import {
-  formatMonthDayYear,
   STATUS_BAND,
   STATUS_BAND_TEXT,
   STATUS_LABEL,
@@ -10,6 +9,7 @@ import {
   type BeachData,
 } from "@/lib/data";
 import { VERDICT_CELL_COLOR, VERDICT_CELL_TEXT } from "@/lib/window";
+import BoardHeading from "./BoardHeading";
 
 // Every beach on one screen: the name on the left, today's call on the right,
 // one beach per row. The map answers "which of these is near me"; this answers
@@ -25,13 +25,6 @@ const TIER_CELL_COLOR: Record<BeachData["status"], string> = {
   "Slightly elevated": "#D5C82E",
   "Not recommended": "#E24B4A",
 };
-
-// "Boston, MA" -> "Boston". The label carries the state so a tab reading
-// "Boston, MA" is unambiguous next to "Hermosa Beach, CA", but as a heading over
-// the list the state is noise: the reader already knows which board they opened.
-function placeName(label: string): string {
-  return label.split(",")[0].trim() || label;
-}
 
 export default function BeachList({
   beaches,
@@ -58,25 +51,34 @@ export default function BeachList({
 
   return (
     <section className="mx-auto w-full max-w-3xl px-6 sm:px-10 py-8">
-      {/* Names the place the list is for. The tab bar above says List, not
-          where, and the wordmark says the product rather than the location.
-          Same teal as the wordmark and its subtitle (ProjectNeptuneLogo's fill)
-          so the two headings read as one voice rather than two. */}
-      <h2 className="pb-4 text-3xl font-bold" style={{ color: "#2C8487" }}>
-        {placeName(locationLabel)}
-      </h2>
+      {/* Title, then what and when, then the table. The place and the date used
+          to sit at opposite ends of the block, one as a 3xl heading and the
+          other as 11px grey pinned to the right margin, which read as two
+          unrelated fragments above a list. They are one caption: this board,
+          this day. Shared with the Map tab, which shows the same readings. */}
+      <div className="pb-4">
+        <BoardHeading
+          locationLabel={locationLabel}
+          date={date}
+          binaryVerdict={binaryVerdict}
+        />
+      </div>
 
-      {date && (
-        // Right-aligned across the row rather than boxed into the reading
-        // column: the column is only as wide as "Good", and constraining a full
-        // date to it wraps the year onto its own line. Aligning to the same
-        // right edge lines it up with the readings without that.
-        <div className="pb-2 text-right text-[11px] text-gray-500">
-          {formatMonthDayYear(date)}
-        </div>
-      )}
+      {/* Column headers, on the same widths the rows use. Without them the
+          reading column is a stack of coloured chips a reader has to decode
+          from the colours alone; with them the list reads as a table, which is
+          what it is. */}
+      <div className="flex items-center gap-3 border-b border-gray-200 pb-2 text-[11px] font-medium uppercase tracking-wider text-gray-400">
+        <span className="min-w-0 flex-1">Beach</span>
+        <span className="w-20 shrink-0 text-center">
+          {binaryVerdict ? "Forecast" : "Index"}
+        </span>
+        {/* Matches the chevron each row ends with, so the two columns above
+            line up with what is under them. */}
+        <span className="w-4 shrink-0" aria-hidden="true" />
+      </div>
 
-      <ul className="divide-y divide-gray-100 border-t border-gray-100">
+      <ul className="divide-y divide-gray-100">
         {beaches.map((beach) => {
           const verdict = binaryVerdict ? beach.verdict : null;
           const pct = Math.round(beach.probability * 100);
@@ -84,7 +86,8 @@ export default function BeachList({
           const pctText = `${pct}${hidePercent ? "" : "%"}`;
           // A binary board's cell is the verdict alone; it publishes no
           // percentage to stack anything under.
-          const label = verdict ?? `${pctText}, ${STATUS_LABEL[beach.status]}`;
+          const label =
+            verdict ?? `${pctText}, ${STATUS_LABEL[beach.status]}`;
 
           return (
             <li key={beach.code}>

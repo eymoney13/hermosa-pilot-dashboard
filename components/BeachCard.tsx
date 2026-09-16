@@ -73,16 +73,37 @@ function articleFor(num: number): string {
 function LocationHeader({
   beach,
   locationLabel,
+  binaryVerdict,
 }: {
   beach: BeachData;
   locationLabel: string;
+  binaryVerdict: boolean;
 }) {
+  // The board's own name, over the beach it is reporting on. This line used to
+  // repeat the region, which the reader picked the beach from a moment ago and
+  // which most of these names carry anyway ("Hermosa Beach - Herondo St"). The
+  // brand is the more useful thing to put above a subject, and it reads the way
+  // a report is headed rather than the way a pin is labelled, so the map pin
+  // goes with it.
+  //
+  // Boards that publish no score keep the region. "Neptune Index" over a card
+  // showing Good/Moderate/Poor against a per-beach cutoff would name a number
+  // that is not on the page.
   return (
     <div>
-      <div className="flex items-center gap-1.5 text-sm text-gray-500">
-        <MapPin className="h-4 w-4" aria-hidden="true" />
-        <span>{locationLabel}</span>
-      </div>
+      {binaryVerdict ? (
+        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+          <MapPin className="h-4 w-4" aria-hidden="true" />
+          <span>{locationLabel}</span>
+        </div>
+      ) : (
+        <p
+          className="text-[11px] font-medium uppercase tracking-wider"
+          style={{ color: "#2C8487" }}
+        >
+          Neptune Index
+        </p>
+      )}
       <h2 className="mt-1 text-xl font-medium text-gray-900">{beach.name}</h2>
     </div>
   );
@@ -202,8 +223,20 @@ function StatusHero({
           className="flex shrink-0 flex-col items-end leading-none"
           aria-label={`Neptune Index ${index}`}
         >
-          <span className={`text-[11px] uppercase tracking-wide ${tint.mid}`}>
+          {/* A branded number that never says what it counts is just a number
+              with a nickname. The definition belongs beside it, not three
+              sections down: this is the first thing on the card a reader has
+              no prior idea how to read. */}
+          <span
+            className={`flex items-center gap-1 text-[11px] uppercase tracking-wide ${tint.mid}`}
+          >
             Neptune Index
+            <InfoTooltip
+              title="Neptune Index"
+              body="A 0 to 100 score for how likely bacteria are to exceed the EPA safe-swimming threshold today. Higher means a greater chance the water tests unsafe. It is the same figure as the probability of unsafe bacteria levels under Behind the Prediction."
+              iconClassName="h-3.5 w-3.5"
+              ariaLabel="About the Neptune Index"
+            />
           </span>
           <span
             className="mt-0.5 text-6xl font-semibold tabular-nums"
@@ -645,7 +678,11 @@ export default function BeachCard({
   return (
     <div className="mx-auto w-full max-w-3xl px-6 sm:px-10 py-10">
       <div className="space-y-6">
-        <LocationHeader beach={beach} locationLabel={locationLabel} />
+        <LocationHeader
+          beach={beach}
+          locationLabel={locationLabel}
+          binaryVerdict={features.binaryVerdict}
+        />
 
         {/* Above the status read on boards that opt in. The window is the
             reason a reader opened the card - today's call is one cell of it,
