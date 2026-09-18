@@ -8,10 +8,10 @@
  * module is the whole of that copy, so keeping the two in step is one file to
  * edit rather than a hunt through components.
  *
- * `id` is a URL fragment, not decoration: two places in the UI raise one of
- * these questions and link straight to its answer (see FAQ_LINKS below). An id
- * is therefore a published address. Rewording a question is free; renaming an
- * id breaks whatever points at it.
+ * `id` is a URL fragment, not decoration: the card links straight to one of
+ * these answers (see FAQ_LINKS below), and an id is therefore a published
+ * address. Rewording a question is free; renaming an id breaks whatever points
+ * at it.
  */
 export interface FaqItem {
   id: string;
@@ -82,7 +82,7 @@ export const FAQ: FaqItem[] = [
 ];
 
 /**
- * The answers the dashboard itself points at, by the question each surface
+ * The answers the dashboard itself points at, by the question the surface
  * provokes. An FAQ filed at the bottom of a page is read by almost nobody; one
  * offered at the moment the question occurs is read by the person asking it.
  *
@@ -92,8 +92,6 @@ export const FAQ: FaqItem[] = [
 export const FAQ_LINKS = {
   /** Beside the probability readout, which names bacteria without naming which. */
   whatWeMeasure: "what-is-enterococcus",
-  /** Beside the footer's advisory line, which is this answer in one sentence. */
-  officialAdvisories: "official-advisories",
 } as const;
 
 /** Link to one answer on the FAQ page. */
