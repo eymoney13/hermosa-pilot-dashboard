@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import DashboardTabs from "@/components/DashboardTabs";
 import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
 import BeachAlertSignup from "@/components/BeachAlertSignup";
@@ -8,7 +7,6 @@ import FaqAccordion from "@/components/FaqAccordion";
 import { loadDashboardData } from "@/lib/loadData";
 import { isAlertsConfigured } from "@/lib/alerts";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
-import { faqHref, FAQ_LINKS } from "@/lib/faq";
 import { featuresFor } from "@/lib/features";
 import {
   fetchNewsAlerts,
@@ -157,13 +155,6 @@ export default async function LocationPage({
           >
             {(config.advisory ?? DEFAULT_ADVISORY).label}
           </a>
-          .{" "}
-          <Link
-            href={faqHref(FAQ_LINKS.officialAdvisories)}
-            className="underline hover:text-gray-600"
-          >
-            How this relates to official advisories
-          </Link>
           .
         </div>
       </footer>
