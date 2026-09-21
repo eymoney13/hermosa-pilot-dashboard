@@ -310,6 +310,16 @@ export const STATUS_BAND: Record<Status, { short: string; abbr: string }> = {
   "Not recommended": TIER_LABEL.high,
 };
 
+// The fill for a band, keyed by the internal status. Read off RISK_TIERS rather
+// than written out again: the legend, the day cells and this are the same three
+// colours, and there are already several hand-copied tables of them around the
+// components that should fold into this one.
+export const STATUS_COLOR: Record<Status, string> = {
+  Normal: RISK_TIERS[0].color,
+  "Slightly elevated": RISK_TIERS[1].color,
+  "Not recommended": RISK_TIERS[2].color,
+};
+
 // Text colour for a band word laid across its own tier fill, wherever that
 // happens: the card's day cells and the list's reading column. Near-black is
 // fine on the green and the yellow and close to unreadable on the red, so the

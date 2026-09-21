@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ChevronDown, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import type { NewsItem } from "@/lib/news";
@@ -10,6 +10,7 @@ import MapClient from "./MapClient";
 import NewsTab from "./NewsTab";
 import OverviewMapClient from "./OverviewMapClient";
 import BeachList from "./BeachList";
+import BeachPicker from "./BeachPicker";
 import BoardHeading from "./BoardHeading";
 
 const STATUS_UNDERLINE: Record<string, string> = {
@@ -249,36 +250,19 @@ export default function DashboardTabs({
               </button>
 
               {/* What the beach tabs were for, in something that fits. Every
-                  option is one press away at any roster size, where the strip
-                  needed a reader to scroll past seven names to reach the eighth.
-
-                  A native select on purpose. It gets keyboard support, type-to-
-                  find, screen-reader semantics and the platform's own picker on
-                  a phone without any of it being reimplemented, which is more
-                  than a hand-built menu of this size would reliably get. Only
-                  the box is styled; the behaviour is the browser's. */}
-              <div className="relative min-w-0">
-                <label className="sr-only" htmlFor="beach-picker">
-                  Choose a beach
-                </label>
-                <select
-                  id="beach-picker"
-                  value={active.code}
-                  onChange={(e) => {
-                    setActiveCode(e.target.value);
+                  beach is one press away at any roster size, where the strip
+                  needed a reader to scroll past seven names to reach the
+                  eighth, and each one shows its own reading so the choice is
+                  informed rather than blind. */}
+              <div className="min-w-0 max-w-[18rem] flex-1">
+                <BeachPicker
+                  beaches={beaches}
+                  activeCode={active.code}
+                  binaryVerdict={features.binaryVerdict}
+                  onSelect={(code) => {
+                    setActiveCode(code);
                     scrollToTop();
                   }}
-                  className="w-full appearance-none truncate rounded-md border border-gray-300 bg-white py-1.5 pl-3 pr-9 text-sm text-gray-900 transition-colors hover:border-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                >
-                  {beaches.map((b) => (
-                    <option key={b.code} value={b.code}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  aria-hidden="true"
-                  className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
                 />
               </div>
             </div>
