@@ -102,6 +102,13 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
   // The Map stays the landing tab. The List is a second way in, not a
   // replacement for the view the board has always opened on.
   southbay: {
+    // Eight beach names averaging 30 characters made a tab strip 2,229px wide
+    // in 289px of phone: 7.7 screens of sideways scrolling, with List and Map
+    // the only two things visible at rest and every beach past the edge. A
+    // control nobody can see is not a shortcut. The List and the Map are better
+    // ways in at this roster size, and the card carries a picker for moving
+    // between beaches once you are in one.
+    hideBeachTabs: true,
     // The CA pipeline now publishes the same ranked drivers and measured
     // conditions the region one does (project-neptune's generate_nowcast.py /
     // generate_forecast.py), which is what the summary is written from — before

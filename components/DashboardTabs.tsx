@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronDown, ChevronLeft } from "lucide-react";
 import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import type { NewsItem } from "@/lib/news";
@@ -235,18 +235,52 @@ export default function DashboardTabs({
               Matches the card's own container width so it reads as part of it
               rather than as page furniture. */}
           {features.hideBeachTabs && (
-            <div className="mx-auto w-full max-w-3xl px-6 sm:px-10 pt-6">
+            <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-6 sm:px-10 pt-6">
               <button
                 type="button"
                 onClick={() => {
                   setActiveCode(cameFrom);
                   scrollToTop();
                 }}
-                className="inline-flex items-center gap-1.5 rounded-sm text-sm text-gray-500 transition-colors hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-sm text-sm text-gray-500 transition-colors hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                 Back to {cameFrom === MAP_TAB ? "map" : "list"}
               </button>
+
+              {/* What the beach tabs were for, in something that fits. Every
+                  option is one press away at any roster size, where the strip
+                  needed a reader to scroll past seven names to reach the eighth.
+
+                  A native select on purpose. It gets keyboard support, type-to-
+                  find, screen-reader semantics and the platform's own picker on
+                  a phone without any of it being reimplemented, which is more
+                  than a hand-built menu of this size would reliably get. Only
+                  the box is styled; the behaviour is the browser's. */}
+              <div className="relative min-w-0">
+                <label className="sr-only" htmlFor="beach-picker">
+                  Choose a beach
+                </label>
+                <select
+                  id="beach-picker"
+                  value={active.code}
+                  onChange={(e) => {
+                    setActiveCode(e.target.value);
+                    scrollToTop();
+                  }}
+                  className="w-full appearance-none truncate rounded-md border border-gray-300 bg-white py-1.5 pl-3 pr-9 text-sm text-gray-900 transition-colors hover:border-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                >
+                  {beaches.map((b) => (
+                    <option key={b.code} value={b.code}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                />
+              </div>
             </div>
           )}
 
