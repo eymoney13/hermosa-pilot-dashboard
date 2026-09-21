@@ -10,6 +10,7 @@ import MapClient from "./MapClient";
 import NewsTab from "./NewsTab";
 import OverviewMapClient from "./OverviewMapClient";
 import BeachList from "./BeachList";
+import BeachPicker from "./BeachPicker";
 import BoardHeading from "./BoardHeading";
 
 const STATUS_UNDERLINE: Record<string, string> = {
@@ -235,18 +236,35 @@ export default function DashboardTabs({
               Matches the card's own container width so it reads as part of it
               rather than as page furniture. */}
           {features.hideBeachTabs && (
-            <div className="mx-auto w-full max-w-3xl px-6 sm:px-10 pt-6">
+            <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-6 sm:px-10 pt-6">
               <button
                 type="button"
                 onClick={() => {
                   setActiveCode(cameFrom);
                   scrollToTop();
                 }}
-                className="inline-flex items-center gap-1.5 rounded-sm text-sm text-gray-500 transition-colors hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-sm text-sm text-gray-500 transition-colors hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                 Back to {cameFrom === MAP_TAB ? "map" : "list"}
               </button>
+
+              {/* What the beach tabs were for, in something that fits. Every
+                  beach is one press away at any roster size, where the strip
+                  needed a reader to scroll past seven names to reach the
+                  eighth, and each one shows its own reading so the choice is
+                  informed rather than blind. */}
+              <div className="min-w-0 max-w-[18rem] flex-1">
+                <BeachPicker
+                  beaches={beaches}
+                  activeCode={active.code}
+                  binaryVerdict={features.binaryVerdict}
+                  onSelect={(code) => {
+                    setActiveCode(code);
+                    scrollToTop();
+                  }}
+                />
+              </div>
             </div>
           )}
 
