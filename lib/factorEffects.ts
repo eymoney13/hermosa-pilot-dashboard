@@ -1,4 +1,5 @@
-import type { Driver, FactorDirection } from "./data";
+import type { Conditions, Driver, FactorDirection } from "./data";
+import { rainDepth, rainState, rainTotalMm } from "./rain";
 
 // Plain-language explanation of how one contributing factor is affecting the
 // water, for the list under "Top contributing factors".
@@ -8,10 +9,15 @@ import type { Driver, FactorDirection } from "./data";
 // not already know why it matters learns nothing from seeing it ranked first.
 // These lines answer the only question the list raises.
 //
-// WRITTEN FOR SOMEONE STANDING ON THE BEACH. One sentence, no jargon, no
-// numbers, and no em dashes. Each says what is happening and why it matters to
-// the water, in that order, so the sentence stays readable if the reader stops
-// halfway.
+// WRITTEN FOR SOMEONE STANDING ON THE BEACH. One sentence, no jargon, and no
+// em dashes. Each says what is happening and why it matters to the water, in
+// that order, so the sentence stays readable if the reader stops halfway.
+//
+// No numbers either, with one deliberate exception: rain names its depth. A
+// direction alone cannot separate a downpour from 0.7 mm, and describing the
+// latter as "recent rain washing bacteria off streets" contradicted the summary
+// directly above it, which called the same day dry. The depth is the only thing
+// that reconciles the two, so rain is measured out loud and nothing else is.
 //
 // Keyed by the canonical display label from lib/factors.ts, which is the same
 // string the list itself shows, so a label that renders has an entry here.
@@ -170,12 +176,60 @@ const EFFECTS: Record<string, Effect> = {
  * presented as an explanation. The caller renders the factor with no line under
  * it instead, which is the honest version of not knowing.
  */
+/**
+ * The rain factors, whose line is measured rather than looked up.
+ *
+ * Both describe the same runoff story from the same figures, so both get the
+ * depth. Keyed on the canonical labels lib/factors.ts collapses the model's
+ * rain features into.
+ */
+const RAIN_FACTORS = new Set(["Recent rainfall", "Rain near sewer outfalls"]);
+
+/**
+ * The rain line, built from the day's measured depth instead of its direction.
+ *
+ * Returns null when the backend published no rain figures at all -- a stale
+ * weather feed blanks them, and a blank is not a dry spell. The caller falls
+ * back to the direction-only wording, which claims no depth.
+ *
+ * Note this ignores the SHAP direction on purpose. Direction is what the model
+ * did with the number; the number is what actually fell, and where the two
+ * disagreed it was always the direction that misled -- a non-zero trace reads
+ * as "increasing risk" and rendered as a sentence about bacteria washing off
+ * streets, on a day 0.7 mm fell. Stating the depth cannot be wrong that way.
+ */
+function rainLine(factor: string, c: Conditions | undefined): string | null {
+  const total = rainTotalMm(c);
+  if (total == null) return null;
+  const nearOutfall = factor === "Rain near sewer outfalls";
+
+  switch (rainState(total)) {
+    case "none":
+      return nearOutfall
+        ? "There has been no rain, so the sewer outfalls are not overflowing toward the beach."
+        : "There has been no rain in the past few days, so nothing is washing in off the land.";
+    case "trace":
+      return nearOutfall
+        ? `Only ${rainDepth(total)} of rain has fallen, very little rain, and far too little to make the sewer outfalls overflow.`
+        : `Only ${rainDepth(total)} of rain has fallen in the past few days. That is very little rain, not enough to wash much in off the land.`;
+    default:
+      return nearOutfall
+        ? `${rainDepth(total)} of rain has fallen, enough that the sewer outfalls can push overflow toward the beach.`
+        : `${rainDepth(total)} of rain has fallen in the past few days, washing bacteria off streets and storm drains into the water.`;
+  }
+}
+
 export function factorEffect(
   factor: string,
-  direction: FactorDirection | null | undefined
+  direction: FactorDirection | null | undefined,
+  conditions?: Conditions
 ): string | null {
   const effect = EFFECTS[factor];
   if (!effect || !direction) return null;
+  if (RAIN_FACTORS.has(factor)) {
+    const measured = rainLine(factor, conditions);
+    if (measured) return measured;
+  }
   return direction === "increasing risk" ? effect.raising : effect.lowering;
 }
 

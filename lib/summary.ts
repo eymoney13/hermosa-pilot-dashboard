@@ -1,4 +1,5 @@
 import type { Conditions, Driver, ForecastDay, Status, Verdict } from "./data";
+import { rainDepth, rainState, rainTotalMm } from "./rain";
 
 // Generates the "What we're seeing" summary shown on boards that hide the raw
 // probability (see the `predictionSummary` / `binaryVerdict` flags in
@@ -44,12 +45,10 @@ function joinList(items: string[]): string {
 
 const MM_PER_INCH = 25.4;
 
-// The rain depth at which runoff starts to matter, 0.1 in. Not a round number
-// picked for prose: it is the same cutoff the model's own `wet` feature uses
-// (precip over 3 days > 2.54 mm), so the text calls a day wet exactly when the
-// model does. Below it, a few tenths of a millimetre is dew on the pavement,
-// not a runoff event, and describing it as one contradicts a Good rating.
-const WET_MM = 2.54;
+// WET_MM, rainState, rainTotalMm and rainDepth now live in lib/rain.ts, shared
+// with the contributing-factor list under this paragraph. Each surface used to
+// judge "was there rain?" on its own and they disagreed on screen; see that
+// module's header for the day they contradicted each other.
 
 // Rain depth as a phrase, not a decimal: "about a quarter inch" reads as
 // weather, "0.27 in" reads as instrumentation.
@@ -159,23 +158,41 @@ function tense(past: boolean, present: string, wasPast: string): string {
 }
 
 function rainSentence(c: Conditions, past: boolean): TopicSentence | null {
-  const today = c.rainTodayMm;
-  const prior = c.rainPrior3dMm;
-  if (today == null && prior == null) return null;
+  const total = rainTotalMm(c);
+  if (total == null) return null;
 
-  const total = (today ?? 0) + (prior ?? 0);
   const window = tense(past, "over the past few days", "in the days before");
+  const state = rainState(total);
 
-  if (total < WET_MM) {
+  // Exactly nothing. The only case that may say "no rain" flatly, and it says
+  // it without a depth because "0.0 mm" is a reading where "none" is a fact.
+  if (state === "none") {
     return {
       valence: "helps",
       text:
-        `There ${tense(past, "has", "had")} been no real rain ${window}, so ` +
-        `little runoff ${tense(past, "is", "was")} washing bacteria off streets ` +
+        `There ${tense(past, "has", "had")} been no rain ${window}, so ` +
+        `no runoff ${tense(past, "is", "was")} washing bacteria off streets ` +
         `and storm drains into the water, the biggest driver of bacteria along ` +
         `this coast.`,
     };
   }
+
+  // More than nothing, less than a runoff event. This used to be folded in with
+  // the line above and read as a flat "no real rain", which is what let the
+  // factor list underneath announce rain the summary had just denied. It now
+  // says both true things -- it did rain, and it was far too little to matter --
+  // and prints the figure that reconciles them.
+  if (state === "trace") {
+    return {
+      valence: "helps",
+      text:
+        `Only ${rainDepth(total)} of rain ${tense(past, "has", "had")} fallen ` +
+        `${window}. That ${tense(past, "is", "was")} very little rain, not ` +
+        `enough to wash much bacteria off streets and storm drains into the ` +
+        `water.`,
+    };
+  }
+
   const phrase = rainPhrase(total);
   // Combined sewer overflows are Boston Harbor's version of the runoff story.
   // Only worth raising for a beach close enough to an outfall to be affected,
@@ -189,9 +206,10 @@ function rainSentence(c: Conditions, past: boolean): TopicSentence | null {
   return {
     valence: "hurts",
     text:
-      `${phrase[0].toUpperCase()}${phrase.slice(1)} ${tense(past, "has", "had")} ` +
-      `fallen ${window}, and that runoff ${tense(past, "carries", "carried")} ` +
-      `bacteria off streets and storm drains into the water.${sewer}`,
+      `${phrase[0].toUpperCase()}${phrase.slice(1)} (${rainDepth(total)}) ` +
+      `${tense(past, "has", "had")} fallen ${window}, and that runoff ` +
+      `${tense(past, "carries", "carried")} bacteria off streets and storm ` +
+      `drains into the water.${sewer}`,
   };
 }
 
