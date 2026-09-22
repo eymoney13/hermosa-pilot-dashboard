@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, ChevronDown } from "lucide-react";
 import {
   subtractDays,
   type Accuracy,
+  type Conditions,
   type Driver,
   type FactorDirection,
 } from "@/lib/data";
@@ -89,6 +90,7 @@ export default function WhyPrediction({
   figures,
   factors,
   drivers,
+  conditions,
   lastResult,
   daysSinceSample,
   predictionDate,
@@ -108,6 +110,11 @@ export default function WhyPrediction({
   // The same ranking as `factors`, carrying the direction the model gave each
   // one. Supplies the "how" under each listed factor.
   drivers: Driver[];
+  // The day's measured conditions. Only the rain figures are read, by the rain
+  // factors, which state a depth rather than a direction. Optional because a
+  // board whose backend publishes no conditions still renders this list, just
+  // with the direction-only wording.
+  conditions?: Conditions;
   lastResult: number | string | null;
   daysSinceSample: number | null;
   predictionDate: string;
@@ -220,7 +227,7 @@ export default function WhyPrediction({
                     // list further down, so a reader never has to count rows to
                     // work out which line belongs to which name.
                     const direction = directions.get(factor);
-                    const effect = factorEffect(factor, direction);
+                    const effect = factorEffect(factor, direction, conditions);
                     return (
                       <li key={`${factor}-${i}`} className="flex gap-3">
                         <span className="text-gray-400 tabular-nums">

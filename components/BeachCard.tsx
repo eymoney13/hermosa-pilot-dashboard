@@ -740,6 +740,10 @@ export default function BeachCard({
           }
           factors={activeDay.factors ?? []}
           drivers={activeDay.drivers ?? beach.drivers}
+          // Same fallback as drivers just above: each day explains itself with
+          // its own weather, so a forecast day's rain depth is that day's
+          // forecast rain and not today's.
+          conditions={activeDay.conditions ?? beach.conditions}
           lastResult={activeDay.lastResult ?? null}
           daysSinceSample={activeDay.daysSinceSample ?? null}
           predictionDate={activeDay.date}
