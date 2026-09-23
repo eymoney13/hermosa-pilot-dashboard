@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ChevronLeft } from "lucide-react";
-import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
+import { ChevronLeft, Pointer } from "lucide-react";
+import { orderForList, VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import type { NewsItem } from "@/lib/news";
 import BeachCard from "./BeachCard";
@@ -29,6 +29,7 @@ export default function DashboardTabs({
   locationLabel,
   fallbackCenter,
   features,
+  listTopStations,
   alertSignup,
   news,
   newsEnabled,
@@ -37,6 +38,10 @@ export default function DashboardTabs({
   locationLabel: string;
   fallbackCenter: [number, number];
   features: FeatureFlags;
+  // Station codes this board leads its List with (LocationConfig.listTopStations).
+  // The List only: the tab bar, the map and the card picker below all read
+  // `beaches` in its coastline order.
+  listTopStations?: string[];
   // The alert signup, passed in rather than built here: it needs the location
   // slug and the alerts-configured check, both of which are the page's to know.
   // Rendered here because where it belongs depends on which tab is open, which
@@ -200,7 +205,7 @@ export default function DashboardTabs({
 
       {listActive ? (
         <BeachList
-          beaches={beaches}
+          beaches={orderForList(beaches, listTopStations)}
           locationLabel={locationLabel}
           binaryVerdict={features.binaryVerdict}
           hidePercent={features.hidePercentSign}
@@ -217,6 +222,31 @@ export default function DashboardTabs({
               date={beaches[0]?.predictionDate}
               binaryVerdict={features.binaryVerdict}
             />
+            {/* The pins are clickable and nothing says so. A pin reads as a
+                finished answer - a labelled dot saying "Normal" - so there is
+                nothing about it to suggest a card sits behind it, and the only
+                affordance it carries is a CSS cursor: no hover state, and on a
+                touch screen no cursor either. This line is the part of that fix
+                that does not depend on the reader hovering or tapping first.
+
+                It matters most on the boards that hide their per-beach tabs
+                (see features.hideBeachTabs): there the map is both the landing
+                view and the only thing that says the cards exist at all.
+
+                Map tab only. The List says the same thing with its chevrons and
+                its rows, so repeating it there would be explaining a control
+                that already explains itself. */}
+            <p className="mt-3 flex items-center gap-1.5 text-sm text-gray-600">
+              <Pointer
+                aria-hidden="true"
+                className="h-3.5 w-3.5 shrink-0 text-[#2C8487]"
+              />
+              {/* "Select" rather than "tap" or "click": the board is read on
+                  both, and naming one input names the wrong one for half the
+                  readers. */}
+              Select a beach to see its full forecast and what&rsquo;s driving
+              it.
+            </p>
           </div>
           <OverviewMapClient
             beaches={beaches}
