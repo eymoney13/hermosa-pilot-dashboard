@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
-import { VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
+import { orderForList, VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import type { NewsItem } from "@/lib/news";
 import BeachCard from "./BeachCard";
@@ -29,6 +29,7 @@ export default function DashboardTabs({
   locationLabel,
   fallbackCenter,
   features,
+  listTopStations,
   alertSignup,
   news,
   newsEnabled,
@@ -37,6 +38,10 @@ export default function DashboardTabs({
   locationLabel: string;
   fallbackCenter: [number, number];
   features: FeatureFlags;
+  // Station codes this board leads its List with (LocationConfig.listTopStations).
+  // The List only: the tab bar, the map and the card picker below all read
+  // `beaches` in its coastline order.
+  listTopStations?: string[];
   // The alert signup, passed in rather than built here: it needs the location
   // slug and the alerts-configured check, both of which are the page's to know.
   // Rendered here because where it belongs depends on which tab is open, which
@@ -200,7 +205,7 @@ export default function DashboardTabs({
 
       {listActive ? (
         <BeachList
-          beaches={beaches}
+          beaches={orderForList(beaches, listTopStations)}
           locationLabel={locationLabel}
           binaryVerdict={features.binaryVerdict}
           hidePercent={features.hidePercentSign}
