@@ -133,6 +133,7 @@ export default async function LocationPage({
           locationLabel={config.displayName}
           fallbackCenter={config.mapFallbackCenter}
           features={features}
+          listTopStations={config.listTopStations}
           // Rendered inside the tabs: on a beach it belongs between the card
           // and the map, and only that component knows which tab is open.
           alertSignup={

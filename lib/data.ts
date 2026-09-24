@@ -27,6 +27,12 @@ export interface LocationConfig {
   // Official advisory authority linked in the page footer. Defaults to LA County
   // (the CA locations) when omitted.
   advisory?: { label: string; href: string };
+  // Optional: station codes pinned to the top of the List tab, in this order.
+  // Everything else follows in the board's usual north-to-south order (see
+  // orderForList). The List tab only — the Map, the tabs and the card picker
+  // stay on the coastline order, which is the one that matches the geography
+  // they draw.
+  listTopStations?: string[];
   // Optional: read this board's published files from public/data/<dataSlug>
   // instead of public/data/<slug>. Lets one board mirror another's live data
   // with no copied files and nothing added to project-neptune — the mirror is
@@ -151,6 +157,17 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       DHS115: "Hermosa Beach - Herondo St",
       DHS116: "Redondo Beach - Topaz",
     },
+    // The List leads with the four city beaches - Manhattan, both Hermosa
+    // stations and Redondo - and puts the Dockweiler pins under them. Strict
+    // north-to-south order opened the list with four Dockweiler rows whose
+    // names differ only by their landmark in parentheses, so a reader looking
+    // for their own beach scrolled past half the board to reach it. The map
+    // keeps the coastline order; a list is read top-down, not geographically.
+    //
+    // Only the four are pinned, so the three hidden Dockweiler stations above
+    // slot back into the block below in latitude order if they are ever
+    // re-added, with no change here.
+    listTopStations: ["DHS113", "DHS114", "DHS115", "DHS116"],
     // Recentered for the Dockweiler additions: the roster now spans 33.8321
     // (Redondo) to 33.9570 (Culver Blvd.). Only used when no beaches load.
     mapFallbackCenter: [33.895, -118.42],
@@ -197,6 +214,9 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       DHS115: "Hermosa Beach - Herondo St",
       DHS116: "Redondo Beach - Topaz",
     },
+    // Copied from South Bay so the board starts as a faithful duplicate. This
+    // is one of the things most worth reordering here first.
+    listTopStations: ["DHS113", "DHS114", "DHS115", "DHS116"],
     mapFallbackCenter: [33.895, -118.42],
     timeZone: "America/Los_Angeles",
   },
@@ -548,6 +568,25 @@ export interface BeachData {
   pastDays: ForecastDay[];
   forecast: ForecastDay[];
   accuracy: Accuracy;
+}
+
+// The List tab's row order. Beaches named in `topCodes` lead, in that order;
+// every other beach follows in the order it arrived, which is the board's
+// north-to-south coastline order (loadDashboardData sorts by latitude). Boards
+// that name no pinned stations keep that order untouched.
+export function orderForList<T extends { code: string }>(
+  beaches: T[],
+  topCodes: string[] | undefined
+): T[] {
+  if (!topCodes?.length) return beaches;
+  const pinned = topCodes
+    .map((code) => beaches.find((b) => b.code === code))
+    // A pinned code that is not on the board - a station hidden from
+    // `stations`, or one the backend stopped publishing - is simply skipped,
+    // rather than leaving a hole at the top of the list.
+    .filter((b): b is T => b != null);
+  const pinnedCodes = new Set(pinned.map((b) => b.code));
+  return [...pinned, ...beaches.filter((b) => !pinnedCodes.has(b.code))];
 }
 
 export interface DashboardData {
