@@ -33,6 +33,21 @@ export interface LocationConfig {
   // stay on the coastline order, which is the one that matches the geography
   // they draw.
   listTopStations?: string[];
+  // Optional: read this board's published files from public/data/<dataSlug>
+  // instead of public/data/<slug>. Lets one board mirror another's live data
+  // with no copied files and nothing added to project-neptune — the mirror is
+  // current the moment the original's daily refresh lands. Defaults to `slug`,
+  // so every board that does not set it is unaffected.
+  dataSlug?: string;
+  // Optional: ask search engines not to index this board. For the boards that
+  // are not the real thing — an experiment showing another board's data under
+  // a different name is exactly what should not turn up in a search for it.
+  noindex?: boolean;
+}
+
+/** Where a board's published files live. See LocationConfig.dataSlug. */
+export function dataSlugFor(config: LocationConfig): string {
+  return config.dataSlug ?? config.slug;
 }
 
 export const LOCATIONS: Record<string, LocationConfig> = {
@@ -155,6 +170,53 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     listTopStations: ["DHS113", "DHS114", "DHS115", "DHS116"],
     // Recentered for the Dockweiler additions: the roster now spans 33.8321
     // (Redondo) to 33.9570 (Culver Blvd.). Only used when no beaches load.
+    mapFallbackCenter: [33.895, -118.42],
+    timeZone: "America/Los_Angeles",
+  },
+  // A copy of South Bay to experiment on.
+  //
+  // /southbay has real readers, so there is nowhere to try a layout change
+  // without shipping it to them. This board shows THE SAME LIVE DATA — dataSlug
+  // points its reads at public/data/southbay, so there is no second copy of the
+  // files, nothing for project-neptune to publish twice, and no way for the two
+  // to drift — but carries its own entry in FEATURES_BY_LOCATION, which is the
+  // whole point: flags can be flipped here without touching the real board.
+  //
+  // The roster below is duplicated rather than shared. It is the one thing that
+  // SHOULD be free to diverge: reordering the list or hiding a station is
+  // exactly the kind of change this board exists to try out.
+  //
+  // Alerts and the Pro offer are deliberately off (see lib/features.ts).
+  sandbox: {
+    slug: "sandbox",
+    // Named in full, because the two boards are otherwise identical on screen
+    // and this name is the only thing in a screenshot that tells them apart.
+    displayName: "South Bay Sandbox, CA",
+    dataSlug: "southbay",
+    noindex: true,
+    stations: [
+      "SMB-2-10",
+      "SMB-2-11",
+      "SMB-2-13",
+      "DHS112B",
+      "DHS113",
+      "DHS114",
+      "DHS115",
+      "DHS116",
+    ],
+    beachNames: {
+      "SMB-2-10": "Dockweiler State Beach (Culver Blvd.)",
+      "SMB-2-11": "Dockweiler State Beach (Westchester Storm Drain)",
+      "SMB-2-13": "Dockweiler State Beach (Imperial HWY Storm Drain)",
+      DHS112B: "Dockweiler State Beach (South Jetty)",
+      DHS113: "Manhattan Beach - 28th st",
+      DHS114: "Hermosa Beach - 26th St",
+      DHS115: "Hermosa Beach - Herondo St",
+      DHS116: "Redondo Beach - Topaz",
+    },
+    // Copied from South Bay so the board starts as a faithful duplicate. This
+    // is one of the things most worth reordering here first.
+    listTopStations: ["DHS113", "DHS114", "DHS115", "DHS116"],
     mapFallbackCenter: [33.895, -118.42],
     timeZone: "America/Los_Angeles",
   },
