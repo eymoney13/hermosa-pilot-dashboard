@@ -4,6 +4,7 @@ import path from "node:path";
 import Papa from "papaparse";
 import {
   computeAccuracy,
+  dataSlugFor,
   statusFromProb,
   statusFromThreshold,
   thresholdFor,
@@ -165,7 +166,7 @@ interface RosterEntry {
 async function resolveRoster(config: LocationConfig): Promise<RosterEntry[]> {
   if (config.rosterFile) {
     const roster = await readJsonOptional<RosterFile>(
-      config.slug,
+      dataSlugFor(config),
       config.rosterFile
     );
     return (roster?.beaches ?? [])
@@ -372,6 +373,11 @@ function parseLastResult(raw: unknown): number | string | null {
 export async function loadDashboardData(
   config: LocationConfig
 ): Promise<DashboardData> {
+  // Which directory under public/data these reads come from. Normally the
+  // board's own slug; a board mirroring another's data reads from that one
+  // instead (see LocationConfig.dataSlug).
+  const data = dataSlugFor(config);
+
   // Every input is optional. A location whose backend hasn't published yet (or
   // that never ships a given file — not every model produces a 3-day forecast)
   // loads as an empty dashboard rather than throwing ENOENT and 500-ing the page.
@@ -384,11 +390,11 @@ export async function loadDashboardData(
     thresholdMap,
   ] = await Promise.all([
     resolveRoster(config),
-    readCsvOptional<NowcastRow>(config.slug, "nowcast_latest.csv"),
-    readCsvOptional<ForecastRow>(config.slug, "forecast_3day.csv"),
-    readCsvOptional<ForecastRow>(config.slug, "history_3day.csv"),
-    readCsvOptional<AccuracyRow>(config.slug, "accuracy.csv"),
-    loadThresholds(config.slug),
+    readCsvOptional<NowcastRow>(data, "nowcast_latest.csv"),
+    readCsvOptional<ForecastRow>(data, "forecast_3day.csv"),
+    readCsvOptional<ForecastRow>(data, "history_3day.csv"),
+    readCsvOptional<AccuracyRow>(data, "accuracy.csv"),
+    loadThresholds(data),
   ]);
 
   // Group the lab samples by station, chronological (oldest → newest), so each

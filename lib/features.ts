@@ -126,6 +126,22 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
     // fine. Alerts are how they hear about the days they are not.
     beachAlerts: true,
   },
+  // The experiment board (see LOCATIONS.sandbox). Starts as a copy of South
+  // Bay's LAYOUT so that anything changed here is visibly a change from the
+  // real board rather than from stock defaults.
+  //
+  // beachAlerts and proOffer are left OFF, and beachAlerts especially is not an
+  // oversight: alertEnabledLocations() sends for every board carrying that
+  // flag, so turning it on here would have the daily job mailing anyone who
+  // signed up on an experiment. Flip it when the alert flow itself is what
+  // needs testing, and expect real email.
+  sandbox: {
+    hideBeachTabs: true,
+    predictionSummary: true,
+    listTab: true,
+    openOnMap: true,
+    siteAccuracyPercent: true,
+  },
   cabrillo: {}, // plain Manhattan-style — all flags default off
   // Boston reads as a Good/Moderate/Poor board: its model ships its own
   // Safe/Unsafe call against per-beach cutoffs of 10-25%, which the shared

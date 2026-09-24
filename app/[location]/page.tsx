@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import DashboardTabs from "@/components/DashboardTabs";
 import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
@@ -39,6 +40,11 @@ export async function generateMetadata({
   return {
     title: `${config.displayName} Water Quality`,
     description: `Daily water quality forecast for ${config.displayName}.`,
+    // An experiment board shows another board's live readings under a name
+    // that is not the real one. There is no robots.txt or sitemap in this app,
+    // so without this it would be as crawlable as the board it copies, and a
+    // search for the real beaches could land someone on the wrong one.
+    ...(config.noindex ? { robots: { index: false, follow: false } } : {}),
   };
 }
 
@@ -69,6 +75,26 @@ export default async function LocationPage({
 
   return (
     <main className="flex flex-col">
+      {/* An experiment board is pixel-identical to the one it copies and shows
+          the same live readings, so nothing on the page would otherwise say
+          which one you are looking at. Above the header rather than inside it,
+          because it is a fact about the whole page and not part of the brand.
+          Amber, not the board's teal: it is the one element here that is not
+          part of the product. */}
+      {config.noindex && (
+        <div className="w-full bg-amber-50 border-b border-amber-200">
+          <p className="mx-auto max-w-6xl px-6 sm:px-10 py-2 text-xs text-amber-900">
+            <strong className="font-semibold">Sandbox.</strong> An experimental
+            copy of South Bay, showing the same live readings. Not the live
+            board &mdash; that is{" "}
+            <Link href="/southbay" className="underline underline-offset-2">
+              /southbay
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+
       <header className="w-full border-b border-gray-100">
         <div className="mx-auto max-w-6xl px-6 sm:px-10 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex flex-col">
