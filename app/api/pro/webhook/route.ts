@@ -21,13 +21,26 @@ import {
 
 export const dynamic = "force-dynamic";
 
-// Stripe's own period field. Read defensively: it sits on the subscription in
-// the versions we target, and a missing one means "no known expiry" rather
-// than "expired" — cutting a paying subscriber off over a shape change would
-// be the worst possible failure here.
+// When the paid-for period runs out.
+//
+// THE FIELD MOVED. Up to a point Stripe carried current_period_end on the
+// subscription itself; from the version this integration pins it lives on each
+// subscription ITEM (items.data[].current_period_end), and reading only the old
+// location silently yields undefined — which stored a null and left the expiry
+// backstop in entitlementFrom() permanently inert. Caught in test mode against
+// a real subscription, where the value sat at items.data[0].
+//
+// Both locations are read, newest first, so this keeps working whichever shape
+// an account's API version sends. A missing value still means "no known expiry"
+// rather than "expired": cutting a paying subscriber off over a shape change
+// would be the worst failure available here.
 function periodEnd(sub: Stripe.Subscription): Date | null {
-  const raw = (sub as unknown as { current_period_end?: number })
-    .current_period_end;
+  const item = sub.items?.data?.[0] as
+    | { current_period_end?: number }
+    | undefined;
+  const raw =
+    item?.current_period_end ??
+    (sub as unknown as { current_period_end?: number }).current_period_end;
   return typeof raw === "number" ? new Date(raw * 1000) : null;
 }
 
