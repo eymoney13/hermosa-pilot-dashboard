@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import DashboardTabs from "@/components/DashboardTabs";
 import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
+import AccountControl from "@/components/AccountControl";
 import BeachAlertSignup from "@/components/BeachAlertSignup";
 import FaqAccordion from "@/components/FaqAccordion";
 import { loadDashboardData } from "@/lib/loadData";
@@ -132,11 +133,16 @@ export default async function LocationPage({
               that publishes once a morning, and "Forecast for" named the thing
               the whole page already is. What a reader needs from the header is
               which day they are looking at. */}
-          {predictionDate && (
-            <div className="text-sm text-slate-600">
-              {formatMonthDayYear(predictionDate)}
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {predictionDate && (
+              <div className="text-sm text-slate-600">
+                {formatMonthDayYear(predictionDate)}
+              </div>
+            )}
+            {/* Only on a board that sells something. Everywhere else an
+                account would be a control with nothing behind it. */}
+            {features.paywall && <AccountControl />}
+          </div>
         </div>
       </header>
 
