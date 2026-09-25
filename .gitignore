@@ -43,3 +43,4 @@ next-env.d.ts
 # local fixtures
 public/data/**/history_3day.test-fixture.csv
 .env.local
+.claude/
