@@ -143,7 +143,7 @@ export default async function LocationPage({
             )}
             {/* Only on a board that sells something. Everywhere else an
                 account would be a control with nothing behind it. */}
-            {features.paywall && <AccountControl />}
+            {features.paywall && <AccountControl location={config.slug} />}
           </div>
         </div>
       </header>

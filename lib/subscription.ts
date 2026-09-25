@@ -212,6 +212,46 @@ export async function updateSubscriptionStatus(
   `;
 }
 
+/**
+ * The Stripe customer this account belongs to, or null.
+ *
+ * Read from OUR table by Clerk user id — never accepted from the client. A
+ * customer id is all it takes to open a billing portal, so one arriving in a
+ * request body would let anyone who guessed or scraped one manage someone
+ * else's subscription.
+ */
+export async function getStripeCustomerId(
+  clerkUserId: string
+): Promise<string | null> {
+  const rows = (await db()`
+    SELECT stripe_customer_id
+      FROM pro_subscriptions
+     WHERE clerk_user_id = ${clerkUserId}
+  `) as Array<{ stripe_customer_id: string | null }>;
+  return rows[0]?.stripe_customer_id ?? null;
+}
+
+/**
+ * A Stripe-hosted session where someone can see their invoices, change their
+ * card and cancel.
+ *
+ * Hosted by Stripe on purpose: cancelling is the one flow it would be worst to
+ * get subtly wrong, and Stripe's own page is always correct about what a
+ * cancellation does and when it takes effect. Whatever happens in there comes
+ * back to us as the same webhooks a CLI cancellation produces, so entitlement
+ * needs no new rules.
+ */
+export async function createBillingPortalSession(
+  customerId: string,
+  returnTo: string
+): Promise<string> {
+  const session = await stripe().billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${siteUrl()}${returnTo}`,
+  });
+  return session.url;
+}
+
 /** Verify a webhook came from Stripe. Throws if the signature does not check out. */
 export function constructWebhookEvent(
   payload: string,
