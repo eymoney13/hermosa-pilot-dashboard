@@ -48,6 +48,29 @@ function db() {
   return neon(url);
 }
 
+/**
+ * THE KILL SWITCH. Nothing that can take money is created unless this is on.
+ *
+ * Temporary, and deliberately separate from isStripeConfigured(): the keys can
+ * be perfectly valid and live while we still do not want a single real charge
+ * to be possible. It exists so /sandbox can be deployed and shown to people
+ * with the Pro UI, the paywall and the prices all visible, while every path
+ * that would reach Stripe is closed.
+ *
+ * DEFAULT OFF. Absent, empty, "1", "yes", "TRUE" — all off. Only the exact
+ * string "true" enables billing, so no typo and no missing variable can turn
+ * real payments on by accident. Forgetting it fails safe; that is the whole
+ * point of the direction it defaults in.
+ *
+ * TO REMOVE LATER: set NEPTUNE_LIVE_BILLING_ENABLED=true in Vercel Production
+ * and redeploy. To retire the switch entirely, delete this function and its
+ * three call sites (/pro/start, /pro/manage, and checkoutReady in the location
+ * page) — grep for isLiveBillingEnabled.
+ */
+export function isLiveBillingEnabled(): boolean {
+  return process.env.NEPTUNE_LIVE_BILLING_ENABLED === "true";
+}
+
 /** Whether a subscription can be sold at all: somewhere to charge, somewhere to record it. */
 export function isStripeConfigured(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY && process.env.DATABASE_URL);

@@ -10,7 +10,7 @@ import { loadDashboardData } from "@/lib/loadData";
 import { isAlertsConfigured } from "@/lib/alerts";
 import { isEntitled } from "@/lib/entitlement";
 import { isClerkConfigured } from "@/lib/clerkConfig";
-import { isStripeConfigured } from "@/lib/subscription";
+import { isLiveBillingEnabled, isStripeConfigured } from "@/lib/subscription";
 import { redactForEntitlement } from "@/lib/paywall";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
 import { featuresFor } from "@/lib/features";
@@ -174,7 +174,15 @@ export default async function LocationPage({
                 // so before the reader starts, and app/actions/alerts.ts
                 // refuses the write regardless of what the dialog does.
                 locked={features.paywall && !entitled}
-                checkoutReady={isClerkConfigured() && isStripeConfigured()}
+                // The offer, the plans and the prices still render; only the
+                // navigation to checkout is withheld. A reviewer sees exactly
+                // what a buyer would see, and the Continue button says so
+                // rather than walking into a 404.
+                checkoutReady={
+                  isClerkConfigured() &&
+                  isStripeConfigured() &&
+                  isLiveBillingEnabled()
+                }
               />
             ) : null
           }

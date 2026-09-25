@@ -6,6 +6,7 @@ import { paywalledReturnPath } from "@/lib/paywall";
 import {
   createBillingPortalSession,
   getStripeCustomerId,
+  isLiveBillingEnabled,
   isStripeConfigured,
 } from "@/lib/subscription";
 
@@ -32,6 +33,9 @@ export default async function ProManagePage({
   searchParams: Promise<{ from?: string }>;
 }) {
   if (!isClerkConfigured() || !isStripeConfigured()) notFound();
+  // Same switch. A portal session is a Stripe object too, and it exposes
+  // invoices and cancellation, so it stays shut with the rest.
+  if (!isLiveBillingEnabled()) notFound();
 
   // Same gate as /pro/start, and for the same reason. This value becomes
   // Stripe's return_url, so it must be a relative path; and it must name a

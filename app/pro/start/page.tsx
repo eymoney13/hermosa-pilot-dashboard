@@ -5,6 +5,7 @@ import { isClerkConfigured } from "@/lib/clerkConfig";
 import { paywalledReturnPath } from "@/lib/paywall";
 import {
   createCheckoutSession,
+  isLiveBillingEnabled,
   isProPlan,
   isStripeConfigured,
 } from "@/lib/subscription";
@@ -31,6 +32,10 @@ export default async function ProStartPage({
   searchParams: Promise<{ from?: string; plan?: string }>;
 }) {
   if (!isClerkConfigured() || !isStripeConfigured()) notFound();
+  // Billing switched off: no checkout session is created, and none can be.
+  // Checked before anything reads the query string, so there is no path from a
+  // crafted URL to Stripe while the switch is down.
+  if (!isLiveBillingEnabled()) notFound();
 
   // Which board this purchase is for — and whether that board sells anything.
   //

@@ -2,7 +2,11 @@ import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { isClerkConfigured } from "@/lib/clerkConfig";
-import { getStripeCustomerId, isStripeConfigured } from "@/lib/subscription";
+import {
+  getStripeCustomerId,
+  isLiveBillingEnabled,
+  isStripeConfigured,
+} from "@/lib/subscription";
 
 // The only place on a board that mentions accounts at all.
 //
@@ -40,9 +44,12 @@ export default async function AccountControl({
   // currently entitled. Someone who has cancelled still needs their invoices,
   // and someone whose card just failed needs to fix it — those are exactly the
   // people for whom a missing billing link is most infuriating.
-  const customerId = isStripeConfigured()
-    ? await getStripeCustomerId(userId)
-    : null;
+  // Also behind the kill switch: /pro/manage 404s while billing is off, and a
+  // link that leads nowhere is worse than no link.
+  const customerId =
+    isStripeConfigured() && isLiveBillingEnabled()
+      ? await getStripeCustomerId(userId)
+      : null;
 
   return (
     <div className="flex items-center gap-3">
