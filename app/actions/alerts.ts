@@ -3,6 +3,7 @@
 import { getLocation } from "@/lib/data";
 import { featuresFor } from "@/lib/features";
 import { isAlertsConfigured, subscribe } from "@/lib/alerts";
+import { isEntitled } from "@/lib/entitlement";
 import { loadStationCodes } from "@/lib/loadData";
 import type { AlertFormState } from "@/lib/alertForm";
 
@@ -19,6 +20,19 @@ export async function subscribeToAlerts(
   const config = getLocation(location);
   if (!config || !featuresFor(location).beachAlerts) {
     return { status: "error", message: "Email alerts aren't available here." };
+  }
+
+  // THE ACTUAL GATE. The dialog also refuses to submit for an unentitled
+  // reader, but that is presentation: this action is reachable by a direct
+  // POST, so a client-side paywall is a suggestion and this is the rule.
+  //
+  // It runs before any write, which is what makes "nothing is stored for
+  // someone who declines" true rather than merely intended.
+  if (featuresFor(location).paywall && !(await isEntitled())) {
+    return {
+      status: "error",
+      message: "Email alerts are part of Neptune Pro.",
+    };
   }
 
   if (!isAlertsConfigured()) {

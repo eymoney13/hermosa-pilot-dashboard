@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { Check, Mail, X } from "lucide-react";
+import { Check, Lock, Mail, X } from "lucide-react";
 import { subscribeToAlerts } from "@/app/actions/alerts";
 import { IDLE_ALERT_STATE, type AlertFormState } from "@/lib/alertForm";
 
@@ -17,14 +17,26 @@ export interface AlertBeach {
 export default function BeachAlertSignup({
   beaches,
   location,
+  locked = false,
 }: {
   beaches: AlertBeach[];
   location: string;
+  // Alerts are part of Pro on this board and this reader has not paid.
+  //
+  // Said on the button rather than sprung at the end. The reader still picks
+  // their beaches and types their address — someone who completes a form they
+  // KNOW ends in a paywall is a far better signal than someone cornered into
+  // it at the last step — but nobody starts under a false impression, which on
+  // a board that warns people about bathing water is the part that matters.
+  locked?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [state, setState] = useState<AlertFormState>(IDLE_ALERT_STATE);
   const [pending, setPending] = useState(false);
+  // The paywall step, shown in place of the form once a locked reader submits.
+  const [showOffer, setShowOffer] = useState(false);
+  const [checkoutTried, setCheckoutTried] = useState(false);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -42,6 +54,8 @@ export default function BeachAlertSignup({
   const openDialog = () => {
     setSelected([]);
     setState(IDLE_ALERT_STATE);
+    setShowOffer(false);
+    setCheckoutTried(false);
     setOpen(true);
   };
 
@@ -64,7 +78,7 @@ export default function BeachAlertSignup({
 
   const toggle = (code: string) =>
     setSelected((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
     );
 
   const allSelected = selected.length === beaches.length && beaches.length > 0;
@@ -73,6 +87,15 @@ export default function BeachAlertSignup({
     e.preventDefault();
     // Read the form before the first await — after it, currentTarget is gone.
     const formData = new FormData(e.currentTarget);
+
+    // A locked reader never reaches the server. Nothing they typed is sent and
+    // nothing is stored — the address of someone who declines is not ours to
+    // keep, and the action would refuse it anyway (see app/actions/alerts.ts).
+    if (locked) {
+      setShowOffer(true);
+      return;
+    }
+
     setPending(true);
     setState(IDLE_ALERT_STATE);
     try {
@@ -108,6 +131,11 @@ export default function BeachAlertSignup({
           >
             <Mail className="h-5 w-5 shrink-0" aria-hidden="true" />
             Email me when my beach has elevated bacteria levels
+            {locked && (
+              <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider">
+                Pro
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -131,10 +159,7 @@ export default function BeachAlertSignup({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
-              <span
-                id={titleId}
-                className="text-sm font-medium text-gray-900"
-              >
+              <span id={titleId} className="text-sm font-medium text-gray-900">
                 Beach alerts
               </span>
               <button
@@ -148,10 +173,56 @@ export default function BeachAlertSignup({
               </button>
             </div>
 
-            {succeeded ? (
+            {showOffer ? (
+              // The paywall, reached only by a locked reader pressing submit.
+              // Nothing they entered has been sent anywhere; Back returns them
+              // to the form with their picks intact, because throwing away
+              // their work would punish them for reading the price.
+              <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2563EB]/10">
+                  <Lock className="h-5 w-5 text-[#2563EB]" aria-hidden="true" />
+                </span>
+                <p className="text-base font-semibold text-gray-900">
+                  Email alerts are part of Neptune Pro
+                </p>
+                <p className="max-w-xs text-sm text-gray-600">
+                  We&rsquo;ll watch{" "}
+                  {selected.length === 1
+                    ? "your beach"
+                    : `your ${selected.length} beaches`}{" "}
+                  and email you the mornings any of them is forecast to have
+                  elevated bacteria levels.
+                </p>
+                <p className="text-sm font-semibold text-gray-900">
+                  Neptune Pro is $4.99/month
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCheckoutTried(true)}
+                  className="mt-1 w-full max-w-xs rounded-md bg-[#2563EB] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1D4ED8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"
+                >
+                  Continue
+                </button>
+                {checkoutTried && (
+                  <p role="status" className="text-xs text-gray-500">
+                    Checkout isn&rsquo;t wired up yet.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowOffer(false)}
+                  className="text-sm text-gray-500 transition-colors hover:text-gray-700"
+                >
+                  Back
+                </button>
+              </div>
+            ) : succeeded ? (
               <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2C8487]/10">
-                  <Check className="h-6 w-6 text-[#2C8487]" aria-hidden="true" />
+                  <Check
+                    className="h-6 w-6 text-[#2C8487]"
+                    aria-hidden="true"
+                  />
                 </span>
                 <p className="text-sm font-medium text-slate-800">
                   {state.message}
@@ -181,7 +252,7 @@ export default function BeachAlertSignup({
                       type="button"
                       onClick={() =>
                         setSelected(
-                          allSelected ? [] : beaches.map((b) => b.code)
+                          allSelected ? [] : beaches.map((b) => b.code),
                         )
                       }
                       className="shrink-0 text-xs font-medium text-[#2C8487] underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2C8487] focus-visible:ring-offset-2 rounded"
@@ -232,7 +303,11 @@ export default function BeachAlertSignup({
                   />
 
                   {state.status === "error" && (
-                    <p id={errorId} role="alert" className="mt-2 text-sm text-[#cc3333]">
+                    <p
+                      id={errorId}
+                      role="alert"
+                      className="mt-2 text-sm text-[#cc3333]"
+                    >
                       {state.message}
                     </p>
                   )}

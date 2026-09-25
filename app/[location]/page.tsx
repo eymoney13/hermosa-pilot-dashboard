@@ -154,6 +154,10 @@ export default async function LocationPage({
               <BeachAlertSignup
                 beaches={beaches.map((b) => ({ code: b.code, name: b.name }))}
                 location={config.slug}
+                // Alerts are part of Pro on a paywalled board. The button says
+                // so before the reader starts, and app/actions/alerts.ts
+                // refuses the write regardless of what the dialog does.
+                locked={features.paywall && !entitled}
               />
             ) : null
           }
