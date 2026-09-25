@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Lock, Mail, X } from "lucide-react";
 import posthog from "posthog-js";
 import { subscribeToAlerts } from "@/app/actions/alerts";
@@ -23,9 +24,14 @@ export default function BeachAlertSignup({
   beaches,
   location,
   locked = false,
+  checkoutReady = false,
 }: {
   beaches: AlertBeach[];
   location: string;
+  // Whether there is actually a checkout to send them to. False until Clerk
+  // and Stripe are both configured, in which case the button says so rather
+  // than walking them into a 404.
+  checkoutReady?: boolean;
   // Alerts are part of Pro on this board and this reader has not paid.
   //
   // Said on the button rather than sprung at the end. The reader still picks
@@ -35,6 +41,7 @@ export default function BeachAlertSignup({
   // a board that warns people about bathing water is the part that matters.
   locked?: boolean;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [state, setState] = useState<AlertFormState>(IDLE_ALERT_STATE);
@@ -208,9 +215,24 @@ export default function BeachAlertSignup({
                 <p className="text-sm font-semibold text-gray-900">
                   Neptune Pro is $4.99/month
                 </p>
+                {/* Off to /pro/start, which makes the account if there is
+                    not one yet and then opens Stripe. A full navigation rather
+                    than fetch-and-redirect: the next thing they see is a card
+                    form, and a spinner in a dialog on the way there adds a
+                    step without adding anything. router.push rather than
+                    assigning location: /pro/start is an internal route, and a
+                    hard assignment throws away the client cache for nothing. */}
                 <button
                   type="button"
-                  onClick={() => setCheckoutTried(true)}
+                  onClick={() => {
+                    if (!checkoutReady) {
+                      setCheckoutTried(true);
+                      return;
+                    }
+                    router.push(
+                      `/pro/start?from=${encodeURIComponent(`/${location}`)}`
+                    );
+                  }}
                   className="mt-1 w-full max-w-xs rounded-md bg-[#2563EB] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1D4ED8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"
                 >
                   Continue

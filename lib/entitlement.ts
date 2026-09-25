@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { auth } from "@clerk/nextjs/server";
 import { isClerkConfigured } from "./clerkConfig";
+import { hasLiveSubscription, subscriptionsEnforced } from "./subscription";
 
 // Who is allowed to see the paid half of a board.
 //
@@ -28,15 +29,31 @@ const DEV_COOKIE = "neptune_pro";
 
 export async function isEntitled(): Promise<boolean> {
   if (isClerkConfigured()) {
-    // Signed in IS entitled, for now. Phase 3 narrows this to "signed in AND
-    // holding a live subscription" — until then there is nothing to buy, so
-    // an account is the only thing there is to check.
-    //
     // auth() is async in Clerk Core 3, and it needs clerkMiddleware to have
     // run — proxy.ts runs it whenever Clerk is configured, which is the same
     // condition as this branch.
     const { userId } = await auth();
-    return Boolean(userId);
+    if (!userId) return false;
+
+    // Signed in is NOT entitled. An account on its own buys nothing; the
+    // subscription is the thing, and it is checked on every request rather
+    // than cached into the session, so a cancellation takes effect on the next
+    // page load instead of whenever the cookie happens to expire.
+    //
+    // Fails CLOSED. subscriptionsEnforced() is keyed on the database, which
+    // production always has, so a production deploy that somehow lost its
+    // Stripe keys withholds Pro rather than handing it to everyone with an
+    // account. Only a machine with no database at all treats being signed in
+    // as enough, and that machine has nothing to sell anyway.
+    if (!subscriptionsEnforced()) return true;
+    try {
+      return await hasLiveSubscription(userId);
+    } catch (err) {
+      // A database that is down must not silently unlock the paid half. It
+      // must not lock out a paying subscriber quietly either, so this is loud.
+      console.error("[entitlement] subscription lookup", err);
+      return false;
+    }
   }
 
   const jar = await cookies();
