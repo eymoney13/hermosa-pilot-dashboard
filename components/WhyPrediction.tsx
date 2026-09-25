@@ -26,6 +26,10 @@ import ForecastAccuracy from "./ForecastAccuracy";
 // withholding happens upstream. These are grey bars shaped like the real
 // sections so the panel keeps its proportions, and nothing is invented: no
 // numbers, no factor names, no readings.
+//
+// Two blocks, not three: the forecast-confidence card renders for real below
+// this, unblurred, because its headline percentage is free. A third grey block
+// shaped like it would read as a second, locked copy of the panel underneath.
 function LockedBody() {
   return (
     <div className="relative">
@@ -45,10 +49,6 @@ function LockedBody() {
               <div className={`h-3 rounded bg-gray-200 ${w}`} />
             </div>
           ))}
-        </div>
-        <div className="space-y-2">
-          <div className="h-2.5 w-32 rounded bg-gray-200" />
-          <div className="h-12 w-full rounded bg-gray-100" />
         </div>
       </div>
 
@@ -83,7 +83,7 @@ function formatSampleDate(iso: string): string {
 // that was latest as of that date, not a future one.
 function sampleDateFor(
   daysSinceSample: number | null,
-  predictionDate: string
+  predictionDate: string,
 ): string | null {
   if (daysSinceSample == null) return null;
   return formatSampleDate(subtractDays(predictionDate, daysSinceSample));
@@ -229,6 +229,7 @@ export default function WhyPrediction({
           accuracy={accuracy}
           hidePercent={hidePercent}
           showOverallPercent={showAccuracyPercent}
+          locked={locked}
         />
       </div>
     );
@@ -342,10 +343,11 @@ export default function WhyPrediction({
             )}
 
             <ForecastAccuracy
-          accuracy={accuracy}
-          hidePercent={hidePercent}
-          showOverallPercent={showAccuracyPercent}
-        />
+              accuracy={accuracy}
+              hidePercent={hidePercent}
+              showOverallPercent={showAccuracyPercent}
+              locked={locked}
+            />
           </div>
         </div>
       </div>

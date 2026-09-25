@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, Target, X } from "lucide-react";
+import { Check, ChevronDown, Lock, Target, X } from "lucide-react";
 import {
   ACCURACY_MIN_SAMPLES,
   accuracyPercent,
@@ -80,12 +80,18 @@ export default function ForecastAccuracy({
   accuracy,
   hidePercent,
   showOverallPercent = false,
+  locked = false,
 }: {
   accuracy: Accuracy;
   hidePercent: boolean;
   // Headline the panel with this site's accuracy over its whole sampling
   // record, instead of describing only the last seven samples.
   showOverallPercent?: boolean;
+  // The individual lab samples were withheld for an unentitled reader (see
+  // lib/paywall.ts). The headline figure still shows — it is the board's claim
+  // about its own reliability, and charging for that would be charging for the
+  // answer to "should I believe any of this" — but there is nothing to open.
+  locked?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -96,23 +102,70 @@ export default function ForecastAccuracy({
   // component reads, rather than two that can drift apart.
   const overallPct = showOverallPercent ? accuracyPercent(accuracy) : null;
   const enough =
-    overallPct !== null || (!showOverallPercent && windowSize >= ACCURACY_MIN_SAMPLES);
+    overallPct !== null ||
+    (!showOverallPercent && windowSize >= ACCURACY_MIN_SAMPLES);
   const misses = windowSize - matches;
 
   // On boards carrying the whole-record figure the title states it inline
   // ("Forecast confidence: 86%") and the line beneath gives the size of the
   // record behind it. Elsewhere the title is the bare label it has always been.
   const title =
-    overallPct !== null ? `Forecast confidence: ${overallPct}%` : "Forecast accuracy";
+    overallPct !== null
+      ? `Forecast confidence: ${overallPct}%`
+      : "Forecast confidence";
 
   const summaryLine = !enough
     ? "Not enough lab samples yet to report accuracy"
     : overallPct !== null
-    ? `Based on ${totalSamples.toLocaleString()} historical observations.`
-    : `Matched lab results in ${matches} of ${windowSize} recent samples`;
+      ? `Based on ${totalSamples.toLocaleString()} historical observations.`
+      : `Matched lab results in ${matches} of ${windowSize} recent samples`;
 
   // Primary signal for screen readers — never color alone.
   const stripAriaLabel = `${windowSize} recent lab samples: ${matches} matched the forecast, ${misses} did not.`;
+
+  // Same header either way; only what it does differs. A locked panel is a
+  // div, not a disabled button — there is nothing behind it to reach, so
+  // offering a control that refuses is worse than offering none. The padlock
+  // in place of the chevron is what says so.
+  const header = (
+    <>
+      <span className="flex items-start gap-2.5 min-w-0">
+        <Target
+          className="h-4 w-4 mt-0.5 shrink-0 text-gray-400"
+          aria-hidden="true"
+        />
+        <span className="min-w-0">
+          <span className="block text-sm text-gray-700">{title}</span>
+          <span className="block text-xs text-gray-500">{summaryLine}</span>
+        </span>
+      </span>
+      {locked ? (
+        <Lock className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+      ) : (
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      )}
+    </>
+  );
+
+  if (locked) {
+    return (
+      <div className="rounded-lg border border-gray-100">
+        <div
+          className="w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left"
+          title="The individual lab samples are part of Neptune Pro"
+        >
+          {header}
+          <span className="sr-only">
+            The individual lab samples are part of Neptune Pro
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-gray-100">
@@ -123,21 +176,7 @@ export default function ForecastAccuracy({
         aria-controls="forecast-accuracy-panel"
         className="w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left hover:bg-gray-50/60 rounded-lg transition-colors"
       >
-        <span className="flex items-start gap-2.5 min-w-0">
-          <Target
-            className="h-4 w-4 mt-0.5 shrink-0 text-gray-400"
-            aria-hidden="true"
-          />
-          <span className="min-w-0">
-            <span className="block text-sm text-gray-700">{title}</span>
-            <span className="block text-xs text-gray-500">{summaryLine}</span>
-          </span>
-        </span>
-        <ChevronDown
-          className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
+        {header}
       </button>
 
       <div
@@ -186,7 +225,7 @@ export default function ForecastAccuracy({
                         key={s.date}
                         onClick={() =>
                           setSelectedDate((cur) =>
-                            cur === s.date ? null : s.date
+                            cur === s.date ? null : s.date,
                           )
                         }
                         aria-pressed={isSelected}

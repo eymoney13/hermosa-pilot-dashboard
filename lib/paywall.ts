@@ -17,7 +17,8 @@ import { buildSummary } from "./summary";
 //   and the date — plus "What we're seeing" for today, minus its last sentence.
 //
 // Paid:
-//   the days either side of today, and everything under “What’s affecting the
+//   the days either side of today, the individual lab samples behind the
+//   confidence figure, and everything under “What’s affecting the
 //   water quality?” — the ranked drivers, the measured conditions, the last
 //   lab sample and the forecast-accuracy record.
 
@@ -86,12 +87,21 @@ function redactBeach(beach: BeachData, features: FeatureFlags): BeachData {
     conditions: {},
     lastResult: null,
     daysSinceSample: null,
+    // Not zeroed. The headline percentage is what a free reader is meant to
+    // see — it is the board's claim about itself, and hiding it would be
+    // charging for the answer to "should I believe any of this". It is derived
+    // from totalMatches/totalSamples alone (see accuracyPercent), so those two
+    // stay and the detail behind them goes:
+    //
+    //   samples     the individual lab results, which is the panel a free
+    //               reader cannot open
+    //   windowSize  "matched 6 of the last 7" is a summary OF those samples,
+    //   matches     so it goes with them
     accuracy: {
+      ...beach.accuracy,
+      samples: [],
       windowSize: 0,
       matches: 0,
-      samples: [],
-      totalSamples: 0,
-      totalMatches: 0,
     },
     excRatePct: null,
     nSamples: null,
