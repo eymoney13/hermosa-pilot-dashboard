@@ -7,6 +7,8 @@ import BeachAlertSignup from "@/components/BeachAlertSignup";
 import FaqAccordion from "@/components/FaqAccordion";
 import { loadDashboardData } from "@/lib/loadData";
 import { isAlertsConfigured } from "@/lib/alerts";
+import { isEntitled } from "@/lib/entitlement";
+import { redactForEntitlement } from "@/lib/paywall";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
 import { featuresFor } from "@/lib/features";
 import {
@@ -66,12 +68,23 @@ export default async function LocationPage({
     config.slug,
     config.newsFilterTerms
   );
-  const [{ beaches, predictionDate }, news] = await Promise.all([
+  const [{ beaches: allBeaches, predictionDate }, news, entitled] = await Promise.all([
     loadDashboardData(config),
     newsEnabled
       ? fetchNewsAlerts(getNewsFeedUrls(), newsFilterTerms)
       : Promise.resolve([]),
+    isEntitled(),
   ]);
+
+  // THE SECURITY BOUNDARY. Everything below this line runs on data that has
+  // already had the paid half removed, and `beaches` is handed whole to
+  // DashboardTabs — a client component — so anything still attached here is
+  // serialised into the page and readable from view-source. Blurring downstream
+  // hides nothing. A no-op on every board without the paywall flag.
+  const beaches = redactForEntitlement(allBeaches, {
+    entitled,
+    features,
+  });
 
   return (
     <main className="flex flex-col">

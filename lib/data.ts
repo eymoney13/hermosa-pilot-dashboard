@@ -530,6 +530,13 @@ export interface ForecastDay {
   // exactly what the written summary explains the day in terms of.
   drivers?: Driver[];
   conditions?: Conditions;
+  /**
+   * This day exists but its values were withheld from the payload for an
+   * unentitled reader (see lib/paywall.ts). Distinct from a day that is simply
+   * absent: a beach the backend never published a Thursday for must not be
+   * dressed up as something you could buy.
+   */
+  locked?: boolean;
 }
 
 export interface BeachData {
@@ -568,6 +575,19 @@ export interface BeachData {
   pastDays: ForecastDay[];
   forecast: ForecastDay[];
   accuracy: Accuracy;
+  /**
+   * The paid half of this beach was withheld before the page was serialised.
+   * The card reads this to draw the locked state; it is not a styling hint, it
+   * is a statement that the data is genuinely not here.
+   */
+  locked?: boolean;
+  /**
+   * "What we're seeing", rendered server-side because the client can no longer
+   * build it: the drivers it is written from are exactly what a locked beach
+   * withholds. Only set on a locked beach — everywhere else BeachCard builds
+   * the summary itself, per selected day, exactly as before.
+   */
+  summary?: string[];
 }
 
 // The List tab's row order. Beaches named in `topCodes` lead, in that order;

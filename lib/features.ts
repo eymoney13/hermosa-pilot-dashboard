@@ -68,6 +68,14 @@ export interface FeatureFlags {
   // (DATABASE_URL) — without one the card hides itself rather than taking a
   // signup it cannot keep. See lib/alerts.ts.
   beachAlerts: boolean;
+  // Put the paid half of this board behind a paywall: the days either side of
+  // today, and everything under "Behind the Prediction", are withheld from the
+  // page for a reader who is not entitled — leaving the list, the map, today's
+  // reading and the written summary free.
+  //
+  // The withholding happens server-side in lib/paywall.ts, which is where the
+  // actual boundary is. This flag only says which boards it applies to.
+  paywall: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -83,6 +91,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   siteAccuracyPercent: false,
   openOnMap: false,
   beachAlerts: false,
+  paywall: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
@@ -145,6 +154,11 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
     // (email, location), so nothing here touches a real South Bay subscriber,
     // and clearing them is a DELETE on location = 'sandbox'.
     beachAlerts: true,
+    // Under construction, and the reason this board exists. Entitlement is a
+    // hand-set cookie for now (lib/entitlement.ts): there is no login and no
+    // payment yet, so this must not follow the other flags onto /southbay
+    // until both exist.
+    paywall: true,
   },
   cabrillo: {}, // plain Manhattan-style — all flags default off
   // Boston reads as a Good/Moderate/Poor board: its model ships its own

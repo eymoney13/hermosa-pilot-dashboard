@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, CircleCheck, MapPin } from "lucide-react";
+import { AlertTriangle, CircleCheck, Lock, MapPin } from "lucide-react";
 import {
   RISK_TIERS,
   STATUS_BAND,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import { buildSummary } from "@/lib/summary";
+import PaywallNotice from "./PaywallNotice";
 import {
   buildWindowCells,
   VERDICT_CELL_COLOR,
@@ -128,7 +129,7 @@ const THRESHOLD_TOOLTIP_BODY =
 function predictionSubtitle(
   status: Status,
   when = "today",
-  verdict: Verdict | null = null
+  verdict: Verdict | null = null,
 ): string {
   // A middle day has to say two things at once: something is pushing bacteria
   // up, and it is still expected to stay under the limit. "Predicted to be
@@ -477,13 +478,42 @@ function SevenDayWindow({
 
       <div style={gridStyle}>
         {cells.map(({ day, type }) => {
+          // Withheld from the payload, not hidden with CSS — there is no
+          // reading here to reveal (see lib/paywall.ts). Rendered as its own
+          // branch before anything reads day.status or day.probability, which
+          // on a locked day are placeholders rather than this beach's values.
+          //
+          // Not a button: a cell that cannot be opened must not invite the
+          // press. The upsell under the strip is what takes the click.
+          if (day.locked) {
+            return (
+              <div
+                key={day.date}
+                className="flex w-full flex-col items-center gap-1"
+              >
+                <span className="text-[11px] text-gray-400">
+                  {weekdayShort(day.date)}
+                </span>
+                <div
+                  className="flex h-7 w-full items-center justify-center rounded-sm border border-dashed border-gray-300 bg-gray-100"
+                  title="Locked — available with Neptune Pro"
+                >
+                  <Lock className="h-3 w-3 text-gray-400" aria-hidden="true" />
+                  <span className="sr-only">
+                    {weekdayShort(day.date)}: locked, available with Neptune Pro
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
           const isSelected = day.date === selectedDate;
           const dayLabelClass =
             type === "today"
               ? "text-blue-600 font-medium"
               : type === "past"
-              ? "text-gray-400"
-              : "text-gray-500";
+                ? "text-gray-400"
+                : "text-gray-500";
           const opacity = type === "past" ? "opacity-55" : "opacity-100";
           const selectedOutline = isSelected
             ? "outline outline-2 outline-blue-500"
@@ -491,7 +521,7 @@ function SevenDayWindow({
           const pct = Math.round(day.probability * 100);
           // Each day is scored against its own cutoff — Boston's model re-tunes
           // the threshold per forecast horizon.
-          const verdict = binaryVerdict ? day.verdict ?? null : null;
+          const verdict = binaryVerdict ? (day.verdict ?? null) : null;
           // The tooltip and screen-reader text, which name the band AND the
           // number whichever the cell itself is showing.
           const cellSummary =
@@ -512,7 +542,9 @@ function SevenDayWindow({
               </span>
               <div
                 className={`h-7 w-full overflow-hidden rounded-sm flex items-center justify-center transition-all ${opacity} ${selectedOutline} ${
-                  isSelected ? "" : "hover:outline hover:outline-1 hover:outline-blue-300"
+                  isSelected
+                    ? ""
+                    : "hover:outline hover:outline-1 hover:outline-blue-300"
                 }`}
                 style={{
                   backgroundColor: verdict
@@ -621,34 +653,41 @@ export default function BeachCard({
     cells[0];
   const activeDay = activeCell.day;
 
-  const verdict = features.binaryVerdict ? activeDay.verdict ?? null : null;
+  const verdict = features.binaryVerdict ? (activeDay.verdict ?? null) : null;
 
-  const summary = features.predictionSummary
-    ? buildSummary({
-        // proseName, not name: on a board whose roster appends a town to keep
-        // tab labels apart, the sentence drops it; on one whose names carry the
-        // street, the sentence keeps it.
-        name: beach.proseName,
-        verdict: activeDay.verdict ?? null,
-        date: activeDay.date,
-        // "past" | "today" | "forecast" — the cell type already carries it, and
-        // the summary needs it for tense, not just for the outlook.
-        timeframe: activeCell.type,
-        noRecentSample: beach.noRecentSample,
-        // Each day explains itself with its OWN conditions: a forecast day's
-        // drivers are that day's forecast weather, not today's.
-        drivers: activeDay.drivers ?? beach.drivers,
-        conditions: activeDay.conditions ?? beach.conditions,
-        forecast: beach.forecast,
-        // Speak in whichever read this card actually rendered. `verdict` above
-        // is null unless binaryVerdict is on, so on every other board the
-        // summary would otherwise describe a Good/Moderate/Poor call the reader
-        // cannot see and which disagrees with the tier they can — a 34% day is
-        // "Good" against a 50% cutoff but "Slightly elevated" on the shared
-        // scale. Passing the tier keeps the paragraph and the label agreeing.
-        status: features.binaryVerdict ? null : activeDay.status,
-      })
-    : [];
+  // On a locked beach the summary arrives pre-built from the server: the
+  // drivers buildSummary writes from are exactly what the paywall withholds,
+  // so it cannot be composed here any more (see lib/paywall.ts). It also comes
+  // without its closing "the next few days..." sentence, which would otherwise
+  // narrate the forecast this beach has just locked.
+  const summary = beach.locked
+    ? (beach.summary ?? [])
+    : features.predictionSummary
+      ? buildSummary({
+          // proseName, not name: on a board whose roster appends a town to keep
+          // tab labels apart, the sentence drops it; on one whose names carry the
+          // street, the sentence keeps it.
+          name: beach.proseName,
+          verdict: activeDay.verdict ?? null,
+          date: activeDay.date,
+          // "past" | "today" | "forecast" — the cell type already carries it, and
+          // the summary needs it for tense, not just for the outlook.
+          timeframe: activeCell.type,
+          noRecentSample: beach.noRecentSample,
+          // Each day explains itself with its OWN conditions: a forecast day's
+          // drivers are that day's forecast weather, not today's.
+          drivers: activeDay.drivers ?? beach.drivers,
+          conditions: activeDay.conditions ?? beach.conditions,
+          forecast: beach.forecast,
+          // Speak in whichever read this card actually rendered. `verdict` above
+          // is null unless binaryVerdict is on, so on every other board the
+          // summary would otherwise describe a Good/Moderate/Poor call the reader
+          // cannot see and which disagrees with the tier they can — a 34% day is
+          // "Good" against a 50% cutoff but "Slightly elevated" on the shared
+          // scale. Passing the tier keeps the paragraph and the label agreeing.
+          status: features.binaryVerdict ? null : activeDay.status,
+        })
+      : [];
 
   // Two copies of one week, differing only in what each cell says. Both drive
   // the same selectedDate, so whichever a reader taps, the other follows and the
@@ -668,11 +707,7 @@ export default function BeachCard({
   };
   const bandWindow = <SevenDayWindow {...dayWindowProps} readout="band" />;
   const percentWindow = (
-    <SevenDayWindow
-      {...dayWindowProps}
-      readout="percent"
-      title={null}
-    />
+    <SevenDayWindow {...dayWindowProps} readout="percent" title={null} />
   );
 
   return (
@@ -725,33 +760,42 @@ export default function BeachCard({
             way. */}
         <PredictionSummary paragraphs={summary} />
 
-        <WhyPrediction
-          figures={
-            features.binaryVerdict ? null : (
-              <div className="space-y-6">
-                <ExceedanceDetail
-                  probability={activeDay.probability}
-                  hidePercent={features.hidePercentSign}
-                  hideReadout={features.hideExceedanceReadout}
-                />
-                {percentWindow}
-              </div>
-            )
-          }
-          factors={activeDay.factors ?? []}
-          drivers={activeDay.drivers ?? beach.drivers}
-          // Same fallback as drivers just above: each day explains itself with
-          // its own weather, so a forecast day's rain depth is that day's
-          // forecast rain and not today's.
-          conditions={activeDay.conditions ?? beach.conditions}
-          lastResult={activeDay.lastResult ?? null}
-          daysSinceSample={activeDay.daysSinceSample ?? null}
-          predictionDate={activeDay.date}
-          accuracy={beach.accuracy}
-          hidePercent={features.hidePercentSign}
-          hideContributingFactors={features.hideContributingFactors}
-          showAccuracyPercent={features.siteAccuracyPercent}
-        />
+        {/* A locked beach has no drivers, conditions, lab sample or accuracy
+            record to show — they were stripped server-side, not hidden — so
+            the panel is replaced rather than emptied. WhyPrediction given
+            nothing renders nothing, which would read as a board with no
+            explanation rather than one with a paid explanation. */}
+        {beach.locked ? (
+          <PaywallNotice />
+        ) : (
+          <WhyPrediction
+            figures={
+              features.binaryVerdict ? null : (
+                <div className="space-y-6">
+                  <ExceedanceDetail
+                    probability={activeDay.probability}
+                    hidePercent={features.hidePercentSign}
+                    hideReadout={features.hideExceedanceReadout}
+                  />
+                  {percentWindow}
+                </div>
+              )
+            }
+            factors={activeDay.factors ?? []}
+            drivers={activeDay.drivers ?? beach.drivers}
+            // Same fallback as drivers just above: each day explains itself with
+            // its own weather, so a forecast day's rain depth is that day's
+            // forecast rain and not today's.
+            conditions={activeDay.conditions ?? beach.conditions}
+            lastResult={activeDay.lastResult ?? null}
+            daysSinceSample={activeDay.daysSinceSample ?? null}
+            predictionDate={activeDay.date}
+            accuracy={beach.accuracy}
+            hidePercent={features.hidePercentSign}
+            hideContributingFactors={features.hideContributingFactors}
+            showAccuracyPercent={features.siteAccuracyPercent}
+          />
+        )}
       </div>
     </div>
   );
