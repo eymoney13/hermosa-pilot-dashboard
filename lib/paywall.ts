@@ -17,9 +17,9 @@ import { buildSummary } from "./summary";
 //   and the date — plus "What we're seeing" for today, minus its last sentence.
 //
 // Paid:
-//   the days either side of today, and everything under Behind the Prediction
-//   — the ranked drivers, the measured conditions, the last lab sample and the
-//   forecast-accuracy record.
+//   the days either side of today, and everything under “What’s affecting the
+//   water quality?” — the ranked drivers, the measured conditions, the last
+//   lab sample and the forecast-accuracy record.
 
 /**
  * A day that exists but whose values are withheld.
@@ -80,7 +80,7 @@ function redactBeach(beach: BeachData, features: FeatureFlags): BeachData {
     pastDays: beach.pastDays.map(lockDay),
     forecast: beach.forecast.map(lockDay),
 
-    // Everything Behind the Prediction renders.
+    // Everything the water-quality panel renders.
     factors: [],
     drivers: [],
     conditions: {},

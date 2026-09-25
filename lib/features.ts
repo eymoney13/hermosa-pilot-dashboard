@@ -49,7 +49,7 @@ export interface FeatureFlags {
   forecastWindowFirst: boolean;
   // Drop the numbered "Top contributing factors" list. With it gone there is no
   // detail left to hide, so the forecast-accuracy panel stands on its own
-  // instead of behind the "Behind the Prediction" disclosure.
+  // instead of behind the "What’s affecting the water quality?" disclosure.
   hideContributingFactors: boolean;
   // Headline each site's forecast-accuracy panel with a percentage scored over
   // every lab sample on record for that station, rather than only the "matched
@@ -69,9 +69,9 @@ export interface FeatureFlags {
   // signup it cannot keep. See lib/alerts.ts.
   beachAlerts: boolean;
   // Put the paid half of this board behind a paywall: the days either side of
-  // today, and everything under "Behind the Prediction", are withheld from the
-  // page for a reader who is not entitled — leaving the list, the map, today's
-  // reading and the written summary free.
+  // today, and everything under "What’s affecting the water quality?", are
+  // withheld from the page for a reader who is not entitled — leaving the list,
+  // the map, today's reading and the written summary free.
   //
   // The withholding happens server-side in lib/paywall.ts, which is where the
   // actual boundary is. This flag only says which boards it applies to.

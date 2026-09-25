@@ -253,7 +253,7 @@ export default function WhyPrediction({
         aria-controls="why-prediction-panel"
         className="w-full py-3 flex justify-between items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
       >
-        <span>Behind the Prediction</span>
+        <span>What&rsquo;s affecting the water quality?</span>
         <ChevronDown
           className={`h-4 w-4 transition-transform duration-200 ${
             open ? "rotate-180" : ""

@@ -233,7 +233,7 @@ function StatusHero({
             Neptune Index
             <InfoTooltip
               title="Neptune Index"
-              body="A 0 to 100 score for how likely bacteria are to exceed the EPA safe-swimming threshold today. Higher means a greater chance the water tests unsafe. It is the same figure as the probability of unsafe bacteria levels under Behind the Prediction."
+              body="A 0 to 100 score for how likely bacteria are to exceed the EPA safe-swimming threshold today. Higher means a greater chance the water tests unsafe. It is the same figure as the probability of unsafe bacteria levels under “What’s affecting the water quality?”."
               iconClassName="h-3.5 w-3.5"
               ariaLabel="About the Neptune Index"
             />
@@ -313,7 +313,7 @@ function ExceedanceBar({ probability }: { probability: number }) {
 }
 
 // The figures behind the bar: the probability itself and the key naming each
-// band. Rendered inside Behind the Prediction rather than on the face of the
+// band. Rendered inside the “What’s affecting the water quality?” panel
 // card, so the card leads with the call, the bar and the week, and a reader who
 // wants the number opens the panel for it.
 function ExceedanceDetail({
@@ -441,10 +441,10 @@ function SevenDayWindow({
   hidePercent: boolean;
   // What a cell says: its band ("Moderate") or its number ("34%"). The card
   // shows one of each, the band copy up with the scale bar where the week is
-  // read at a glance, the number copy down in Behind the Prediction. Ignored on
+  // read at a glance, the number copy down in the water-quality panel. Ignored on
   // a binary board, which writes its own verdict into every cell.
   readout: "band" | "percent";
-  // null drops the heading entirely. The copy inside Behind the Prediction
+  // null drops the heading entirely. The copy inside the water-quality panel
   // takes that: it sits under the key it is keyed to, in a panel whose own
   // heading already frames everything in it, so naming it again would caption a
   // strip the reader is already looking at.
