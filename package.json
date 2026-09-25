@@ -17,7 +17,7 @@
     "@vercel/analytics": "^2.0.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.14.0",
-    "next": "16.2.6",
+    "next": "^16.3.6",
     "nodemailer": "^10.0.2",
     "papaparse": "^5.5.3",
     "posthog-js": "^1.434.12",
@@ -35,7 +35,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.6",
+    "eslint-config-next": "^16.3.6",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
