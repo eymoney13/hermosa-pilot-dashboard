@@ -251,8 +251,13 @@ export default function WhyPrediction({
         }}
         aria-expanded={open}
         aria-controls="why-prediction-panel"
-        className="w-full py-3 flex justify-between items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        className="w-full py-3 flex justify-between items-center text-xs uppercase tracking-wider text-gray-500 hover:text-gray-700 transition-colors"
       >
+        {/* Capitalised in CSS, not typed in capitals: a screen reader gets
+            the sentence as written rather than spelling out an acronym, and
+            the source stays readable. tracking-wider because caps set at
+            normal spacing close up — the same pairing the section labels
+            inside this panel already use. */}
         <span>What&rsquo;s affecting the water quality?</span>
         <ChevronDown
           className={`h-4 w-4 transition-transform duration-200 ${
