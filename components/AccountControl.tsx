@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { isClerkConfigured } from "@/lib/clerkConfig";
 
 // The only place on a board that mentions accounts at all.
@@ -8,26 +9,26 @@ import { isClerkConfigured } from "@/lib/clerkConfig";
 // not need an account and are never asked for one; this is here so a Pro
 // subscriber who cleared their cookies or picked up a different phone has a way
 // back in, and so a signed-in one has a way out. It says "Sign in", not "Sign
-// up" — creating an account is something that happens when you pay, not
-// something to advertise beside the water quality.
+// up" — creating an account happens at checkout, not beside the water quality.
 //
-// Renders nothing at all when Clerk is unconfigured.
-export default function AccountControl() {
+// An async server component branching on auth(), NOT <SignedIn>/<SignedOut>:
+// those two were REMOVED in Clerk Core 3 and throw at runtime rather than
+// failing to compile, which took every paywalled board to a 500. The state is
+// known on the server here anyway, so there is nothing for a client-side
+// wrapper to decide.
+export default async function AccountControl() {
   if (!isClerkConfigured()) return null;
 
-  return (
-    <>
-      <SignedOut>
-        <Link
-          href="/sign-in"
-          className="text-xs text-gray-400 underline-offset-2 transition-colors hover:text-gray-600 hover:underline"
-        >
-          Sign in
-        </Link>
-      </SignedOut>
-      <SignedIn>
-        <UserButton />
-      </SignedIn>
-    </>
+  const { userId } = await auth();
+
+  return userId ? (
+    <UserButton />
+  ) : (
+    <Link
+      href="/sign-in"
+      className="text-xs text-gray-400 underline-offset-2 transition-colors hover:text-gray-600 hover:underline"
+    >
+      Sign in
+    </Link>
   );
 }
