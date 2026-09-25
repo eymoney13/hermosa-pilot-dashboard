@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, ChevronDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, Lock } from "lucide-react";
 import {
   subtractDays,
   type Accuracy,
@@ -16,6 +16,54 @@ import {
 } from "@/lib/factorEffects";
 import { labSampleResult } from "@/lib/insight";
 import ForecastAccuracy from "./ForecastAccuracy";
+
+// What fills the panel on a locked beach.
+//
+// A SKELETON, not this beach's explanation blurred over. lib/paywall.ts strips
+// the drivers, the conditions, the lab sample and the accuracy record on the
+// server, so none of it is in the page to cover up — blurring in CSS would hide
+// nothing from anyone who opens devtools, which is the whole reason the
+// withholding happens upstream. These are grey bars shaped like the real
+// sections so the panel keeps its proportions, and nothing is invented: no
+// numbers, no factor names, no readings.
+function LockedBody() {
+  return (
+    <div className="relative">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none select-none space-y-5 blur-[3px]"
+      >
+        <div className="space-y-2">
+          <div className="h-2.5 w-24 rounded bg-gray-200" />
+          <div className="h-8 w-full rounded bg-gray-100" />
+        </div>
+        <div className="space-y-2.5">
+          <div className="h-2.5 w-40 rounded bg-gray-200" />
+          {["w-5/6", "w-3/4", "w-4/5", "w-2/3"].map((w) => (
+            <div key={w} className="flex gap-3">
+              <div className="h-3 w-3 shrink-0 rounded bg-gray-200" />
+              <div className={`h-3 rounded bg-gray-200 ${w}`} />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          <div className="h-2.5 w-32 rounded bg-gray-200" />
+          <div className="h-12 w-full rounded bg-gray-100" />
+        </div>
+      </div>
+
+      {/* Small and centred, not a panel of its own. Without something saying
+          so, a blurred block reads as a page that failed to load rather than
+          one with more behind it. */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm ring-1 ring-gray-200">
+          <Lock className="h-3.5 w-3.5 text-[#2563EB]" aria-hidden="true" />
+          Available with Neptune Pro
+        </span>
+      </div>
+    </div>
+  );
+}
 
 // "May 7, 2026" style. lib/data's formatLongDate includes the weekday;
 // here we want a more compact form for the inline metadata line.
@@ -98,6 +146,7 @@ export default function WhyPrediction({
   hidePercent,
   hideContributingFactors = false,
   showAccuracyPercent = false,
+  locked = false,
 }: {
   // Everything that sits above the contributing factors in this panel: the
   // probability readout, the risk key, and the week by the numbers. Passed as a
@@ -123,6 +172,14 @@ export default function WhyPrediction({
   // Passed straight through: whether the accuracy panel leads with this site's
   // whole-record percentage (see FeatureFlags.siteAccuracyPercent).
   showAccuracyPercent?: boolean;
+  /**
+   * This beach's explanation was withheld from the payload for an unentitled
+   * reader (see lib/paywall.ts). The panel still opens — a disclosure that
+   * refuses to open tells the reader nothing about why — but what is inside is
+   * a blurred skeleton. Nothing real is being covered up: there is no drivers
+   * list, no conditions and no accuracy record in the page to cover.
+   */
+  locked?: boolean;
   // Boards whose written summary already explains the drivers in prose, where a
   // ranked list of the same feature names underneath adds nothing.
   hideContributingFactors?: boolean;
@@ -181,7 +238,7 @@ export default function WhyPrediction({
   // have something to say about them, though, so it alone keeps the panel alive:
   // returning null here would take the probability and the key off a forecast
   // day entirely, which is not a move of the block but a loss of it.
-  if (factors.length === 0 && !labResult && !figures) return null;
+  if (!locked && factors.length === 0 && !labResult && !figures) return null;
 
   return (
     <div className="border-t border-gray-100">
@@ -214,7 +271,8 @@ export default function WhyPrediction({
             being clipped (a fixed max-height could not accommodate it). */}
         <div className={expanded ? "overflow-visible" : "overflow-hidden"}>
           <div className="pb-5 space-y-6">
-            {figures}
+            {locked && <LockedBody />}
+            {!locked && figures}
 
             {!hideContributingFactors && factors.length > 0 && (
               <div>

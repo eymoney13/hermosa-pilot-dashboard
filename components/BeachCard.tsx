@@ -15,7 +15,6 @@ import {
 } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import { buildSummary } from "@/lib/summary";
-import PaywallNotice from "./PaywallNotice";
 import {
   buildWindowCells,
   VERDICT_CELL_COLOR,
@@ -765,37 +764,38 @@ export default function BeachCard({
             the panel is replaced rather than emptied. WhyPrediction given
             nothing renders nothing, which would read as a board with no
             explanation rather than one with a paid explanation. */}
-        {beach.locked ? (
-          <PaywallNotice />
-        ) : (
-          <WhyPrediction
-            figures={
-              features.binaryVerdict ? null : (
-                <div className="space-y-6">
-                  <ExceedanceDetail
-                    probability={activeDay.probability}
-                    hidePercent={features.hidePercentSign}
-                    hideReadout={features.hideExceedanceReadout}
-                  />
-                  {percentWindow}
-                </div>
-              )
-            }
-            factors={activeDay.factors ?? []}
-            drivers={activeDay.drivers ?? beach.drivers}
-            // Same fallback as drivers just above: each day explains itself with
-            // its own weather, so a forecast day's rain depth is that day's
-            // forecast rain and not today's.
-            conditions={activeDay.conditions ?? beach.conditions}
-            lastResult={activeDay.lastResult ?? null}
-            daysSinceSample={activeDay.daysSinceSample ?? null}
-            predictionDate={activeDay.date}
-            accuracy={beach.accuracy}
-            hidePercent={features.hidePercentSign}
-            hideContributingFactors={features.hideContributingFactors}
-            showAccuracyPercent={features.siteAccuracyPercent}
-          />
-        )}
+        {/* Locked or not, this is the same panel and it still opens. A
+            locked beach simply has nothing real inside it — the drivers,
+            conditions, lab sample and accuracy record were stripped
+            server-side — so it fills with a blurred skeleton instead. */}
+        <WhyPrediction
+          locked={beach.locked ?? false}
+          figures={
+            features.binaryVerdict ? null : (
+              <div className="space-y-6">
+                <ExceedanceDetail
+                  probability={activeDay.probability}
+                  hidePercent={features.hidePercentSign}
+                  hideReadout={features.hideExceedanceReadout}
+                />
+                {percentWindow}
+              </div>
+            )
+          }
+          factors={activeDay.factors ?? []}
+          drivers={activeDay.drivers ?? beach.drivers}
+          // Same fallback as drivers just above: each day explains itself with
+          // its own weather, so a forecast day's rain depth is that day's
+          // forecast rain and not today's.
+          conditions={activeDay.conditions ?? beach.conditions}
+          lastResult={activeDay.lastResult ?? null}
+          daysSinceSample={activeDay.daysSinceSample ?? null}
+          predictionDate={activeDay.date}
+          accuracy={beach.accuracy}
+          hidePercent={features.hidePercentSign}
+          hideContributingFactors={features.hideContributingFactors}
+          showAccuracyPercent={features.siteAccuracyPercent}
+        />
       </div>
     </div>
   );
