@@ -17,7 +17,8 @@ if (!posthogKey) {
   }
 } else {
   posthog.init(posthogKey, {
-    api_host: posthogHost,
+    api_host: "/relay-np",
+    ui_host: "https://us.posthog.com",
     defaults: "2026-01-30",
     capture_exceptions: true,
     debug: process.env.NODE_ENV === "development",
