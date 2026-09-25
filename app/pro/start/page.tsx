@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { isClerkConfigured } from "@/lib/clerkConfig";
-import { createCheckoutSession, isStripeConfigured } from "@/lib/subscription";
+import {
+  createCheckoutSession,
+  isProPlan,
+  isStripeConfigured,
+} from "@/lib/subscription";
 
 // The one door into paying. A page rather than a button handler, because it has
 // to survive a round trip through sign-up: someone with no account is sent to
@@ -23,23 +27,30 @@ export const metadata: Metadata = {
 export default async function ProStartPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string }>;
+  searchParams: Promise<{ from?: string; plan?: string }>;
 }) {
   if (!isClerkConfigured() || !isStripeConfigured()) notFound();
 
   // Where to put them back if they abandon the card form. Relative paths only:
   // an open redirect here would let anyone bounce a reader off our domain to
   // theirs, and the value arrives in a query string.
-  const { from } = await searchParams;
+  const { from, plan: rawPlan } = await searchParams;
   const returnTo = from && /^\/[A-Za-z0-9/_-]*$/.test(from) ? from : "/sandbox";
+  // Monthly unless yearly was asked for by name. An unrecognised value bills
+  // the cheaper of the two rather than guessing upward.
+  const plan = isProPlan(rawPlan) ? rawPlan : "monthly";
 
   const { userId } = await auth();
   if (!userId) {
     // No account yet, so make one — and come back here afterwards, which is
     // what turns sign-up into the first step of paying rather than a detour.
-    redirect(`/sign-up?redirect_url=/pro/start?from=${encodeURIComponent(returnTo)}`);
+    redirect(
+      `/sign-up?redirect_url=${encodeURIComponent(
+        `/pro/start?plan=${plan}&from=${returnTo}`
+      )}`
+    );
   }
 
-  const url = await createCheckoutSession(userId, returnTo);
+  const url = await createCheckoutSession(userId, plan, returnTo);
   redirect(url);
 }

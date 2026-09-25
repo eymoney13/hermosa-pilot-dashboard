@@ -9,8 +9,25 @@ import { neon } from "@neondatabase/serverless";
 // completes — not the $0 setup-mode dry run this repo tried earlier and threw
 // away. Test keys before live ones, every time.
 
-export const PRO_PRICE_CENTS = 499;
-export const PRO_PRICE_LABEL = "$4.99/month";
+// The two ways to buy. Cents, because that is the unit Stripe speaks and the
+// unit the subscription row records — a float here would be the one place the
+// figure could drift from what the reader was shown.
+//
+// Yearly is $40 against $60 for twelve months, so it saves $20. Worth naming on
+// the button: a discount nobody can see is not a discount.
+export const PRO_PLANS = {
+  monthly: { cents: 500, interval: "month" as const, label: "$5/month" },
+  yearly: { cents: 4000, interval: "year" as const, label: "$40/year" },
+};
+
+export type ProPlan = keyof typeof PRO_PLANS;
+
+export function isProPlan(value: string | undefined): value is ProPlan {
+  return value === "monthly" || value === "yearly";
+}
+
+/** What the board says Pro costs when it has room for only one figure. */
+export const PRO_PRICE_LABEL = "$5/month, or $40/year";
 
 // Pinned rather than left to the SDK default, so upgrading `stripe` cannot
 // quietly change the shape of what we send or get back.
@@ -98,20 +115,22 @@ export async function hasLiveSubscription(clerkUserId: string): Promise<boolean>
  */
 export async function createCheckoutSession(
   clerkUserId: string,
+  plan: ProPlan,
   returnTo: string
 ): Promise<string> {
+  const { cents, interval } = PRO_PLANS[plan];
   const session = await stripe().checkout.sessions.create({
     mode: "subscription",
     client_reference_id: clerkUserId,
-    metadata: { clerk_user_id: clerkUserId },
-    subscription_data: { metadata: { clerk_user_id: clerkUserId } },
+    metadata: { clerk_user_id: clerkUserId, plan },
+    subscription_data: { metadata: { clerk_user_id: clerkUserId, plan } },
     line_items: [
       {
         quantity: 1,
         price_data: {
           currency: "usd",
-          unit_amount: PRO_PRICE_CENTS,
-          recurring: { interval: "month" },
+          unit_amount: cents,
+          recurring: { interval },
           product_data: {
             name: "Neptune Pro",
             description:
@@ -148,15 +167,17 @@ export async function recordSubscription(input: {
   subscriptionId: string | null;
   status: string;
   currentPeriodEnd: Date | null;
+  plan: ProPlan | null;
 }): Promise<void> {
+  const plan = input.plan ?? "monthly";
   await db()`
     INSERT INTO pro_subscriptions
       (clerk_user_id, stripe_customer_id, stripe_subscription_id, status,
-       current_period_end, price_cents)
+       current_period_end, price_cents, plan)
     VALUES
       (${input.clerkUserId}, ${input.customerId}, ${input.subscriptionId},
        ${input.status}, ${input.currentPeriodEnd?.toISOString() ?? null},
-       ${PRO_PRICE_CENTS})
+       ${PRO_PLANS[plan].cents}, ${plan})
     ON CONFLICT (clerk_user_id) DO UPDATE
       SET stripe_customer_id     = COALESCE(EXCLUDED.stripe_customer_id,
                                             pro_subscriptions.stripe_customer_id),
@@ -164,6 +185,8 @@ export async function recordSubscription(input: {
                                             pro_subscriptions.stripe_subscription_id),
           status                 = EXCLUDED.status,
           current_period_end     = EXCLUDED.current_period_end,
+          price_cents            = EXCLUDED.price_cents,
+          plan                   = EXCLUDED.plan,
           updated_at             = now()
   `;
 }

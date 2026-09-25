@@ -8,7 +8,7 @@ import { subscribeToAlerts } from "@/app/actions/alerts";
 import { IDLE_ALERT_STATE, type AlertFormState } from "@/lib/alertForm";
 
 const posthogConfigured = Boolean(
-  process.env.NEXT_PUBLIC_POSTHOG_KEY && process.env.NEXT_PUBLIC_POSTHOG_HOST
+  process.env.NEXT_PUBLIC_POSTHOG_KEY && process.env.NEXT_PUBLIC_POSTHOG_HOST,
 );
 
 export interface AlertBeach {
@@ -49,6 +49,9 @@ export default function BeachAlertSignup({
   // The paywall step, shown in place of the form once a locked reader submits.
   const [showOffer, setShowOffer] = useState(false);
   const [checkoutTried, setCheckoutTried] = useState(false);
+  // Monthly is preselected: it is the smaller ask, and a reader who wants the
+  // cheaper-per-month option can see it sitting right there.
+  const [plan, setPlan] = useState<"monthly" | "yearly">("monthly");
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -212,9 +215,39 @@ export default function BeachAlertSignup({
                   and email you the mornings any of them is forecast to have
                   elevated bacteria levels.
                 </p>
-                <p className="text-sm font-semibold text-gray-900">
-                  Neptune Pro is $4.99/month
-                </p>
+                {/* Both prices, side by side, with the saving named. A
+                    yearly option nobody is shown is not an option. */}
+                <div className="mt-1 grid w-full max-w-xs grid-cols-2 gap-2">
+                  {(
+                    [
+                      { plan: "monthly", label: "$5", sub: "per month" },
+                      {
+                        plan: "yearly",
+                        label: "$40",
+                        sub: "per year · save $20",
+                      },
+                    ] as const
+                  ).map((option) => (
+                    <button
+                      key={option.plan}
+                      type="button"
+                      onClick={() => setPlan(option.plan)}
+                      aria-pressed={plan === option.plan}
+                      className={`rounded-md border px-3 py-2.5 text-center transition-colors ${
+                        plan === option.plan
+                          ? "border-[#2563EB] bg-[#2563EB]/5"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <span className="block text-base font-semibold text-gray-900">
+                        {option.label}
+                      </span>
+                      <span className="block text-[11px] text-gray-500">
+                        {option.sub}
+                      </span>
+                    </button>
+                  ))}
+                </div>
                 {/* Off to /pro/start, which makes the account if there is
                     not one yet and then opens Stripe. A full navigation rather
                     than fetch-and-redirect: the next thing they see is a card
@@ -230,7 +263,9 @@ export default function BeachAlertSignup({
                       return;
                     }
                     router.push(
-                      `/pro/start?from=${encodeURIComponent(`/${location}`)}`
+                      `/pro/start?plan=${plan}&from=${encodeURIComponent(
+                        `/${location}`,
+                      )}`,
                     );
                   }}
                   className="mt-1 w-full max-w-xs rounded-md bg-[#2563EB] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1D4ED8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"

@@ -1,5 +1,6 @@
 import {
   constructWebhookEvent,
+  isProPlan,
   recordSubscription,
   updateSubscriptionStatus,
   type Stripe,
@@ -75,6 +76,11 @@ export async function POST(request: Request): Promise<Response> {
           // definition, and the lifecycle events below own it from here.
           status: "active",
           currentPeriodEnd: null,
+          // Set on the session at creation. Falls back to monthly rather than
+          // to nothing, so a row always says what was bought.
+          plan: isProPlan(session.metadata?.plan)
+            ? session.metadata.plan
+            : null,
         });
         break;
       }

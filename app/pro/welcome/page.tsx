@@ -41,8 +41,8 @@ export default function ProWelcomePage() {
         <p className="mt-3 text-sm text-gray-600">
           {/* Said plainly and up front rather than buried: the easiest
               subscription to keep is one the subscriber knows they can leave. */}
-          $4.99/month. Cancel any time from your account, and you keep Pro until
-          the month you have paid for runs out.
+          Cancel any time from your account, and you keep Pro until the period
+          you have paid for runs out.
         </p>
 
         <div className="mt-8">

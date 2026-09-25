@@ -24,7 +24,10 @@ CREATE TABLE IF NOT EXISTS pro_subscriptions (
   -- When the paid-for period runs out. Entitlement outlives a cancellation
   -- until this passes: someone who cancels on day 2 paid for the month.
   current_period_end     TIMESTAMPTZ,
-  price_cents            INTEGER     NOT NULL DEFAULT 499,
+  price_cents            INTEGER     NOT NULL DEFAULT 500,
+  -- monthly | yearly. Recorded because $5/month and $40/year are the same
+  -- subscriber to Stripe but not to anyone reading these rows later.
+  plan                   TEXT,
   created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -33,3 +36,9 @@ CREATE TABLE IF NOT EXISTS pro_subscriptions (
 -- even though the unique constraint above already provides one.
 CREATE INDEX IF NOT EXISTS pro_subscriptions_status_idx
   ON pro_subscriptions (clerk_user_id, status);
+
+-- Both are for tables created before the two plans existed. CREATE TABLE IF NOT
+-- EXISTS is a no-op on an existing table, so the column and the corrected
+-- default have to be added on their own. Idempotent, like everything above.
+ALTER TABLE pro_subscriptions ADD COLUMN IF NOT EXISTS plan TEXT;
+ALTER TABLE pro_subscriptions ALTER COLUMN price_cents SET DEFAULT 500;
