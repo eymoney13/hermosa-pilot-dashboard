@@ -2,8 +2,13 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Check, Lock, Mail, X } from "lucide-react";
+import posthog from "posthog-js";
 import { subscribeToAlerts } from "@/app/actions/alerts";
 import { IDLE_ALERT_STATE, type AlertFormState } from "@/lib/alertForm";
+
+const posthogConfigured = Boolean(
+  process.env.NEXT_PUBLIC_POSTHOG_KEY && process.env.NEXT_PUBLIC_POSTHOG_HOST
+);
 
 export interface AlertBeach {
   code: string;
@@ -99,7 +104,14 @@ export default function BeachAlertSignup({
     setPending(true);
     setState(IDLE_ALERT_STATE);
     try {
-      setState(await subscribeToAlerts(formData));
+      const next = await subscribeToAlerts(formData);
+      setState(next);
+      if (next.status === "success" && posthogConfigured) {
+        posthog.capture("alert_subscription_completed", {
+          location,
+          beach_count: selected.length,
+        });
+      }
     } catch {
       setState({
         status: "error",

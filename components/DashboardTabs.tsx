@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { ChevronLeft, Pointer } from "lucide-react";
+import posthog from "posthog-js";
 import { orderForList, VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import type { FeatureFlags } from "@/lib/features";
 import type { NewsItem } from "@/lib/news";
@@ -23,6 +24,10 @@ const STATUS_UNDERLINE: Record<string, string> = {
 const MAP_TAB = "__map__"; // all-beaches overview map
 const LIST_TAB = "__list__"; // all-beaches list, one row each
 const NEWS_TAB = "__news__"; // global (not per-beach) news
+
+const posthogConfigured = Boolean(
+  process.env.NEXT_PUBLIC_POSTHOG_KEY && process.env.NEXT_PUBLIC_POSTHOG_HOST
+);
 
 export default function DashboardTabs({
   beaches,
@@ -83,10 +88,35 @@ export default function DashboardTabs({
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
 
-  const openBeach = (code: string, from: string) => {
-    setCameFrom(from);
+  const selectView = (code: string, view: "list" | "map" | "news") => {
     setActiveCode(code);
-    scrollToTop();
+    if (posthogConfigured) {
+      posthog.capture("dashboard_view_selected", {
+        board_location: locationLabel,
+        view,
+      });
+    }
+  };
+
+  const selectBeach = (
+    code: string,
+    source: "list" | "map" | "picker" | "tab",
+    scroll = false
+  ) => {
+    setActiveCode(code);
+    if (scroll) scrollToTop();
+    if (posthogConfigured) {
+      posthog.capture("beach_selected", {
+        board_location: locationLabel,
+        beach_code: code,
+        source,
+      });
+    }
+  };
+
+  const openBeach = (code: string, from: "list" | "map") => {
+    setCameFrom(from === "list" ? LIST_TAB : MAP_TAB);
+    selectBeach(code, from, true);
   };
 
   if (beaches.length === 0) return null;
@@ -118,7 +148,7 @@ export default function DashboardTabs({
             {showListTab && (
               <button
                 type="button"
-                onClick={() => setActiveCode(LIST_TAB)}
+                onClick={() => selectView(LIST_TAB, "list")}
                 aria-current={listActive ? "page" : undefined}
                 className={`relative shrink-0 py-4 px-2 text-sm font-medium transition-colors ${
                   listActive
@@ -135,7 +165,7 @@ export default function DashboardTabs({
             {showMapTab && (
               <button
                 type="button"
-                onClick={() => setActiveCode(MAP_TAB)}
+                onClick={() => selectView(MAP_TAB, "map")}
                 aria-current={mapActive ? "page" : undefined}
                 className={`relative shrink-0 py-4 px-2 text-sm font-medium transition-colors ${
                   mapActive
@@ -163,7 +193,7 @@ export default function DashboardTabs({
                 <button
                   key={b.code}
                   type="button"
-                  onClick={() => setActiveCode(b.code)}
+                  onClick={() => selectBeach(b.code, "tab")}
                   aria-current={isActive ? "page" : undefined}
                   className={`relative shrink-0 py-4 px-2 text-sm font-medium transition-colors ${
                     isActive
@@ -185,7 +215,7 @@ export default function DashboardTabs({
             {newsEnabled && (
               <button
                 type="button"
-                onClick={() => setActiveCode(NEWS_TAB)}
+                onClick={() => selectView(NEWS_TAB, "news")}
                 aria-current={newsActive ? "page" : undefined}
                 className={`relative shrink-0 py-4 px-2 text-sm font-medium transition-colors ${
                   newsActive
@@ -209,7 +239,7 @@ export default function DashboardTabs({
           locationLabel={locationLabel}
           binaryVerdict={features.binaryVerdict}
           hidePercent={features.hidePercentSign}
-          onSelect={(code) => openBeach(code, LIST_TAB)}
+          onSelect={(code) => openBeach(code, "list")}
         />
       ) : mapActive ? (
         <section className="w-full">
@@ -252,7 +282,7 @@ export default function DashboardTabs({
             beaches={beaches}
             fallbackCenter={fallbackCenter}
             binaryVerdict={features.binaryVerdict}
-            onSelect={(code) => openBeach(code, MAP_TAB)}
+            onSelect={(code) => openBeach(code, "map")}
           />
         </section>
       ) : newsActive ? (
@@ -289,10 +319,7 @@ export default function DashboardTabs({
                   beaches={beaches}
                   activeCode={active.code}
                   binaryVerdict={features.binaryVerdict}
-                  onSelect={(code) => {
-                    setActiveCode(code);
-                    scrollToTop();
-                  }}
+                  onSelect={(code) => selectBeach(code, "picker", true)}
                 />
               </div>
             </div>

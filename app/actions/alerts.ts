@@ -5,6 +5,7 @@ import { featuresFor } from "@/lib/features";
 import { isAlertsConfigured, subscribe } from "@/lib/alerts";
 import { isEntitled } from "@/lib/entitlement";
 import { loadStationCodes } from "@/lib/loadData";
+import { emitPostHogLog } from "@/lib/posthogLog";
 import type { AlertFormState } from "@/lib/alertForm";
 
 // The alert signup form's Server Action. Reachable by direct POST, not only
@@ -62,6 +63,12 @@ export async function subscribeToAlerts(
   }
 
   const count = new Set(stations).size;
+  await emitPostHogLog("alert subscription persisted", {
+    event: "alert_subscription_persisted",
+    location,
+    station_count: count,
+  });
+
   return {
     status: "success",
     message: `You're signed up for ${count} ${count === 1 ? "beach" : "beaches"}.`,
