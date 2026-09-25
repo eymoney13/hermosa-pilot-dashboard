@@ -76,7 +76,15 @@ export default async function LocationPage({
     newsEnabled
       ? fetchNewsAlerts(getNewsFeedUrls(), newsFilterTerms)
       : Promise.resolve([]),
-    isEntitled(),
+    // ONLY on a board that sells something. Off the paywalled boards this is
+    // not merely unused — it is not asked. A board with no Pro features has no
+    // business consulting Clerk for a session or the billing table for a
+    // subscription, and until this gate existed /southbay did both for every
+    // signed-in visitor and threw the answer away.
+    //
+    // This is the first half of the isolation invariant: no paywall flag, no
+    // contact with the auth or billing stack at all.
+    features.paywall ? isEntitled() : Promise.resolve(false),
   ]);
 
   // THE SECURITY BOUNDARY. Everything below this line runs on data that has

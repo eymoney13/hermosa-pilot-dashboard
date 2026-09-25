@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { isClerkConfigured } from "@/lib/clerkConfig";
+import { paywalledReturnPath } from "@/lib/paywall";
 import {
   createCheckoutSession,
   isProPlan,
@@ -31,11 +32,16 @@ export default async function ProStartPage({
 }) {
   if (!isClerkConfigured() || !isStripeConfigured()) notFound();
 
-  // Where to put them back if they abandon the card form. Relative paths only:
-  // an open redirect here would let anyone bounce a reader off our domain to
-  // theirs, and the value arrives in a query string.
+  // Which board this purchase is for — and whether that board sells anything.
+  //
+  // NO FALLBACK. This used to default to "/sandbox" when `from` was missing or
+  // malformed, which meant a bare /pro/start still opened a live checkout. Now
+  // an unrecognised or non-paywalled board is a 404 and no Stripe session is
+  // created at all, so /pro/start?from=/southbay cannot take anybody's money
+  // for a board that would give them nothing.
   const { from, plan: rawPlan } = await searchParams;
-  const returnTo = from && /^\/[A-Za-z0-9/_-]*$/.test(from) ? from : "/sandbox";
+  const returnTo = paywalledReturnPath(from);
+  if (!returnTo) notFound();
   // Monthly unless yearly was asked for by name. An unrecognised value bills
   // the cheaper of the two rather than guessing upward.
   const plan = isProPlan(rawPlan) ? rawPlan : "monthly";

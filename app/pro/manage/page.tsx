@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { isClerkConfigured } from "@/lib/clerkConfig";
+import { paywalledReturnPath } from "@/lib/paywall";
 import {
   createBillingPortalSession,
   getStripeCustomerId,
@@ -32,10 +33,14 @@ export default async function ProManagePage({
 }) {
   if (!isClerkConfigured() || !isStripeConfigured()) notFound();
 
-  // Relative paths only. This becomes Stripe's return_url, and an unchecked
-  // value would turn our own domain into an open redirect.
+  // Same gate as /pro/start, and for the same reason. This value becomes
+  // Stripe's return_url, so it must be a relative path; and it must name a
+  // board that actually sells something, so a link built from a board with no
+  // paywall cannot open a billing portal. No fallback — a missing or
+  // non-paywalled `from` is a 404, not a guess.
   const { from } = await searchParams;
-  const returnTo = from && /^\/[A-Za-z0-9/_-]*$/.test(from) ? from : "/sandbox";
+  const returnTo = paywalledReturnPath(from);
+  if (!returnTo) notFound();
 
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");

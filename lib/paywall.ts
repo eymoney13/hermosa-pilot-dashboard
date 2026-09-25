@@ -1,6 +1,6 @@
 import "server-only";
-import type { BeachData, ForecastDay } from "./data";
-import type { FeatureFlags } from "./features";
+import { getLocation, type BeachData, type ForecastDay } from "./data";
+import { featuresFor, type FeatureFlags } from "./features";
 import { buildSummary } from "./summary";
 
 // The paywall itself.
@@ -128,4 +128,33 @@ function freeSummary(beach: BeachData, features: FeatureFlags): string[] {
     status: features.binaryVerdict ? null : beach.status,
     includeOutlook: false,
   });
+}
+
+/**
+ * Validate a `from=` path and return the board it names, but only if that board
+ * is actually selling something.
+ *
+ * Every paid entry point — starting a checkout, opening the billing portal —
+ * goes through this. Without it those routes are global: /pro/start is reachable
+ * by URL from anywhere, so /pro/start?from=/southbay would create a LIVE Stripe
+ * Checkout for a board with no paywall, and whoever paid would unlock nothing
+ * because /southbay redacts nothing. Real money for no product is the worst
+ * failure this system can produce, and it needs no attacker — a stale link or a
+ * shared URL is enough.
+ *
+ * Three ways to be rejected, all returning null:
+ *   - not a plain relative path (so `//evil.example.com` and any absolute URL
+ *     cannot turn our own domain into an open redirect via Stripe's return_url)
+ *   - not a board we know
+ *   - a board whose paywall flag is off
+ *
+ * Returns the normalised "/<slug>", so anything trailing the slug is discarded
+ * rather than carried into a redirect.
+ */
+export function paywalledReturnPath(from: string | undefined): string | null {
+  if (!from || !/^\/[A-Za-z0-9/_-]*$/.test(from)) return null;
+  const slug = from.split("/").filter(Boolean)[0];
+  if (!slug || !getLocation(slug)) return null;
+  if (!featuresFor(slug).paywall) return null;
+  return `/${slug}`;
 }
