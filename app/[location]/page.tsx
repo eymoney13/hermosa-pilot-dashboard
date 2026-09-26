@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DashboardTabs from "@/components/DashboardTabs";
+import SandboxDashboard from "@/components/sandbox/SandboxDashboard";
 import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
 import AccountControl from "@/components/AccountControl";
 import BeachAlertSignup from "@/components/BeachAlertSignup";
@@ -96,6 +97,27 @@ export default async function LocationPage({
     entitled,
     features,
   });
+
+  // Presentation only. The live boards retain the original render path below;
+  // sandbox receives exactly the same server-redacted data as before.
+  if (location === "sandbox") {
+    return (
+      <SandboxDashboard
+        beaches={beaches}
+        predictionDate={predictionDate}
+        fallbackCenter={config.mapFallbackCenter}
+        listTopStations={config.listTopStations}
+        entitled={entitled}
+        alertsEnabled={alertsEnabled}
+        checkoutReady={isClerkConfigured() && isStripeConfigured() && isLiveBillingEnabled()}
+        account={<AccountControl location={config.slug} />}
+        faq={<FaqAccordion />}
+        news={news}
+        newsEnabled={newsEnabled}
+        advisory={config.advisory ?? DEFAULT_ADVISORY}
+      />
+    );
+  }
 
   return (
     <main className="flex flex-col">

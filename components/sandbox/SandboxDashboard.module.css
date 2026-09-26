@@ -1,0 +1,308 @@
+.root { --ink: #173a3c; --teal: #246f72; --muted: #607174; --line: #dce5e2; color: var(--ink); background: #fcfdfb; min-height: 100vh; }
+.root button, .root a, .root select, .root input { -webkit-tap-highlight-color: transparent; }
+.root button:not(:disabled), .root select { cursor: pointer; }
+.root :is(button,a,select,input):focus-visible { outline: 3px solid #368a8c; outline-offset: 4px; }
+.sandboxNote { background: #f3f1e8; border-bottom: 1px solid #e5e2d6; font-size: 11px; color: #6c6652; }
+.sandboxNote > div { max-width: 1120px; margin: auto; min-height: 35px; padding: 7px 32px; display: flex; align-items: center; gap: 12px; }
+.sandboxNote strong { text-transform: uppercase; letter-spacing: .1em; font-size: 10px; }
+.sandboxNote a { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; }
+.header { max-width: 1120px; margin: auto; padding: 26px 32px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.account { display: flex; align-items: center; gap: 14px; min-height: 44px; }
+.header > a { min-width: 0; }
+.header > a svg { max-width: 100%; height: auto; }
+.content { max-width: 1000px; margin: auto; padding: 20px 32px 0; }
+.masthead { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding: 25px 0 35px; }
+.eyebrow { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .13em; }
+.masthead h1 { font-size: clamp(38px,6vw,60px); line-height: 1.1; letter-spacing: -.055em; font-weight: 600; margin-top: 12px; }
+.intro { font-size: 17px; margin-top: 14px; color: var(--muted); }
+.dateline { font-size: 12px; display: grid; gap: 5px; padding-bottom: 3px; text-align: right; white-space: nowrap; }
+.dateline span { color: var(--muted); }
+.dateline strong { font-weight: 500; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; border-block: 1px solid var(--line); gap: 12px; }
+.tabs { display: flex; gap: 24px; }
+.tabs button { display: flex; align-items: center; gap: 8px; min-height: 58px; font-size: 14px; border-bottom: 2px solid transparent; color: var(--muted); }
+.tabs button[aria-current] { color: var(--ink); border-color: var(--teal); font-weight: 650; }
+.proLink, .inlineLink { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--teal); min-height: 44px; }
+.overview { padding: 34px 0 36px; }
+.sectionHeading { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+.sectionHeading h2, .sectionHeading h3, .summary h3, .lockedExplanation h3 { font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
+.sectionHeading > span { font-size: 12px; color: var(--muted); }
+.supporting { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+.beaches { margin-top: 24px; border-top: 1px solid var(--line); }
+.beaches li { border-bottom: 1px solid var(--line); }
+.beaches button { width: 100%; display: grid; grid-template-columns: minmax(0,1fr) auto 18px; align-items: center; gap: 20px; text-align: left; min-height: 77px; padding: 16px 8px; transition: background .15s; }
+.beaches button:hover { background: #f0f5ef; }
+.beaches button:active { background: #e6eee6; }
+.beachName { font-weight: 500; font-size: 15px; line-height: 1.5; }
+.band { display: inline-flex; align-items: center; gap: 8px; background: var(--tone-bg); color: var(--tone); padding: 7px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.low { --tone: #3c6435; --tone-bg: #edf4e7; }
+.moderate { --tone: #786016; --tone-bg: #f8f0d7; }
+.high { --tone: #a63d36; --tone-bg: #fbece7; }
+.legend { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 24px; font-size: 11px; }
+.legend > span { display: inline-flex; gap: 6px; align-items: center; color: var(--tone); }
+.caveat { color: var(--muted); font-size: 11px; line-height: 1.7; margin-top: 12px; }
+.map { margin-top: 24px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; isolation: isolate; }
+.beachNav { position: sticky; top: 0; z-index: 10; background: #fcfdfb; display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.beachNav button { display: inline-flex; gap: 6px; align-items: center; min-height: 44px; color: var(--teal); font-size: 13px; flex-shrink: 0; }
+.beachNav label { min-width: 0; max-width: 350px; }
+.beachNav select { width: 100%; min-height: 44px; background: white; border: 1px solid var(--line); border-radius: 4px; padding: 8px; font-size: 13px; text-overflow: ellipsis; }
+.beachHeading { font-size: clamp(23px,4vw,32px); font-weight: 600; letter-spacing: -.04em; scroll-margin-top: 90px; margin: 24px 0; }
+.detail { max-width: 740px; margin: auto; padding-bottom: 40px; }
+.reading { border-left: 4px solid var(--tone); padding: 26px 30px; background: var(--tone-bg); color: var(--tone); }
+.reading h3 { font-size: clamp(28px,5vw,42px); font-weight: 550; letter-spacing: -.04em; margin: 12px 0 6px; }
+.reading > p:last-child { max-width: 540px; font-size: 14px; line-height: 1.7; margin-top: 16px; }
+.readingDate { font-size: 12px; }
+.week { padding: 28px 0; }
+/* Still used by the beach list rows and the legend, though no longer by the
+   day cells. */
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--tone); flex-shrink: 0; }
+.days { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 6px; margin-top: 18px; overflow-x: auto; padding: 4px; }
+.day, .lockedDay { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 4px; font-size: 12px; border: 1px solid var(--line); border-radius: 4px; min-width: 0; }
+.day { background: var(--tone-bg); color: var(--tone); }
+.day[aria-pressed=true] { outline: 2px solid var(--teal); outline-offset: 1px; }
+/* Three named slots: weekday, the reading, the date. Previously these were
+   nth-child rules tied to a slot order that has now changed, which is exactly
+   the kind of thing that silently restyles the wrong element. */
+.dayName { font-size: 11px; opacity: .8; }
+/* The reading takes the prominent slot the day-of-month number used to hold.
+   It is the only thing in the cell anyone is actually reading. */
+.dayBand { display: flex; align-items: center; justify-content: center; min-height: 22px; font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
+.dayDate { font-size: 10px; opacity: .7; font-variant-numeric: tabular-nums; }
+/* "Moderate" is the widest word here and the mobile cells are 57px. The
+   abbreviation swaps in below the breakpoint; nowrap stops either from
+   splitting across two lines and shoving the date out of alignment. */
+/* The exceedance figure and the band key, shown inside the
+   "What's affecting the water quality?" panel. */
+.exceedance { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 9px; margin-bottom: 14px; }
+.exceedancePct { font-size: 28px; font-weight: 600; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.exceedanceLabel { font-size: 15px; font-weight: 500; color: #33403a; }
+
+.riskKey { display: grid; gap: 6px; }
+.riskKey > div { display: grid; grid-template-columns: 11px 58px 1fr; align-items: center; gap: 8px; font-size: 12px; }
+.riskKey dt { font-variant-numeric: tabular-nums; color: #33403a; }
+.riskKey dd { color: var(--muted); }
+.keySwatch { width: 10px; height: 10px; border-radius: 50%; }
+
+/* The scale bar under the status read: a gradient track with a marker showing
+   where today sits. Deliberately unlabelled — this board states the Index as a
+   word, so putting numbers on the scale would contradict it. */
+.scaleBar { position: relative; height: 22px; margin-top: 16px; }
+.scaleTrack { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); height: 8px; border-radius: 999px; }
+/* The position marker on the scale, carrying the Neptune mark.
+
+   22px, up from 18px, and the ring is 2px rather than 2.5px: at the old size
+   the usable interior was 13px across, and a 1.39:1 mark inscribed in a 13px
+   circle is 8px tall -- small enough that the wave collapsed into a smudge.
+   18px of interior is what lets it read.
+
+   The ring is the brand navy rather than near-black. Against #111827 the navy
+   mark inside was a second dark shape at almost the same value, and the two
+   muddied into one blob; one colour family reads as a single object.
+
+   display:grid centres the mark without the baseline gap an inline SVG would
+   leave under place-items:center's alternatives. */
+.scaleMarker { position: absolute; top: 50%; width: 22px; height: 22px; transform: translate(-50%, -50%); border-radius: 50%; background: #fff; border: 2px solid #053563; box-shadow: 0 1px 3px rgba(0,0,0,.25); display: grid; place-items: center; }
+/* Width, not height: the mark is wider than it is tall, so width is the
+   dimension that decides whether it touches the ring. 13px across leaves ~2px
+   of white either side of a 18px interior. */
+.scaleMarkerLogo { width: 13px; color: #053563; display: block; }
+
+.bandFull, .bandAbbr { white-space: nowrap; }
+.bandAbbr { display: none; }
+.lockedDay { color: #74807c; background: #f3f5f0; border-style: dashed; }
+.summary { border-top: 1px solid var(--line); padding: 24px 0; }
+.summary p { font-size: 14px; line-height: 1.85; color: #4a5f61; margin-top: 10px; }
+.lockedExplanation { display: flex; gap: 14px; padding: 24px 0; border-top: 1px solid var(--line); }
+.lockedExplanation > svg { flex-shrink: 0; margin-top: 3px; }
+.lockedExplanation p { font-size: 14px; line-height: 1.7; color: var(--muted); margin-top: 8px; }
+/* Sandbox-only Neptune Pro upgrade card. */
+/* Rounded, lit from one corner, floating on a soft shadow. The flat
+   hard-edged rectangle it replaces read as an ad slot dropped onto the page;
+   a card with depth reads as part of the product. */
+.proOffer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: #f5f7ed;
+  padding: 40px 36px 34px;
+  margin: 28px 0 52px;
+  border-radius: 28px;
+  background: radial-gradient(130% 150% at 8% -10%, #1f6259 0%, #17474a 42%, #102e2f 100%);
+  box-shadow: 0 24px 56px -30px rgba(8,38,36,.85), inset 0 1px 0 rgba(223,238,173,.16);
+  scroll-margin-top: 90px;
+}
+
+/* A slow aurora behind the content. Pure decoration, aria-hidden, and the one
+   thing doing the "high-tech" work without resorting to neon. */
+.proGlow {
+  position: absolute;
+  inset: -55% -25% auto -30%;
+  height: 90%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(48% 58% at 32% 42%, rgba(223,238,173,.20), transparent 72%);
+  filter: blur(6px);
+}
+
+.proInner { position: relative; }
+
+.proHeadline {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -.035em;
+  line-height: 1.15;
+  color: #dfeead;
+  margin-bottom: 22px;
+}
+
+/* Two columns on a wide card so four short lines do not become a long thin
+   list with a lot of dead space beside it. */
+.proFeatures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px 28px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  margin-bottom: 30px;
+}
+
+.proFeatures li { display: flex; align-items: flex-start; gap: 10px; }
+
+/* A drawn checkmark. No glow and no fill behind it — at this size a halo
+   reads as a notification rather than a list marker. */
+.proTick {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  color: #dfeead;
+}
+.proBadge { display: inline-flex; font-size: 9px; font-weight: 700; letter-spacing: .08em; border: 1px solid #a4b8aa; color: var(--teal); padding: 3px 6px; border-radius: 3px; white-space: nowrap; }
+/* A pill, not a rectangle with the corners barely knocked off. The lift on
+   hover and the press on active are what make it read as a physical thing
+   worth pushing; 4px corners and a flat fill read as a form field. */
+.primary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 60px;
+  padding: 16px 26px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #edf9bd 0%, #dfeead 52%, #cadf95 100%);
+  color: #12332c;
+  font-size: 15.5px;
+  line-height: 1.4;
+  font-weight: 680;
+  text-align: center;
+  box-shadow:
+    0 12px 26px -12px rgba(223,238,173,.55),
+    inset 0 1px 0 rgba(255,255,255,.75),
+    inset 0 -1px 0 rgba(18,51,44,.10);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 20px 34px -14px rgba(223,238,173,.7),
+    inset 0 1px 0 rgba(255,255,255,.85),
+    inset 0 -1px 0 rgba(18,51,44,.10);
+}
+
+.primary:active { transform: translateY(0); box-shadow: 0 6px 16px -10px rgba(223,238,173,.5), inset 0 2px 4px rgba(18,51,44,.18); }
+
+.primary:focus-visible { outline: 3px solid rgba(223,238,173,.9); outline-offset: 3px; }
+/* Stays part of the card rather than turning into a grey slab on a dark
+   panel. Clearly inert, still designed. */
+.primary:disabled {
+  background: rgba(245,247,237,.10);
+  border: 1px solid rgba(245,247,237,.22);
+  color: rgba(245,247,237,.62);
+  box-shadow: none;
+  transform: none;
+  filter: none;
+  cursor: not-allowed;
+}
+.checkoutNote { font-size: 11px; text-align: center; color: #c6dad3; line-height: 1.6; margin-top: 10px; }
+/* "Your Neptune" — the member's alert list. */
+.yourNeptune { padding: 32px 0; border-top: 1px solid var(--line); }
+.yourNeptune h2 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; line-height: 1.3; margin: 10px 0 20px; max-width: 30ch; }
+
+.alertList { display: grid; gap: 2px; }
+.alertList li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.alertBeach { font-size: 15px; font-weight: 550; }
+.alertSub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* The switch reads as on because it is: a beach only appears in this list when
+   its alerts are active, so there is no off state to draw here — pressing it
+   removes the row. */
+.switchOn { display: inline-flex; align-items: center; gap: 8px; flex: none; padding: 5px 12px 5px 6px; border-radius: 999px; background: var(--teal); color: #fff; font-size: 12px; font-weight: 600; transition: opacity .15s; }
+.switchOn:hover { opacity: .85; }
+.switchOn:disabled { opacity: .5; }
+.switchKnob { width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+.switchText { line-height: 1; }
+
+.addBeach { display: inline-flex; align-items: center; gap: 7px; margin-top: 18px; padding: 10px 16px; border: 1px dashed var(--line); border-radius: 999px; font-size: 13.5px; font-weight: 550; color: var(--teal); transition: border-color .15s, background .15s; }
+.addBeach:hover { border-color: var(--teal); background: #f3f7f4; }
+
+.picker { margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: #fbfcfa; }
+.pickerHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.pickerHead p { font-size: 13px; font-weight: 600; }
+.picker ul { display: grid; gap: 2px; max-height: 240px; overflow-y: auto; }
+.picker label { display: flex; align-items: center; gap: 10px; padding: 9px 2px; font-size: 14px; cursor: pointer; }
+.pickerSave { margin-top: 12px; padding: 10px 20px; border-radius: 999px; background: var(--teal); color: #fff; font-size: 13.5px; font-weight: 600; }
+.pickerSave:disabled { opacity: .45; cursor: not-allowed; }
+
+.alertMuted { font-size: 13.5px; color: var(--muted); }
+.alertError { font-size: 13px; color: #9B2C2C; margin-bottom: 12px; }
+.faq { border-top: 1px solid var(--line); background: white; }
+.footer { max-width: 1000px; margin: auto; padding: 32px; }
+.footer > p { font-size: 13px; margin: 10px 0; }
+.footer small { display: block; font-size: 11px; color: var(--muted); line-height: 1.8; max-width: 620px; }
+.footer a { text-decoration: underline; text-underline-offset: 3px; }
+.empty { padding: 60px 0; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@media (max-width: 640px) {
+  .sandboxNote > div { padding: 7px 18px; gap: 8px; flex-wrap: wrap; }
+  .sandboxNote span { font-size: 10px; }
+  .header { padding: 18px; gap: 10px; }
+  .header > a { max-width: 65%; }
+  .content { padding: 0 18px; }
+  .masthead { display: block; padding: 22px 0 26px; }
+  .intro { font-size: 15px; }
+  .dateline { display: flex; text-align: left; margin-top: 22px; gap: 10px; font-size: 11px; }
+  .tabs { gap: 16px; }
+  .tabs button { font-size: 13px; gap: 5px; min-height: 54px; }
+  .proLink { font-size: 12px; gap: 4px; }
+  .overview { padding-top: 26px; }
+  .beaches button { grid-template-columns: minmax(0,1fr) auto 12px; column-gap: 8px; padding: 17px 0; }
+  .beachName { font-size: 13px; }
+  .band { font-size: 10px; padding: 7px; gap: 5px; }
+  .legend { gap: 14px; font-size: 10px; }
+  .beachNav { flex-wrap: wrap; gap: 8px; padding: 18px 0; }
+  .beachHeading { scroll-margin-top: 145px; }
+  .beachNav label { width: 100%; max-width: none; }
+  .reading { padding: 22px 18px; }
+  .reading .eyebrow { font-size: 9px; letter-spacing: .07em; gap: 4px; }
+  .sectionHeading h3 { font-size: 16px; }
+  .days { gap: 5px; }
+  .day, .lockedDay { min-width: 57px; }
+  .bandFull { display: none; }
+  .bandAbbr { display: inline; }
+  .dayBand { font-size: 13px; }
+  .dayName { font-size: 10px; }
+  .days { grid-template-columns: repeat(7,minmax(57px,1fr)); padding-bottom: 10px; }
+  .proOffer { padding: 28px 20px 24px; border-radius: 22px; scroll-margin-top: 145px; }
+  .proHeadline { font-size: 23px; margin-bottom: 18px; }
+  .proFeatures { grid-template-columns: 1fr; gap: 11px; font-size: 13.5px; margin-bottom: 24px; }
+  .primary { font-size: 14px; padding: 15px 16px; min-height: 56px; }
+  .footer { padding: 28px 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .root * { transition: none; } }
+
+/* Anyone who has asked for less motion gets the colour change and no movement. */
+@media (prefers-reduced-motion: reduce) {
+  .primary { transition: none; }
+  .primary:hover, .primary:active { transform: none; }
+}
