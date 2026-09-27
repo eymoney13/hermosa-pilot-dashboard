@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import DashboardTabs from "@/components/DashboardTabs";
+import SandboxDashboard from "@/components/sandbox/SandboxDashboard";
 import ProjectNeptuneLogo from "@/components/ProjectNeptuneLogo";
+import AccountControl from "@/components/AccountControl";
 import BeachAlertSignup from "@/components/BeachAlertSignup";
 import FaqAccordion from "@/components/FaqAccordion";
 import { loadDashboardData } from "@/lib/loadData";
 import { isAlertsConfigured } from "@/lib/alerts";
+import { isEntitled } from "@/lib/entitlement";
+import { isClerkConfigured } from "@/lib/clerkConfig";
+import { isLiveBillingEnabled, isStripeConfigured } from "@/lib/subscription";
+import { redactForEntitlement } from "@/lib/paywall";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
 import { featuresFor } from "@/lib/features";
 import {
@@ -39,6 +46,11 @@ export async function generateMetadata({
   return {
     title: `${config.displayName} Water Quality`,
     description: `Daily water quality forecast for ${config.displayName}.`,
+    // An experiment board shows another board's live readings under a name
+    // that is not the real one. There is no robots.txt or sitemap in this app,
+    // so without this it would be as crawlable as the board it copies, and a
+    // search for the real beaches could land someone on the wrong one.
+    ...(config.noindex ? { robots: { index: false, follow: false } } : {}),
   };
 }
 
@@ -60,15 +72,75 @@ export default async function LocationPage({
     config.slug,
     config.newsFilterTerms
   );
-  const [{ beaches, predictionDate }, news] = await Promise.all([
+  const [{ beaches: allBeaches, predictionDate }, news, entitled] = await Promise.all([
     loadDashboardData(config),
     newsEnabled
       ? fetchNewsAlerts(getNewsFeedUrls(), newsFilterTerms)
       : Promise.resolve([]),
+    // ONLY on a board that sells something. Off the paywalled boards this is
+    // not merely unused — it is not asked. A board with no Pro features has no
+    // business consulting Clerk for a session or the billing table for a
+    // subscription, and until this gate existed /southbay did both for every
+    // signed-in visitor and threw the answer away.
+    //
+    // This is the first half of the isolation invariant: no paywall flag, no
+    // contact with the auth or billing stack at all.
+    features.paywall ? isEntitled() : Promise.resolve(false),
   ]);
+
+  // THE SECURITY BOUNDARY. Everything below this line runs on data that has
+  // already had the paid half removed, and `beaches` is handed whole to
+  // DashboardTabs — a client component — so anything still attached here is
+  // serialised into the page and readable from view-source. Blurring downstream
+  // hides nothing. A no-op on every board without the paywall flag.
+  const beaches = redactForEntitlement(allBeaches, {
+    entitled,
+    features,
+  });
+
+  // Presentation only. The live boards retain the original render path below;
+  // sandbox receives exactly the same server-redacted data as before.
+  if (location === "sandbox") {
+    return (
+      <SandboxDashboard
+        beaches={beaches}
+        predictionDate={predictionDate}
+        fallbackCenter={config.mapFallbackCenter}
+        listTopStations={config.listTopStations}
+        entitled={entitled}
+        alertsEnabled={alertsEnabled}
+        checkoutReady={isClerkConfigured() && isStripeConfigured() && isLiveBillingEnabled()}
+        account={<AccountControl location={config.slug} />}
+        faq={<FaqAccordion />}
+        news={news}
+        newsEnabled={newsEnabled}
+        advisory={config.advisory ?? DEFAULT_ADVISORY}
+      />
+    );
+  }
 
   return (
     <main className="flex flex-col">
+      {/* An experiment board is pixel-identical to the one it copies and shows
+          the same live readings, so nothing on the page would otherwise say
+          which one you are looking at. Above the header rather than inside it,
+          because it is a fact about the whole page and not part of the brand.
+          Amber, not the board's teal: it is the one element here that is not
+          part of the product. */}
+      {config.noindex && (
+        <div className="w-full bg-amber-50 border-b border-amber-200">
+          <p className="mx-auto max-w-6xl px-6 sm:px-10 py-2 text-xs text-amber-900">
+            <strong className="font-semibold">Sandbox.</strong> An experimental
+            copy of South Bay, showing the same live readings. Not the live
+            board &mdash; that is{" "}
+            <Link href="/southbay" className="underline underline-offset-2">
+              /southbay
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+
       <header className="w-full border-b border-gray-100">
         <div className="mx-auto max-w-6xl px-6 sm:px-10 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex flex-col">
@@ -93,11 +165,16 @@ export default async function LocationPage({
               that publishes once a morning, and "Forecast for" named the thing
               the whole page already is. What a reader needs from the header is
               which day they are looking at. */}
-          {predictionDate && (
-            <div className="text-sm text-slate-600">
-              {formatMonthDayYear(predictionDate)}
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {predictionDate && (
+              <div className="text-sm text-slate-600">
+                {formatMonthDayYear(predictionDate)}
+              </div>
+            )}
+            {/* Only on a board that sells something. Everywhere else an
+                account would be a control with nothing behind it. */}
+            {features.paywall && <AccountControl location={config.slug} />}
+          </div>
         </div>
       </header>
 
@@ -115,6 +192,19 @@ export default async function LocationPage({
               <BeachAlertSignup
                 beaches={beaches.map((b) => ({ code: b.code, name: b.name }))}
                 location={config.slug}
+                // Alerts are part of Pro on a paywalled board. The button says
+                // so before the reader starts, and app/actions/alerts.ts
+                // refuses the write regardless of what the dialog does.
+                locked={features.paywall && !entitled}
+                // The offer, the plans and the prices still render; only the
+                // navigation to checkout is withheld. A reviewer sees exactly
+                // what a buyer would see, and the Continue button says so
+                // rather than walking into a 404.
+                checkoutReady={
+                  isClerkConfigured() &&
+                  isStripeConfigured() &&
+                  isLiveBillingEnabled()
+                }
               />
             ) : null
           }

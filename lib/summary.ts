@@ -507,6 +507,12 @@ export interface SummaryInput {
   forecastStatuses?: (Status | null)[];
   /** Upcoming days. Only described when the selected day is today. */
   forecast: ForecastDay[];
+  /**
+   * Whether to describe the days ahead. Defaults to true. A board that has put
+   * the forecast behind a paywall passes false, so the free summary explains
+   * today without narrating the days it is charging for.
+   */
+  includeOutlook?: boolean;
 }
 
 // The summary has to describe a day in the same terms the card does, because it
@@ -710,9 +716,12 @@ export function buildSummary(input: SummaryInput): string[] {
   ].join(" ");
 
   // The outlook describes days *after* today, so it only belongs on today's
-  // view — from a forecast day it would be describing the past.
+  // view — from a forecast day it would be describing the past. It is also the
+  // one sentence here that gives away the forecast, so a board that has locked
+  // the forecast suppresses it (see lib/paywall.ts): describing the days a
+  // reader cannot see would be the paywall talking around itself.
   const second = [
-    input.timeframe === "today"
+    input.timeframe === "today" && input.includeOutlook !== false
       ? outlookSentence(input.forecast, verdict, vocab, ratingOf)
       : null,
     input.noRecentSample ? noSampleNote(past) : null,

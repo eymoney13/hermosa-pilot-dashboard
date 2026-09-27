@@ -49,7 +49,7 @@ export interface FeatureFlags {
   forecastWindowFirst: boolean;
   // Drop the numbered "Top contributing factors" list. With it gone there is no
   // detail left to hide, so the forecast-accuracy panel stands on its own
-  // instead of behind the "Behind the Prediction" disclosure.
+  // instead of behind the "What’s affecting the water quality?" disclosure.
   hideContributingFactors: boolean;
   // Headline each site's forecast-accuracy panel with a percentage scored over
   // every lab sample on record for that station, rather than only the "matched
@@ -68,6 +68,14 @@ export interface FeatureFlags {
   // (DATABASE_URL) — without one the card hides itself rather than taking a
   // signup it cannot keep. See lib/alerts.ts.
   beachAlerts: boolean;
+  // Put the paid half of this board behind a paywall: the days either side of
+  // today, and everything under "What’s affecting the water quality?", are
+  // withheld from the page for a reader who is not entitled — leaving the list,
+  // the map, today's reading and the written summary free.
+  //
+  // The withholding happens server-side in lib/paywall.ts, which is where the
+  // actual boundary is. This flag only says which boards it applies to.
+  paywall: boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -83,6 +91,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   siteAccuracyPercent: false,
   openOnMap: false,
   beachAlerts: false,
+  paywall: false,
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
@@ -125,6 +134,31 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
     // two of them and have no reason to open the board on the days those are
     // fine. Alerts are how they hear about the days they are not.
     beachAlerts: true,
+  },
+  // The experiment board (see LOCATIONS.sandbox). Starts as a copy of South
+  // Bay's LAYOUT so that anything changed here is visibly a change from the
+  // real board rather than from stock defaults.
+  //
+  sandbox: {
+    hideBeachTabs: true,
+    predictionSummary: true,
+    listTab: true,
+    openOnMap: true,
+    siteAccuracyPercent: true,
+    // ON, and this one has teeth. alertEnabledLocations() sends for every
+    // board carrying this flag, so the 14:00 cron will mail anyone who signs
+    // up here for real — which is the point if the alert flow is what you are
+    // testing, and a surprise if you only wanted the card on the page.
+    //
+    // Sandbox signups are their own rows: alert_subscribers is keyed on
+    // (email, location), so nothing here touches a real South Bay subscriber,
+    // and clearing them is a DELETE on location = 'sandbox'.
+    beachAlerts: true,
+    // Under construction, and the reason this board exists. Entitlement is a
+    // hand-set cookie for now (lib/entitlement.ts): there is no login and no
+    // payment yet, so this must not follow the other flags onto /southbay
+    // until both exist.
+    paywall: true,
   },
   cabrillo: {}, // plain Manhattan-style — all flags default off
   // Boston reads as a Good/Moderate/Poor board: its model ships its own

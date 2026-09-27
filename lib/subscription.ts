@@ -1,0 +1,288 @@
+import "server-only";
+import Stripe from "stripe";
+import { neon } from "@neondatabase/serverless";
+
+// Neptune Pro subscriptions: creating them, recording them, and answering
+// whether one is live.
+//
+// Real money. mode: "subscription", charged monthly from the moment checkout
+// completes — not the $0 setup-mode dry run this repo tried earlier and threw
+// away. Test keys before live ones, every time.
+
+// The two ways to buy. Cents, because that is the unit Stripe speaks and the
+// unit the subscription row records — a float here would be the one place the
+// figure could drift from what the reader was shown.
+//
+// Yearly is $40 against $60 for twelve months, so it saves $20. Worth naming on
+// the button: a discount nobody can see is not a discount.
+export const PRO_PLANS = {
+  monthly: { cents: 500, interval: "month" as const, label: "$5/month" },
+  yearly: { cents: 4000, interval: "year" as const, label: "$40/year" },
+};
+
+export type ProPlan = keyof typeof PRO_PLANS;
+
+export function isProPlan(value: string | undefined): value is ProPlan {
+  return value === "monthly" || value === "yearly";
+}
+
+/** What the board says Pro costs when it has room for only one figure. */
+export const PRO_PRICE_LABEL = "$5/month, or $40/year";
+
+// Pinned rather than left to the SDK default, so upgrading `stripe` cannot
+// quietly change the shape of what we send or get back.
+const STRIPE_API_VERSION = "2026-08-26.dahlia";
+
+// Lazy, never at module scope: Next evaluates top-level module code at build
+// time, and a build without keys must not crash. It just must not sell
+// anything.
+function stripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
+  return new Stripe(key, { apiVersion: STRIPE_API_VERSION });
+}
+
+function db() {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL is not configured");
+  return neon(url);
+}
+
+/**
+ * THE KILL SWITCH. Nothing that can take money is created unless this is on.
+ *
+ * Temporary, and deliberately separate from isStripeConfigured(): the keys can
+ * be perfectly valid and live while we still do not want a single real charge
+ * to be possible. It exists so /sandbox can be deployed and shown to people
+ * with the Pro UI, the paywall and the prices all visible, while every path
+ * that would reach Stripe is closed.
+ *
+ * DEFAULT OFF. Absent, empty, "1", "yes", "TRUE" — all off. Only the exact
+ * string "true" enables billing, so no typo and no missing variable can turn
+ * real payments on by accident. Forgetting it fails safe; that is the whole
+ * point of the direction it defaults in.
+ *
+ * TO REMOVE LATER: set NEPTUNE_LIVE_BILLING_ENABLED=true in Vercel Production
+ * and redeploy. To retire the switch entirely, delete this function and its
+ * three call sites (/pro/start, /pro/manage, and checkoutReady in the location
+ * page) — grep for isLiveBillingEnabled.
+ */
+export function isLiveBillingEnabled(): boolean {
+  return process.env.NEPTUNE_LIVE_BILLING_ENABLED === "true";
+}
+
+/** Whether a subscription can be sold at all: somewhere to charge, somewhere to record it. */
+export function isStripeConfigured(): boolean {
+  return Boolean(process.env.STRIPE_SECRET_KEY && process.env.DATABASE_URL);
+}
+
+/**
+ * Whether entitlement should be decided by a subscription record at all.
+ *
+ * Separate from isStripeConfigured, and deliberately keyed on the DATABASE
+ * alone. It is the fail-closed half: production always has DATABASE_URL, so
+ * production always requires a real subscription — even if the Stripe keys
+ * went missing, which would otherwise hand Pro to everyone with an account.
+ * Only a machine with no database at all falls back to "signed in is enough".
+ */
+export function subscriptionsEnforced(): boolean {
+  return Boolean(process.env.DATABASE_URL);
+}
+
+// Stripe statuses that mean "this person has paid and has not run out".
+//
+// `past_due` is deliberately included: a card that failed its first retry has
+// not cancelled anything, and cutting someone off mid-month over a bank blip
+// is how a subscription earns a chargeback. Stripe moves them to `canceled` or
+// `unpaid` when the retries are exhausted, and that is when access stops.
+const LIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
+
+export interface SubscriptionRow {
+  status: string;
+  current_period_end: string | null;
+}
+
+/** Whether a stored row still grants access right now. */
+export function entitlementFrom(row: SubscriptionRow | undefined): boolean {
+  if (!row || !LIVE_STATUSES.has(row.status)) return false;
+  // A cancellation mid-month leaves the row live until the period it was paid
+  // for runs out. Stripe keeps status "active" until then and only flips it at
+  // the boundary, so this is a backstop for a webhook that never arrived
+  // rather than the normal path.
+  if (row.current_period_end && new Date(row.current_period_end) < new Date()) {
+    return false;
+  }
+  return true;
+}
+
+/** Does this account hold a live subscription? */
+export async function hasLiveSubscription(clerkUserId: string): Promise<boolean> {
+  const rows = (await db()`
+    SELECT status, current_period_end
+      FROM pro_subscriptions
+     WHERE clerk_user_id = ${clerkUserId}
+  `) as SubscriptionRow[];
+  return entitlementFrom(rows[0]);
+}
+
+/**
+ * Start a checkout for this account.
+ *
+ * The price is built inline rather than referencing a dashboard Price, so
+ * there is no id to create by hand and no way for the figure here to drift
+ * from one configured somewhere else.
+ *
+ * The Clerk user id rides along twice — as client_reference_id and in metadata
+ * — because the webhook has only the session to work from, and one of those
+ * two is how the payment finds its way back to an account.
+ */
+export async function createCheckoutSession(
+  clerkUserId: string,
+  plan: ProPlan,
+  returnTo: string
+): Promise<string> {
+  const { cents, interval } = PRO_PLANS[plan];
+  const session = await stripe().checkout.sessions.create({
+    mode: "subscription",
+    client_reference_id: clerkUserId,
+    metadata: { clerk_user_id: clerkUserId, plan },
+    subscription_data: { metadata: { clerk_user_id: clerkUserId, plan } },
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          unit_amount: cents,
+          recurring: { interval },
+          product_data: {
+            name: "Neptune Pro",
+            description:
+              "Full forecasts, historical conditions and email alerts for your beaches.",
+          },
+        },
+      },
+    ],
+    success_url: `${siteUrl()}/pro/welcome`,
+    // Back where they were, not to a dead end. Someone who changes their mind
+    // at the card form should land on the board they were reading.
+    cancel_url: `${siteUrl()}${returnTo}`,
+  });
+
+  if (!session.url) throw new Error("Stripe returned no checkout URL");
+  return session.url;
+}
+
+function siteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return explicit.replace(/\/+$/, "");
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercel) return `https://${vercel}`;
+  return "http://localhost:3000";
+}
+
+/**
+ * Record what Stripe just told us. Idempotent: Stripe retries a webhook until
+ * it gets a 2xx, and a redelivery must change nothing.
+ */
+export async function recordSubscription(input: {
+  clerkUserId: string;
+  customerId: string | null;
+  subscriptionId: string | null;
+  status: string;
+  currentPeriodEnd: Date | null;
+  plan: ProPlan | null;
+}): Promise<void> {
+  const plan = input.plan ?? "monthly";
+  await db()`
+    INSERT INTO pro_subscriptions
+      (clerk_user_id, stripe_customer_id, stripe_subscription_id, status,
+       current_period_end, price_cents, plan)
+    VALUES
+      (${input.clerkUserId}, ${input.customerId}, ${input.subscriptionId},
+       ${input.status}, ${input.currentPeriodEnd?.toISOString() ?? null},
+       ${PRO_PLANS[plan].cents}, ${plan})
+    ON CONFLICT (clerk_user_id) DO UPDATE
+      SET stripe_customer_id     = COALESCE(EXCLUDED.stripe_customer_id,
+                                            pro_subscriptions.stripe_customer_id),
+          stripe_subscription_id = COALESCE(EXCLUDED.stripe_subscription_id,
+                                            pro_subscriptions.stripe_subscription_id),
+          status                 = EXCLUDED.status,
+          current_period_end     = EXCLUDED.current_period_end,
+          price_cents            = EXCLUDED.price_cents,
+          plan                   = EXCLUDED.plan,
+          updated_at             = now()
+  `;
+}
+
+/**
+ * A subscription changed at Stripe's end — renewed, lapsed, cancelled.
+ *
+ * Matched on the subscription id rather than the Clerk id, because these
+ * events carry no idea who our reader is. Without this handler a cancellation
+ * would never reach us and a former subscriber would keep Pro forever.
+ */
+export async function updateSubscriptionStatus(
+  subscriptionId: string,
+  status: string,
+  currentPeriodEnd: Date | null
+): Promise<void> {
+  await db()`
+    UPDATE pro_subscriptions
+       SET status             = ${status},
+           current_period_end = ${currentPeriodEnd?.toISOString() ?? null},
+           updated_at         = now()
+     WHERE stripe_subscription_id = ${subscriptionId}
+  `;
+}
+
+/**
+ * The Stripe customer this account belongs to, or null.
+ *
+ * Read from OUR table by Clerk user id — never accepted from the client. A
+ * customer id is all it takes to open a billing portal, so one arriving in a
+ * request body would let anyone who guessed or scraped one manage someone
+ * else's subscription.
+ */
+export async function getStripeCustomerId(
+  clerkUserId: string
+): Promise<string | null> {
+  const rows = (await db()`
+    SELECT stripe_customer_id
+      FROM pro_subscriptions
+     WHERE clerk_user_id = ${clerkUserId}
+  `) as Array<{ stripe_customer_id: string | null }>;
+  return rows[0]?.stripe_customer_id ?? null;
+}
+
+/**
+ * A Stripe-hosted session where someone can see their invoices, change their
+ * card and cancel.
+ *
+ * Hosted by Stripe on purpose: cancelling is the one flow it would be worst to
+ * get subtly wrong, and Stripe's own page is always correct about what a
+ * cancellation does and when it takes effect. Whatever happens in there comes
+ * back to us as the same webhooks a CLI cancellation produces, so entitlement
+ * needs no new rules.
+ */
+export async function createBillingPortalSession(
+  customerId: string,
+  returnTo: string
+): Promise<string> {
+  const session = await stripe().billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${siteUrl()}${returnTo}`,
+  });
+  return session.url;
+}
+
+/** Verify a webhook came from Stripe. Throws if the signature does not check out. */
+export function constructWebhookEvent(
+  payload: string,
+  signature: string
+): Stripe.Event {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) throw new Error("STRIPE_WEBHOOK_SECRET is not configured");
+  return stripe().webhooks.constructEvent(payload, signature, secret);
+}
+
+export type { Stripe };

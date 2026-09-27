@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { ClerkProvider } from "@clerk/nextjs";
+import { isClerkConfigured } from "@/lib/clerkConfig";
 import "./globals.css";
 
 const inter = Inter({
@@ -24,7 +26,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
+  const page = (
     <html
       lang="en"
       className={`${inter.variable} ${poppins.variable} h-full antialiased`}
@@ -35,4 +37,11 @@ export default function RootLayout({
       </body>
     </html>
   );
+
+  // Wrapped only when Clerk is configured. ClerkProvider without keys throws,
+  // which would take down every board over a feature no board requires — the
+  // same way the unconfigured PostHog instrumentation took down the dev server
+  // earlier. Nothing here needs an account, so nothing here should break
+  // without one.
+  return isClerkConfigured() ? <ClerkProvider>{page}</ClerkProvider> : page;
 }
