@@ -132,7 +132,7 @@ export default async function LocationPage({
           <p className="mx-auto max-w-6xl px-6 sm:px-10 py-2 text-xs text-amber-900">
             <strong className="font-semibold">Sandbox.</strong> An experimental
             copy of South Bay, showing the same live readings. Not the live
-            board &mdash; that is{" "}
+            board. That is{" "}
             <Link href="/southbay" className="underline underline-offset-2">
               /southbay
             </Link>

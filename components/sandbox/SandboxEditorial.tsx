@@ -20,8 +20,11 @@ export function EditorialShell({ children }: { children: ReactNode }) {
   );
 }
 
-export function PageHero({ title, intro = "[Short introduction]", section }: { title: string; intro?: string; section: string }) {
-  return <header className={s.hero}><p className={s.eyebrow}>{section}</p><h1>{title}</h1><p className={s.heroHeadline}>[Headline]</p><p className={s.intro}>{intro}</p></header>;
+// `headline` defaults to the placeholder so the pages still holding scaffold
+// copy (team, stories, sources) read exactly as they did; a page that has real
+// copy passes its own.
+export function PageHero({ title, intro = "[Short introduction]", section, headline = "[Headline]" }: { title: string; intro?: string; section: string; headline?: ReactNode }) {
+  return <header className={s.hero}><p className={s.eyebrow}>{section}</p><h1>{title}</h1><p className={s.heroHeadline}>{headline}</p><p className={s.intro}>{intro}</p></header>;
 }
 
 export function EditorialSection({ number, title, children }: { number: string; title: string; children: ReactNode }) {
