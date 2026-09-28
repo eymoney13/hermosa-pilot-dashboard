@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, ImageIcon } from "lucide-react";
+import { ArrowLeft, ImageIcon } from "lucide-react";
 import ProjectNeptuneLogo from "../ProjectNeptuneLogo";
 import SandboxMenu from "./SandboxMenu";
 import s from "./SandboxEditorial.module.css";
@@ -41,9 +41,4 @@ export function TeamMember({ name }: { name: string }) {
 
 export function StoryPlaceholder({ featured = false }: { featured?: boolean }) {
   return <figure className={featured ? s.featuredStory : s.story}><span className={s.quoteMark} aria-hidden="true">“</span><blockquote>[Community quote]</blockquote><figcaption>[First name / location]</figcaption><p>[Supporting context]</p></figure>;
-}
-
-// No fake URLs. Pass a verified URL when the final sources are approved.
-export function SourceRow({ title = "[Source title]", description = "[Description]", href }: { title?: string; description?: string; href?: string }) {
-  return <article className={s.sourceRow}><div><h3>{title}</h3><p>{description}</p></div>{href ? <a href={href} target="_blank" rel="noopener noreferrer">View source<ArrowUpRight size={16} aria-hidden="true" /></a> : <span className={s.linkPlaceholder}>[External link]<ArrowUpRight size={16} aria-hidden="true" /></span>}</article>;
 }

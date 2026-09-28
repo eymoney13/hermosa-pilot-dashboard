@@ -16,7 +16,6 @@ Run `npm run dev` from this repository if no server is running. The existing pre
 - http://localhost:3000/sandbox/how-it-works
 - http://localhost:3000/sandbox/stories
 - http://localhost:3000/sandbox/team
-- http://localhost:3000/sandbox/sources
 
 Chrome must use localhost to see these changes. The live site is not deployed.
 
@@ -28,7 +27,6 @@ Created:
 - `app/sandbox/(editorial)/how-it-works/page.tsx`: hero, intro, four numbered steps, methodology note, disclaimer placeholder, three functioning FAQ disclosures.
 - `app/sandbox/(editorial)/stories/page.tsx`: hero, one featured quote plus four story placeholders, two optional metrics, disabled request-your-beach CTA.
 - `app/sandbox/(editorial)/team/page.tsx`: Max and Ethan, portrait placeholders, roles/bios, founder story, neutral advisor/scientist placeholder.
-- `app/sandbox/(editorial)/sources/page.tsx`: four source groups with two placeholder source rows each, anchor navigation, review-note placeholder.
 - `components/sandbox/SandboxEditorial.tsx`: reusable shell, hero, numbered section, photo placeholder, team member, story, source row.
 - `components/sandbox/SandboxEditorial.module.css`: scoped editorial and drawer styling, responsive layouts.
 - `components/sandbox/SandboxMenu.tsx`: reusable sandbox-only navigation drawer.
@@ -45,7 +43,7 @@ Modified:
 - Mobile: full width and full dynamic viewport height; safe-area padding at the bottom.
 - Native modal dialog keeps background content inert. Opening focuses Close; explicit Tab/Shift+Tab wrapping; Escape, Close, and desktop backdrop close the drawer. Focus returns to the trigger. Background scrolling is restored on close/unmount.
 - Links close the drawer and navigate. Current route is highlighted.
-- Menu groups: About Neptune (How Neptune Works, Why It Matters, Meet the Team), Transparency (Data & Sources), Back to Water Quality at the bottom.
+- Menu groups: About Neptune (How Neptune Works, Why It Matters, Meet the Team), Back to Water Quality at the bottom.
 - No Neptune Pro item in this menu.
 
 ## Content ownership
@@ -56,7 +54,7 @@ All new narrative copy is intentionally bracketed placeholder text. Page titles,
 - SourceRow accepts `title`, `description`, and optional `href`. Without a real verified URL it renders an inert `[External link]` label, not a fake anchor.
 - Request-your-beach is disabled with a visible placeholder note. No form or backend was added.
 - Photos are deliberate neutral boxes, not fake people or broken image links.
-- All four new pages are noindex/nofollow.
+- All three new pages are noindex/nofollow.
 
 ## Reference material
 
@@ -80,11 +78,20 @@ Team, Why It Matters, and Sources pages inspired the hierarchy and structure onl
 - `npx tsc --noEmit`: passed after Next regenerated route types. An initial stale `.next/dev/types` error disappeared after route generation/build; do not edit generated type files by hand.
 - Targeted ESLint on sandbox components/pages: passed.
 - `npm run lint`: 0 errors; two existing unused-variable warnings in `lib/data.ts` (`code` and `thresholdMap`). That file was not modified.
-- `npm run build -- --webpack`: production build passed, listing all four new static routes. Webpack is used only via CLI; package scripts/config are unchanged. Default Turbopack previously failed in this host due to worker port permissions.
+- `npm run build -- --webpack`: production build passed, listing the new static routes. Webpack is used only via CLI; package scripts/config are unchanged. Default Turbopack previously failed in this host due to worker port permissions.
 - `git diff --check`: passed.
-- Browser: dashboard menu, all four page URLs, desktop drawer geometry, 390px full-height/full-width drawer, active route styling, link navigation, Escape/focus return, Tab/Shift+Tab wrapping, FAQ expansion, mobile layout inspected. Narrow 320px methodology page had no document overflow.
+- Browser: dashboard menu, every page URL, desktop drawer geometry, 390px full-height/full-width drawer, active route styling, link navigation, Escape/focus return, Tab/Shift+Tab wrapping, FAQ expansion, mobile layout inspected. Narrow 320px methodology page had no document overflow.
 - `/southbay`: original shared rendering path byte-for-byte unchanged; visible server-rendered main markup matches saved pre-redesign baseline after excluding Next development-only diagnostic templates. Shared UI components, global CSS, and protected infrastructure files were not modified.
 
 ## Resume guidance
 
 Read this file and current git diff first. Keep changes in sandbox-only components and the editorial route group. Read relevant local Next docs in `node_modules/next/dist/docs/` before editing, per AGENTS.md. No new dependencies were added. Await the user's layout/copy review before doing more.
+
+## Removed since this handoff
+
+- **Data & Sources** (`/sandbox/sources`) was deleted along with its menu entry,
+  the "Transparency" menu group, the `SourceRow` component and the
+  `.sourceIndex` / `.sourceRow` / `.linkPlaceholder` / `.anchor` rules. It never
+  held a verified source; every row was a placeholder. Restoring it means a new
+  page plus those pieces, and the note above about confirming source links
+  before publishing still applies whenever it comes back.

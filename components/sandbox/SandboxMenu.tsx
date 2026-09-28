@@ -10,7 +10,6 @@ export const sandboxLinks = [
   { href: "/sandbox/how-it-works", label: "How Neptune Works" },
   { href: "/sandbox/stories", label: "Why It Matters" },
   { href: "/sandbox/team", label: "Meet the Team" },
-  { href: "/sandbox/sources", label: "Data & Sources" },
 ];
 
 export default function SandboxMenu() {
@@ -68,9 +67,9 @@ export default function SandboxMenu() {
         </div>
         <nav className={s.drawerNav} aria-label="About Neptune">
           <p className={s.navLabel}>About Neptune</p>
-          {sandboxLinks.slice(0, 3).map((link) => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? "page" : undefined} onClick={close}>{link.label}<ArrowUpRight size={17} aria-hidden="true" /></Link>)}
-          <p className={s.navLabel}>Transparency</p>
-          <Link href="/sandbox/sources" aria-current={pathname === "/sandbox/sources" ? "page" : undefined} onClick={close}>Data &amp; Sources<ArrowUpRight size={17} aria-hidden="true" /></Link>
+          {/* No slice: the array is the whole nav now. It was sliced to 3
+              when a fourth entry needed its own "Transparency" heading. */}
+          {sandboxLinks.map((link) => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? "page" : undefined} onClick={close}>{link.label}<ArrowUpRight size={17} aria-hidden="true" /></Link>)}
         </nav>
         <Link href="/sandbox" className={s.drawerBack} onClick={close}><ArrowLeft size={17} aria-hidden="true" />Back to Water Quality</Link>
       </dialog>
