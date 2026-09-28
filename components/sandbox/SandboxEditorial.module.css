@@ -53,13 +53,6 @@
 .teamMember > p:last-child { margin-top: 15px; color: var(--muted); font-size: 15px; line-height: 1.8; }
 .founderStory { display: grid; gap: 28px; }
 .advisor { display: grid; grid-template-columns: 180px 1fr; align-items: center; gap: 30px; }
-.sourceIndex { display: flex; flex-wrap: wrap; gap: 8px 24px; border-top: 1px solid var(--line); padding: 15px 0 40px; }
-.sourceIndex a { display: inline-flex; align-items: center; gap: 12px; font-size: 12px; min-height: 44px; color: var(--teal); }
-.anchor { scroll-margin-top: 24px; }
-.sourceRow { display: flex; justify-content: space-between; gap: 24px; align-items: start; padding: 24px 0; border-bottom: 1px solid var(--line); }
-.sourceRow:first-child { padding-top: 0; }
-.sourceRow a, .linkPlaceholder { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; line-height: 1.5; color: var(--teal); flex-shrink: 0; padding-top: 5px; }
-.linkPlaceholder { color: var(--muted); }
 .footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; max-width: 1040px; margin: auto; padding: 30px 28px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 .footer a { display: inline-flex; gap: 10px; align-items: center; min-height: 44px; color: var(--teal); }
 .skipLink { position: fixed; top: 10px; left: 10px; z-index: 100; transform: translateY(-200%); background: white; padding: 12px; }
@@ -222,7 +215,6 @@
   .advisor .photo { max-width: 240px; width: 100%; }
   .request { flex-direction: column; align-items: stretch; padding: 26px; }
   .request button { width: 100%; }
-  .sourceRow { flex-direction: column; gap: 15px; }
   .metrics { gap: 18px; }
   .metrics .metric { font-size: 26px; }
   .drawer { width: 100vw; padding: 20px 24px max(20px,env(safe-area-inset-bottom)); }
