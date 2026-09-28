@@ -14,6 +14,13 @@ model repo and pushed into this repo as CSVs by GitHub Actions.
   value (display name, station codes, beach names, map fallback center).
 - **Per-location data folders** live under `public/data/<slug>/` and each contain:
   `nowcast_latest.csv`, `forecast_3day.csv`, `history_3day.csv`, `thresholds.csv`.
+- **Per-location nowcast archives** live under `data/nowcast-archive/<slug>/` — one
+  `nowcast_<date>.csv` per published day, written by
+  [`scripts/archive-nowcast.py`](scripts/archive-nowcast.py) in the same commit as the
+  nowcast it copies. `scripts/build-history.py` reads these in preference to
+  project-neptune's shared archive so the 7-day window's past cells replay exactly what
+  the board published that day. Deliberately outside `public/` — it is a build-time
+  input, not something to serve.
 - Components are generic — they receive location values as props and hardcode nothing.
 - `/` redirects to the default location (`/hermosa`); unknown slugs return a 404.
 

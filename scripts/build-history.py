@@ -4,7 +4,22 @@ Build public/data/history_3day.csv from project-neptune's nowcast_history archiv
 
 Walks backward from yesterday, finds the most recent 3 dates with a
 nowcast_YYYY-MM-DD.csv snapshot, and pivots the wanted stations into a single
-per-station row with day1_*/day2_*/day3_* columns. The schema is a superset of
+per-station row with day1_*/day2_*/day3_* columns.
+
+TWO ARCHIVES, IN PRIORITY ORDER. SOURCE_DIR is the location's own archive of the
+nowcasts it published (written by archive-nowcast.py, committed alongside them),
+and it wins every date it covers. FALLBACK_DIR is project-neptune's shared
+outputs/nowcast_history/, written by the all-beaches daily-full-run job.
+
+They are not the same numbers. The full run is a separate execution over a
+different beach set at a different hour, so it disagrees with what a board
+actually published: on 2026-09-27 the South Bay run published DHS116 at
+0.5105/Unsafe — a red "High" cell — while the full run archived 0.4791/Safe, so
+that Sunday turned yellow the moment it became a past day. The full run also
+skips days the boards publish (there is no 2026-09-26 snapshot), punching holes
+in the strip. Reading the published archive first makes a past cell a literal
+replay of what readers saw; the fallback only covers dates from before a
+location started archiving, so the window does not shrink on the changeover. The schema is a superset of
 forecast_3day.csv: in addition to the date/probability/mpn fields, each day also
 carries that day's top factors, last lab result, days-since-sample, and insight,
 so the dashboard can replay the exact nowcast each past day showed.
@@ -40,6 +55,10 @@ SOURCE_DIR = _path_from_env(
     "NOWCAST_HISTORY_DIR",
     Path.home() / "Desktop" / "project-neptune" / "outputs" / "nowcast_history",
 )
+# Consulted only for dates SOURCE_DIR does not have. Unset means "no fallback",
+# which is the right default for a local run against a single archive.
+_raw_fallback = os.environ.get("NOWCAST_HISTORY_FALLBACK_DIR")
+FALLBACK_DIR = Path(_raw_fallback).expanduser() if _raw_fallback else None
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_FILE = (
     _path_from_env("HISTORY_OUTPUT_DIR", PROJECT_ROOT / "public" / "data")
@@ -89,17 +108,32 @@ OPTIONAL_SOURCE_COLUMNS: list[str] = (
 )
 
 
-def find_recent_dates() -> list[str]:
-    """Walk back from yesterday; return ISO dates whose snapshot files exist,
-    newest first, up to TARGET_DAYS or LOOKBACK_DAYS — whichever hits first."""
+def search_dirs() -> list[Path]:
+    """The archives to consult, most authoritative first."""
+    dirs = [SOURCE_DIR]
+    if FALLBACK_DIR is not None and FALLBACK_DIR != SOURCE_DIR:
+        dirs.append(FALLBACK_DIR)
+    return dirs
+
+
+def find_recent_dates() -> list[tuple[str, Path]]:
+    """Walk back from yesterday; return (ISO date, snapshot path) newest first,
+    up to TARGET_DAYS or LOOKBACK_DAYS — whichever hits first.
+
+    A date present in more than one archive resolves to the first one that has
+    it, so the published archive wins and the fallback only fills gaps.
+    """
     today = date.today()
-    found: list[str] = []
+    found: list[tuple[str, Path]] = []
     for offset in range(1, LOOKBACK_DAYS + 1):
         iso = (today - timedelta(days=offset)).isoformat()
-        if (SOURCE_DIR / f"nowcast_{iso}.csv").exists():
-            found.append(iso)
-            if len(found) == TARGET_DAYS:
+        for directory in search_dirs():
+            candidate = directory / f"nowcast_{iso}.csv"
+            if candidate.exists():
+                found.append((iso, candidate))
                 break
+        if len(found) == TARGET_DAYS:
+            break
     return found
 
 
@@ -163,22 +197,39 @@ def build_header(optional: list[str]) -> list[str]:
 
 def main() -> int:
     print(f"SOURCE_DIR:  {SOURCE_DIR}")
+    if FALLBACK_DIR is not None:
+        print(f"FALLBACK_DIR: {FALLBACK_DIR}")
     print(f"OUTPUT_FILE: {OUTPUT_FILE}")
 
-    if not SOURCE_DIR.is_dir():
-        print(f"Source directory not found: {SOURCE_DIR}", file=sys.stderr)
+    # A missing primary is the normal state on the first run after a location
+    # starts archiving its own nowcasts — the directory does not exist until
+    # archive-nowcast.py creates it. Only bail when nothing is readable at all.
+    available = [d for d in search_dirs() if d.is_dir()]
+    if not available:
+        searched = " or ".join(str(d) for d in search_dirs())
+        print(f"No archive directory found: {searched}", file=sys.stderr)
         return 1
 
-    dates = find_recent_dates()
-    if not dates:
-        print(f"No nowcast snapshots found in {SOURCE_DIR}", file=sys.stderr)
+    dated_paths = find_recent_dates()
+    if not dated_paths:
+        searched = " or ".join(str(d) for d in available)
+        print(f"No nowcast snapshots found in {searched}", file=sys.stderr)
         return 1
 
+    dates = [iso for iso, _ in dated_paths]
     # dates[0] is the most recent past day (day1 of the output).
     rows_by_date: dict[str, dict[str, dict[str, str]]] = {
-        iso: load_station_rows(SOURCE_DIR / f"nowcast_{iso}.csv") for iso in dates
+        iso: load_station_rows(path) for iso, path in dated_paths
     }
     static_meta = rows_by_date[dates[0]]
+
+    # Which archive each day came from. Worth a line of output: a past cell
+    # disagreeing with what the board published that day is exactly the bug this
+    # priority order exists to prevent, and the log is where you would catch a
+    # location silently still reading the shared archive.
+    for iso, path in dated_paths:
+        origin = "published" if path.parent == SOURCE_DIR else "fallback"
+        print(f"  {iso}: {origin} ({path.parent})")
 
     optional = detect_optional_columns(rows_by_date)
     if optional:
