@@ -124,13 +124,6 @@ export default function HowItWorksPage() {
     <EditorialSection number="03" title="What the risk levels mean">
       <p>The Neptune Index is a percentage. It is our model&rsquo;s estimated probability that Enterococcus exceeds {EPA_MPN_THRESHOLD} MPN/100mL at that beach. A lower percentage means an exceedance is less likely. A higher percentage means it is more likely.</p>
 
-      {/* The misreading this section exists to prevent. A percentage next to
-          the word "bacteria" invites "20% bacteria", and no amount of correct
-          prose elsewhere undoes that if it is never said outright. */}
-      <div className={s.note}>
-        <p>A 20% Neptune Index means an estimated 1-in-5 chance of exceeding the threshold. It does not mean the water contains 20% bacteria.</p>
-      </div>
-
       {/* Read straight off RISK_TIERS so the bands and colors here can never
           drift from the legend on the board. */}
       <ul className={s.tierKey}>
