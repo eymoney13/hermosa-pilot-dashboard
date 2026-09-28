@@ -44,3 +44,6 @@ next-env.d.ts
 public/data/**/history_3day.test-fixture.csv
 .env.local
 .claude/
+
+# Python bytecode from the scripts/ helpers
+__pycache__/

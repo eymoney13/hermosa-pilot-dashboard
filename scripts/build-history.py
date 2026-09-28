@@ -2,9 +2,11 @@
 """
 Build public/data/history_3day.csv from project-neptune's nowcast_history archive.
 
-Walks backward from yesterday, finds the most recent 3 dates with a
+Takes the three calendar days before today, reads each one's
 nowcast_YYYY-MM-DD.csv snapshot, and pivots the wanted stations into a single
-per-station row with day1_*/day2_*/day3_* columns.
+per-station row with day1_*/day2_*/day3_* columns. day1 is always yesterday: a
+day with no snapshot is left empty rather than backfilled with an older one, so
+a cell can never carry a different day's prediction than the one it is dated.
 
 TWO ARCHIVES, IN PRIORITY ORDER. SOURCE_DIR is the location's own archive of the
 nowcasts it published (written by archive-nowcast.py, committed alongside them),
@@ -70,7 +72,12 @@ WANTED_STATIONS = [
     for code in os.environ.get("BEACH_FILTER", "DHS114,DHS115").split(",")
     if code.strip()
 ]
-LOOKBACK_DAYS = 14
+# The past strip is exactly the TARGET_DAYS calendar days before today. There is
+# deliberately no lookback beyond that: this used to hunt back up to 14 days to
+# FILL three slots, so one failed refresh pulled an older day forward and drew it
+# adjacent to today — with yesterday's snapshot missing, a Monday strip showed
+# 09-26, 09-25 and 09-21 as "the past three days". A day we have no snapshot for
+# is left empty instead, which every consumer already tolerates.
 TARGET_DAYS = 3
 
 # Per-day output columns emitted for every snapshot, as (output suffix, source
@@ -116,25 +123,29 @@ def search_dirs() -> list[Path]:
     return dirs
 
 
-def find_recent_dates() -> list[tuple[str, Path]]:
-    """Walk back from yesterday; return (ISO date, snapshot path) newest first,
-    up to TARGET_DAYS or LOOKBACK_DAYS — whichever hits first.
+def find_recent_dates() -> list[tuple[str, Path | None]]:
+    """The TARGET_DAYS days before today, newest first, each paired with its
+    snapshot — or None where no archive has one.
+
+    The dates are fixed by the calendar, not chosen by what happens to be on
+    disk, so day1 is always yesterday and a cell can never carry a different
+    day's prediction than the one it is dated.
 
     A date present in more than one archive resolves to the first one that has
     it, so the published archive wins and the fallback only fills gaps.
     """
     today = date.today()
-    found: list[tuple[str, Path]] = []
-    for offset in range(1, LOOKBACK_DAYS + 1):
+    resolved: list[tuple[str, Path | None]] = []
+    for offset in range(1, TARGET_DAYS + 1):
         iso = (today - timedelta(days=offset)).isoformat()
+        match = None
         for directory in search_dirs():
             candidate = directory / f"nowcast_{iso}.csv"
             if candidate.exists():
-                found.append((iso, candidate))
+                match = candidate
                 break
-        if len(found) == TARGET_DAYS:
-            break
-    return found
+        resolved.append((iso, match))
+    return resolved
 
 
 # The CA pipeline used to name slot 1's direction with no number, so archived
@@ -210,26 +221,48 @@ def main() -> int:
         print(f"No archive directory found: {searched}", file=sys.stderr)
         return 1
 
+    # dated_paths[0] is yesterday (day1 of the output); a None path means no
+    # archive has that day, and its slot is left empty rather than backfilled.
     dated_paths = find_recent_dates()
-    if not dated_paths:
+    if not any(path for _, path in dated_paths):
+        # Not an error: carry on and write a file with empty slots. Failing here
+        # would leave the previous history_3day.csv in place, and a stale file is
+        # the one outcome worth avoiding — it draws days older than the window
+        # right next to today, which is the bug this script exists to prevent. An
+        # empty strip shows nothing false. The publish must not be blocked for it
+        # either: the nowcast is the primary product, and this step runs before
+        # the commit.
         searched = " or ".join(str(d) for d in available)
-        print(f"No nowcast snapshots found in {searched}", file=sys.stderr)
-        return 1
+        print(
+            f"Warning: no snapshot for any of the last {TARGET_DAYS} days in "
+            f"{searched} — writing an empty window.",
+            file=sys.stderr,
+        )
 
     dates = [iso for iso, _ in dated_paths]
-    # dates[0] is the most recent past day (day1 of the output).
     rows_by_date: dict[str, dict[str, dict[str, str]]] = {
-        iso: load_station_rows(path) for iso, path in dated_paths
+        iso: (load_station_rows(path) if path is not None else {})
+        for iso, path in dated_paths
     }
-    static_meta = rows_by_date[dates[0]]
 
-    # Which archive each day came from. Worth a line of output: a past cell
-    # disagreeing with what the board published that day is exactly the bug this
-    # priority order exists to prevent, and the log is where you would catch a
-    # location silently still reading the shared archive.
+    # Which archive each day came from, and which days are missing. Worth a line
+    # of output each: a past cell disagreeing with what the board published that
+    # day is exactly the bug this priority order exists to prevent, and a gap is
+    # how you notice a refresh silently failed.
     for iso, path in dated_paths:
+        if path is None:
+            print(f"  {iso}: MISSING — left empty, no older day substituted")
+            continue
         origin = "published" if path.parent == SOURCE_DIR else "fallback"
         print(f"  {iso}: {origin} ({path.parent})")
+
+    # Station metadata from the most recent day that carries the station. Taken
+    # across the window rather than from day1 alone, so a gap yesterday does not
+    # drop every beach from the file.
+    static_meta: dict[str, dict[str, str]] = {}
+    for iso in dates:
+        for code, row in rows_by_date[iso].items():
+            static_meta.setdefault(code, row)
 
     optional = detect_optional_columns(rows_by_date)
     if optional:
@@ -241,7 +274,8 @@ def main() -> int:
         meta = static_meta.get(code)
         if meta is None:
             print(
-                f"Warning: {code} missing from most recent snapshot ({dates[0]}); skipping.",
+                f"Warning: {code} absent from every snapshot in "
+                f"{dates[-1]}..{dates[0]}; skipping.",
                 file=sys.stderr,
             )
             continue
@@ -256,14 +290,19 @@ def main() -> int:
         }
         for i, iso in enumerate(dates, start=1):
             day = rows_by_date[iso].get(code, {})
+            # The date is written even when there is no snapshot, so the file
+            # records WHICH day is missing rather than just coming up short. The
+            # dashboard skips a day whose probability is empty (dynamicTyping
+            # parses a blank cell to null), so an empty slot renders as no cell
+            # rather than as a 0% one.
             row[f"day{i}_date"] = iso
             for name, source in BASE_DAY_FIELDS:
                 row[f"day{i}_{name}"] = day.get(source, "")
             for name in optional:
                 row[f"day{i}_{name}"] = day.get(name, "")
-        # Pad with empty day slots if fewer than 3 valid dates were found. This
-        # is the normal state for the first two runs after an archive starts:
-        # the window grows as snapshots accumulate rather than failing.
+        # build_header always emits three day slots, so fill any the window did
+        # not cover. Unreachable at TARGET_DAYS = 3; kept so lowering it cannot
+        # silently write rows that do not match the header.
         for i in range(len(dates) + 1, 4):
             row[f"day{i}_date"] = ""
             for name, _ in BASE_DAY_FIELDS:
@@ -282,9 +321,11 @@ def main() -> int:
         out_display = OUTPUT_FILE.relative_to(PROJECT_ROOT)
     except ValueError:
         out_display = OUTPUT_FILE
+    filled = sum(1 for _, path in dated_paths if path is not None)
+    gaps = "" if filled == len(dates) else f" ({len(dates) - filled} day(s) with no snapshot)"
     print(
         f"Wrote {out_display} "
-        f"with {len(dates)} days for {len(out_rows)} beaches."
+        f"with {filled} of the last {len(dates)} days for {len(out_rows)} beaches{gaps}."
     )
     return 0
 
