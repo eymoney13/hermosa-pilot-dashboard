@@ -154,7 +154,42 @@
 .ctaSecondary { border: 1px solid #c3d1c6; color: #2c6062; }
 .ctaSecondary:hover { background: #eef2eb; }
 
+
+/* ---- Meet the Team ----------------------------------------------------- */
+
+.founderGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 52px; margin-bottom: 8px; }
+.founder h2 { font-size: 27px; font-weight: 500; letter-spacing: -.03em; }
+/* Name and social icon on one line. */
+.nameRow { display: flex; align-items: center; gap: 6px; }
+.founder .nameRow { margin-top: 20px; }
+/* 44px touch target, pulled back in with negative margins so a finger-sized
+   hit area does not push the name away from the portrait above it. */
+.social { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: -12px -12px -12px -4px; border-radius: 6px; color: #7c8d84; flex-shrink: 0; }
+.social:hover { color: #0a66c2; background: #eef2eb; }
+.founder > p:last-child { margin-top: 14px; color: var(--muted); font-size: 15px; line-height: 1.85; }
+
+/* The fallback when a portrait is missing from public/team. Size comes from
+   the call site (92px for a founder, 64px for the advisor) because the two
+   differ; everything that does not vary lives here. Circular, so a real
+   portrait drops into the same footprint without the layout shifting. */
+.monogram { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; background: linear-gradient(145deg, #e8efe4, #d6e3dc); border: 1px solid #cfdcd2; color: #2c6062; font-family: Georgia, serif; line-height: 1; }
+/* Real portraits share the circle so swapping one in never moves the layout. */
+.portrait { flex-shrink: 0; border-radius: 50%; object-fit: cover; border: 1px solid #cfdcd2; }
+
+/* Underlined inline link for running prose, where the icon-and-caps treatment
+   of .inlineTeal would break the sentence. */
+.textLink { color: var(--teal); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* The advisor: a row, not a third founder card. */
+.advisorRow { border-top: 1px solid var(--line); margin-top: 46px; padding-top: 30px; }
+.advisorRow > div { display: flex; align-items: center; gap: 20px; margin-top: 16px; }
+.advisorRow h2 { font-size: 21px; font-weight: 500; letter-spacing: -.025em; }
+.advisorRow .role { margin: 6px 0 0; }
+
 @media (max-width: 640px) {
+  .founderGrid { grid-template-columns: 1fr; gap: 36px; }
+  .advisorRow { margin-top: 34px; padding-top: 24px; }
+
   .origin { padding: 26px 22px; }
   .invite { padding: 26px 20px; }
   .closing { margin-top: 40px; padding-top: 32px; }

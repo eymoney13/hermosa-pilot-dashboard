@@ -16,7 +16,7 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled }: { chec
     alertsEnabled ? "Elevated bacteria email alerts" : null,
     "3-day forecasts",
     "Water-quality history",
-    "Deeper daily insights",
+    "What’s affecting the water quality",
   ].filter(Boolean) as string[];
 
   return (
