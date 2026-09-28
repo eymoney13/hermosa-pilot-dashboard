@@ -77,7 +77,100 @@
 .drawerNav a { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 21px; letter-spacing: -.025em; min-height: 62px; border-bottom: 1px solid #dce3dc; }
 .drawerNav a[aria-current] { color: #2c7778; font-weight: 600; }
 .drawerBack { display: flex; align-items: center; gap: 10px; min-height: 55px; margin-top: 20px; border-top: 1px solid #dce3dc; padding-top: 14px; font-size: 13px; color: #2c7778; }
+
+/* ---- How Neptune Works ------------------------------------------------- */
+
+/* The testing gap, drawn. Two tracks share one timeline so the sparse
+   sampling dots and the continuous forecast bar are directly comparable;
+   describing the gap in prose alone never lands as well as seeing it. */
+.gapDiagram { margin-top: 30px; display: grid; gap: 22px; padding: 24px; background: #f3f5ee; border: 1px solid var(--line); border-radius: 4px; }
+.gapTrack { display: grid; gap: 9px; }
+.gapTrackName { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--teal); font-weight: 600; }
+.gapLine { position: relative; height: 10px; border-radius: 999px; background: #e0e5da; }
+/* Percentage lefts with a -50% shift, so a dot sits ON its point rather than
+   starting there, and the last one does not hang off the end. */
+.gapSample { position: absolute; top: 50%; width: 14px; height: 14px; margin-left: -7px; transform: translateY(-50%); border-radius: 50%; background: #fcfcf8; border: 3px solid var(--teal); }
+.gapFill { position: absolute; inset: 0; border-radius: 999px; background: linear-gradient(to right, #8fb9a8, #2c7778); }
+.gapNote { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+/* The four bands, straight off RISK_TIERS. Grid rather than flex so the range
+   column self-aligns and the names start on one edge. */
+.tierKey { margin-top: 24px; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.tierKey li { display: grid; grid-template-columns: 18px 72px minmax(0,1fr); align-items: center; gap: 14px; padding: 13px 16px; background: #fcfcf8; }
+.tierSwatch { width: 18px; height: 18px; border-radius: 4px; }
+.tierRange { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tierName { font-size: 14.5px; color: var(--ink); }
+
+/* Two columns that become two stacked cards on a phone. */
+.compare { margin-top: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.compareCol { padding: 22px; border: 1px solid var(--line); border-radius: 4px; background: #fcfcf8; }
+.compareCol h3 { font-size: 18px; }
+.compareSub { font-size: 11px !important; text-transform: uppercase; letter-spacing: .09em; color: var(--teal) !important; margin-top: 6px !important; }
+.compareCol ul { margin-top: 16px; display: grid; gap: 11px; }
+.compareCol li { position: relative; padding-left: 20px; font-size: 14.5px; color: var(--muted); line-height: 1.65; }
+.compareCol li::before { content: ""; position: absolute; left: 0; top: 8px; width: 7px; height: 7px; border-radius: 50%; background: #9bb5aa; }
+
+/* Numbered by CSS counter rather than the <ol> marker, so the digit can take
+   the serif treatment the step list elsewhere on the page uses. */
+.useSteps { margin-top: 22px; counter-reset: usestep; display: grid; gap: 2px; }
+.useSteps li { counter-increment: usestep; display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.useSteps li::before { content: counter(usestep); font-family: Georgia, serif; font-size: 26px; line-height: 1; color: #8ca49b; }
+.useSteps h3 { font-size: 17px; font-weight: 550; }
+.useSteps p { margin-top: 5px !important; }
+
+
+/* ---- Why It Matters ---------------------------------------------------- */
+
+/* The origin story. A warm ground and a wider measure than a body paragraph,
+   so it reads as the page's centre of gravity without needing a photograph
+   the project does not have. */
+.origin { background: #f2f5ec; border: 1px solid #e2e8dc; border-radius: 4px; padding: 40px 44px; margin-bottom: 14px; }
+.origin .eyebrow { margin-bottom: 20px; }
+.originLede { font-family: Georgia, serif; font-size: clamp(22px,2.6vw,29px); line-height: 1.45; color: #23474a; letter-spacing: -.015em; }
+.origin p + p { margin-top: 15px; font-size: 15.5px; color: #55675f; line-height: 1.85; }
+
+/* Teal text link with an icon, matching the dashboard's .inlineLink, which
+   lives in the other stylesheet and cannot be reached from here. */
+.inlineTeal { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; font-size: 13.5px; font-weight: 600; color: var(--teal); min-height: 44px; }
+.inlineTeal:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* An honest empty state. Dashed rather than solid, because the border should
+   read as a space waiting to be filled and not as a finished card. */
+.invite { border: 1px dashed #c6d2c4; border-radius: 4px; padding: 34px 38px; margin: 40px 0 0; text-align: center; }
+.invite h2 { font-size: 21px; font-weight: 550; letter-spacing: -.02em; }
+.invite p { max-width: 48ch; margin: 12px auto 0; font-size: 15px; color: var(--muted); line-height: 1.8; }
+.invite .inlineTeal { margin-top: 10px; }
+
+/* The closing. No panel: after the invitation's dashed box another bordered
+   block would read as a third card in a row. Type carries it instead. */
+.closing { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 44px; }
+.closing h2 { font-family: Georgia, serif; font-size: clamp(27px,3.4vw,40px); line-height: 1.28; letter-spacing: -.02em; color: #23474a; max-width: 17ch; }
+.closing > p { margin-top: 20px; max-width: 60ch; font-size: 15.5px; color: var(--muted); line-height: 1.85; }
+.ctaRow { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+/* 48px minimum on both, so neither is a small target on a phone. */
+.ctaPrimary, .ctaSecondary { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 12px 24px; border-radius: 3px; font-size: 14.5px; font-weight: 600; }
+.ctaPrimary { background: #235e60; color: #f6faf4; }
+.ctaPrimary:hover { background: #1b4c4e; }
+.ctaSecondary { border: 1px solid #c3d1c6; color: #2c6062; }
+.ctaSecondary:hover { background: #eef2eb; }
+
 @media (max-width: 640px) {
+  .origin { padding: 26px 22px; }
+  .invite { padding: 26px 20px; }
+  .closing { margin-top: 40px; padding-top: 32px; }
+  .closing h2 { max-width: none; }
+  /* Full-width stacked buttons: side by side they each fall under 160px on a
+     narrow phone and the labels wrap mid-word. */
+  .ctaRow { flex-direction: column; align-items: stretch; gap: 10px; }
+
+  .gapDiagram { padding: 18px; gap: 18px; }
+  .compare { grid-template-columns: 1fr; gap: 14px; }
+  .compareCol { padding: 18px; }
+  .tierKey li { grid-template-columns: 16px 68px minmax(0,1fr); gap: 10px; padding: 12px 13px; }
+  .tierSwatch { width: 16px; height: 16px; }
+  .tierName { font-size: 14px; }
+  .useSteps li { grid-template-columns: 30px minmax(0,1fr); gap: 12px; }
+
   .header { padding: 18px; }
   .main { padding: 0 22px 48px; }
   .hero { padding: 42px 0; }

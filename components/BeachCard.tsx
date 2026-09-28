@@ -495,7 +495,7 @@ function SevenDayWindow({
                 </span>
                 <div
                   className="flex h-7 w-full items-center justify-center rounded-sm border border-dashed border-gray-300 bg-gray-100"
-                  title="Locked — available with Neptune Pro"
+                  title="Locked. Available with Neptune Pro"
                 >
                   <Lock className="h-3 w-3 text-gray-400" aria-hidden="true" />
                   <span className="sr-only">
