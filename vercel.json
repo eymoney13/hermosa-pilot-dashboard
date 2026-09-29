@@ -3,7 +3,8 @@
     "deploymentEnabled": {
       "codex/subscription-flow": false,
       "codex/pro-launch-followup": false,
-      "codex/california-rollout": false
+      "codex/california-rollout": false,
+      "codex/california-public-launch": false
     }
   },
   "crons": [

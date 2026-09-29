@@ -2,10 +2,18 @@
 // or customer identifiers are printed. It never sends mail or starts checkout.
 import {neon} from '@neondatabase/serverless';
 const origin='https://dashboard.projectneptune.co';
-const report={checkedAt:new Date().toISOString(),pages:{},subscriptions:null};
-for(const path of ['/california','/california/terms','/california/privacy','/sandbox','/southbay','/pro/start?from=/california&plan=monthly','/pro/start?from=/california&plan=yearly','/pro/start?from=/sandbox&plan=monthly','/pro/recover']) {
+const report={checkedAt:new Date().toISOString(),pages:{},redirects:{},subscriptions:null};
+let failed=false;
+for(const path of ['/california','/california/terms','/california/privacy','/sandbox','/southbay','/pro/start?from=/california&plan=monthly','/pro/start?from=/california&plan=yearly','/pro/start?from=/sandbox&plan=monthly','/pro/recover','/sitemap.xml','/robots.txt']) {
  const response=await fetch(origin+path,{signal:AbortSignal.timeout(20000),redirect:'manual'});
  report.pages[path]=response.status;
+ const destination=path==='/southbay'?'/california?region=southbay':path==='/sandbox'?'/california':null;
+ if(destination){
+   const target=new URL(response.headers.get('location')||'/',origin);
+   const valid=response.status===308 && target.origin===origin && target.pathname+target.search===destination;
+   report.redirects[path]=valid?'correct':'unexpected';
+   if(!valid)failed=true;
+ } else if(response.status!==200)failed=true;
 }
 if(process.env.DATABASE_URL) {
  const sql=neon(process.env.DATABASE_URL);
@@ -19,4 +27,4 @@ if(process.env.DATABASE_URL) {
  report.subscriptions=counts;
 }
 console.log(JSON.stringify(report,null,2));
-if(Object.values(report.pages).some(status=>status!==200)||report.subscriptions&&Object.values(report.subscriptions).some(n=>n>0))process.exitCode=1;
+if(failed||!report.subscriptions||Object.values(report.subscriptions).some(n=>n>0))process.exitCode=1;
