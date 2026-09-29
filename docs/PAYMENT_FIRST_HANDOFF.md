@@ -50,7 +50,10 @@ subscription per account plus canceled history. Apply before serving this branch
   and a backup remain required. Do not run the old application against the changed unique constraint.
 - Verify refunds/disputes policy separately: access follows subscription status;
   refunding a payment without canceling its subscription does not revoke access.
-- Configure Stripe customer portal cancellation and production webhook events.
+- Production Stripe webhook is active at the correct dashboard endpoint with
+  checkout.session.completed and customer.subscription.updated/deleted. Live portal
+  cancellation is enabled at period end (read-only verification). Signing-secret
+  matching and a production delivery smoke test remain for rollout.
 - Live billing remains disabled until the user explicitly approves launch.
 
 ## Configure an isolated test environment
@@ -223,12 +226,17 @@ Production configuration still to verify/set during the approved rollout:
 - `PRO_ACTIVATION_EMAIL_FROM=ethan@projectneptune.co` with the matching Gmail app password.
 - `NEPTUNE_PAYMENT_FIRST_ENABLED=true`, `NEPTUNE_LIVE_BILLING_ENABLED=false` initially;
   no test-checkout bypass in production.
-- Clerk production Invite-only and a customer-facing Neptune application name. The
-  development sign-in currently displays the installation name `clerk-emerald-elephant`.
+- Clerk production Invite-only and a customer-facing Neptune application name. Both
+  development sign-in and the production portal currently display `clerk-emerald-elephant`.
+  Production accounts.projectneptune.co/sign-in renders successfully in a browser;
+  the earlier server-fetch 403 is not evidence of a broken customer portal.
 - Stripe production webhook to `/api/pro/webhook`: checkout.session.completed,
-  checkout.session.async_payment_succeeded, customer.subscription.updated,
-  customer.subscription.deleted. Confirm the signing secret belongs to this endpoint.
-- Live customer portal cancellation at period end; confirm return URL to the dashboard.
+  customer.subscription.updated, customer.subscription.deleted are already configured.
+  The handler also supports checkout.session.async_payment_succeeded; add this if
+  delayed payment methods are enabled later (current checkout is card-only).
+  Confirm the signing secret belongs to this endpoint.
+- Live customer portal cancellation at period end is already configured; confirm
+  its generated-session return URL during the live smoke test.
 - Mail authentication: confirm all senders before adding SPF. Vercel also has a Resend
   integration, so do not assume Google Workspace is the only sender.
 
@@ -237,3 +245,8 @@ release with live billing off → production free-access/auth/recovery smoke che
 explicit approval to enable live billing → controlled live purchase and activation.
 Existing pre-migration code is not a safe rollback after the unique-constraint change;
 disable new checkout and roll forward, or use a separately reviewed schema rollback.
+
+Draft review: https://github.com/eymoney13/hermosa-pilot-dashboard/pull/86.
+Post-rebase verification passed: 23 tests, TypeScript, lint (two existing warnings),
+and production build. The PR is mergeable. No GitHub deployment was created for
+the pushed review commit when checked. Local preview remains on port 3105.
