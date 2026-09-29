@@ -110,6 +110,8 @@ export function resolveNewsFilterTerms(
   slug?: string,
   override?: string[]
 ): string[] {
+  // California must remain geographically filtered even without feed settings.
+  if (slug === "california") return REGION_TERMS.california;
   if (slug) {
     const envTerms = envTermsForSlug(slug);
     if (envTerms.length > 0) return envTerms;
