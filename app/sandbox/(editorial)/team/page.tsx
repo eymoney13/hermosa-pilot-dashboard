@@ -7,7 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { PageHero } from "@/components/sandbox/SandboxEditorial";
 import s from "@/components/sandbox/SandboxEditorial.module.css";
 
-export const metadata: Metadata = { title: "Meet the Team · Sandbox" };
+export const metadata: Metadata = { title: "Meet the Team · Neptune" };
 
 // FIRST DRAFT.
 //
@@ -139,9 +139,9 @@ export default function TeamPage() {
 
     <section className={s.closing}>
       <h2>We&rsquo;re starting with the beaches we know.</h2>
-      <p>We are building toward a future where anyone can check the water before they go in. If you want the longer version of why, <Link className={s.textLink} href="/sandbox/stories">read the story behind Neptune</Link>.</p>
+      <p>We are building toward a future where anyone can check the water before they go in. If you want the longer version of why, <Link className={s.textLink} href="/california/stories">read the story behind Neptune</Link>.</p>
       <div className={s.ctaRow}>
-        <Link className={s.ctaPrimary} href="/sandbox">
+        <Link className={s.ctaPrimary} href="/california">
           Explore the forecast
           <ArrowRight size={16} aria-hidden="true" />
         </Link>

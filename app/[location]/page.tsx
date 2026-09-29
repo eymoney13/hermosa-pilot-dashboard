@@ -46,6 +46,7 @@ export async function generateMetadata({
   return {
     title: `${config.displayName} Water Quality`,
     description: `Daily water quality forecast for ${config.displayName}.`,
+    ...(location === "california" ? { alternates: { canonical: "https://dashboard.projectneptune.co/california" } } : {}),
     // An experiment board shows another board's live readings under a name
     // that is not the real one. There is no robots.txt or sitemap in this app,
     // so without this it would be as crawlable as the board it copies, and a
@@ -102,7 +103,7 @@ export default async function LocationPage({
 
   // Presentation only. The live boards retain the original render path below;
   // sandbox receives exactly the same server-redacted data as before.
-  if (location === "sandbox") {
+  if (location === "sandbox" || location === "california") {
     const { isPaymentFirstEnabled } = await import("@/lib/purchase");
     const openForecast = entitled && (await searchParams).pro === "activated";
     return (
@@ -193,7 +194,7 @@ export default async function LocationPage({
           // Rendered inside the tabs: on a beach it belongs between the card
           // and the map, and only that component knows which tab is open.
           alertSignup={
-            alertsEnabled ? (
+            alertsEnabled && location !== "southbay" ? (
               <BeachAlertSignup
                 beaches={beaches.map((b) => ({ code: b.code, name: b.name }))}
                 location={config.slug}

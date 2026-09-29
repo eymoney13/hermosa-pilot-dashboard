@@ -3,7 +3,7 @@ import { EditorialSection, PageHero } from "@/components/sandbox/SandboxEditoria
 import { EPA_MPN_THRESHOLD, RISK_TIERS } from "@/lib/data";
 import s from "@/components/sandbox/SandboxEditorial.module.css";
 
-export const metadata: Metadata = { title: "How Neptune Works · Sandbox" };
+export const metadata: Metadata = { title: "How Neptune Works · Neptune" };
 
 // FIRST DRAFT. Copy is written to be checkable: every number on this page is
 // either imported from lib/data (the tier bands, the EPA threshold) or is a

@@ -79,7 +79,7 @@ export default async function UnsubscribePage({
               This address will no longer receive beach bacteria alerts.
             </p>
             <Link
-              href="/southbay"
+              href="/california"
               className="mt-8 inline-block rounded-md bg-[#2C8487] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#236a6c]"
             >
               Back to the dashboard

@@ -9,13 +9,13 @@ export function EditorialShell({ children }: { children: ReactNode }) {
   return (
     <div className={s.root}>
       <a className={s.skipLink} href="#editorial-content">Skip to content</a>
-      <div className={s.draftBar}>SANDBOX <span>Layout preview · placeholder content</span></div>
+
       <header className={s.header}>
-        <Link href="/sandbox" aria-label="Project Neptune water quality"><ProjectNeptuneLogo size={22} /></Link>
+        <Link href="/california" aria-label="Project Neptune water quality"><ProjectNeptuneLogo size={22} /></Link>
         <SandboxMenu />
       </header>
       <main id="editorial-content" className={s.main}>{children}</main>
-      <footer className={s.footer}><Link href="/sandbox"><ArrowLeft size={16} aria-hidden="true" />Back to Water Quality</Link><span>Neptune / Sandbox</span></footer>
+      <footer className={s.footer}><Link href="/california"><ArrowLeft size={16} aria-hidden="true" />Back to Water Quality</Link><span>Neptune / California</span></footer>
     </div>
   );
 }

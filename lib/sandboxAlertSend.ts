@@ -6,10 +6,10 @@ import { selectSandboxAlerts, sandboxAlertEmail, type AlertState } from "./sandb
 
 type Send = (to: string, subject: string, html: string, text: string, unsubscribe: string) => Promise<boolean>;
 // Caller has already validated forecast freshness. Only explicitly linked, paid
-// sandbox followers qualify; /southbay never enters this path.
+// Pro followers qualify. The historical storage key remains stable across public routes.
 export async function sendSandboxAlerts(beaches: BeachData[], date: string, dryRun: boolean, send: Send): Promise<SendSummary> {
   const sql = neon(process.env.DATABASE_URL!);
-  const summary: SendSummary = {location:"sandbox", predictionDate:date, elevated:beaches.filter(b => b.status === "Not recommended").map(b => b.code), recipients:0,sent:0,failed:0,...(dryRun ? {dryRun:true,wouldNotify:[]} : {})};
+  const summary: SendSummary = {location:"california", predictionDate:date, elevated:beaches.filter(b => b.status === "Not recommended").map(b => b.code), recipients:0,sent:0,failed:0,...(dryRun ? {dryRun:true,wouldNotify:[]} : {})};
   const rows = await sql`
     SELECT s.id, s.email, s.unsubscribe_token, d.states, array_agg(x.station_code) AS stations
     FROM alert_subscribers s
@@ -33,6 +33,17 @@ export async function sendSandboxAlerts(beaches: BeachData[], date: string, dryR
     }
     try {
       const followed = beaches.filter(b => (row.stations as string[]).includes(b.code));
+      // Preserve a preceding legacy high event for clear-up eligibility and
+      // prevent a same-day duplicate when a free subscriber upgrades.
+      const prior = await sql`SELECT n.station_code, max(n.last_notified_date)::text AS date
+        FROM alert_subscribers s JOIN alert_notifications n ON n.subscriber_id=s.id
+        WHERE s.email=${row.email} AND s.location IN ('southbay','sandbox')
+        GROUP BY n.station_code`;
+      state = {...state};
+      for (const old of prior) {
+        const current = state[old.station_code];
+        if (!current || old.date > current.date) state[old.station_code] = {kind:"high",date:old.date};
+      }
       const {high, cleared} = selectSandboxAlerts(followed, state, date);
       if (!high.length && !cleared.length) continue;
       summary.recipients++;
@@ -44,6 +55,11 @@ export async function sendSandboxAlerts(beaches: BeachData[], date: string, dryR
       for (const b of high) next[b.code] = {kind:"high",date};
       for (const b of cleared) next[b.code] = {kind:"low",date};
       await sql`UPDATE sandbox_alert_delivery SET states = ${JSON.stringify(next)}::jsonb, updated_at = now() WHERE subscriber_id = ${row.id}`;
+      // Shared history lets a grandfathered alert resume without repeating a
+      // high email already delivered by Pro earlier on the same date.
+      for (const b of high) await sql`INSERT INTO alert_notifications(subscriber_id,station_code,last_notified_date)
+        VALUES (${row.id},${b.code},${date}::date)
+        ON CONFLICT(subscriber_id,station_code) DO UPDATE SET last_notified_date=EXCLUDED.last_notified_date,updated_at=now()`;
       summary.sent++;
     } finally {
       if (!dryRun) await sql`UPDATE sandbox_alert_delivery SET lease_until = NULL WHERE subscriber_id = ${row.id}`;

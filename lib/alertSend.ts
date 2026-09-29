@@ -160,7 +160,7 @@ export async function sendAlertsForLocation(
     };
   }
 
-  if (config.slug === "sandbox") return sendSandboxAlerts(beaches, predictionDate, dryRun, sendEmail);
+  if (config.slug === "sandbox" || config.slug === "california") return sendSandboxAlerts(beaches, predictionDate, dryRun, sendEmail);
 
   const elevated = beaches.filter((b) => b.status === "Not recommended");
   base.elevated = elevated.map((b) => b.code);
@@ -181,6 +181,26 @@ export async function sendAlertsForLocation(
       ON n.subscriber_id = s.id AND n.station_code = x.station_code
     WHERE s.location = ${config.slug}
       AND x.station_code = ANY(${codes}::text[])
+      AND (s.location <> 'southbay' OR EXISTS (
+        SELECT 1 FROM legacy_alert_grants g
+        WHERE g.subscriber_id = s.id AND g.station_code = x.station_code
+      ))
+      AND NOT EXISTS (
+        SELECT 1 FROM alert_subscribers paid
+        JOIN alert_subscriptions px ON px.subscriber_id = paid.id
+        JOIN sandbox_alert_delivery d ON d.subscriber_id = paid.id
+        JOIN pro_subscriptions p ON p.clerk_user_id = d.clerk_user_id
+        WHERE paid.email = s.email AND paid.location = 'sandbox'
+          AND px.station_code = x.station_code
+          AND p.status IN ('active','trialing','past_due')
+          AND (p.current_period_end IS NULL OR p.current_period_end > now())
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM alert_subscribers other
+        JOIN alert_notifications sent ON sent.subscriber_id = other.id
+        WHERE other.email = s.email AND other.location IN ('sandbox','southbay')
+          AND sent.station_code = x.station_code AND sent.last_notified_date >= ${predictionDate}::date
+      )
       AND (n.last_notified_date IS NULL OR n.last_notified_date <> ${predictionDate}::date)
   `;
 
@@ -227,7 +247,7 @@ export async function sendAlertsForLocation(
     const { subject, html, text } = composeAlertEmail(
       alerted,
       predictionDate,
-      config.slug,
+      config.slug === "southbay" ? "california" : config.slug,
       unsubscribeUrl
     );
 
@@ -268,7 +288,7 @@ export async function sendAlertsForLocation(
 // Every location whose board offers alerts. Driven off the same feature flag
 // the signup card is, so turning a board on turns on both halves at once.
 export function alertEnabledLocations(): LocationConfig[] {
-  return Object.values(LOCATIONS).filter((c) => featuresFor(c.slug).beachAlerts);
+  return Object.values(LOCATIONS).filter((c) => c.slug !== "sandbox" && featuresFor(c.slug).beachAlerts);
 }
 
 export async function sendAllAlerts(

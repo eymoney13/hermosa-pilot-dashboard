@@ -1,0 +1,38 @@
+# California rollout
+
+`/california` is the canonical freemium dashboard. It initially covers the existing eight South Bay beaches; this release does not claim statewide data coverage or add model stations. Today is public; forecasts, history, insights, and new alert follows require existing server-side Pro entitlement. Prices remain $5/month and $40/year.
+
+## Storage and compatibility
+
+- Forecast files, workflows and station codes remain keyed by `southbay`. `LOCATIONS.california.dataSlug` points to that dataset. New regions need validated data ingestion and region configuration, not renamed station IDs.
+- Clerk users, Stripe customers/subscriptions, webhook endpoint, and Neon subscription records do not move.
+- Pro alert records retain the historical `sandbox` database location and `sandbox_alert_delivery` table. This storage name is not a test environment. Both route aliases resolve to the same follows; the cron schedules the dataset once.
+- The additive `scripts/california-alerts-schema.sql` freezes existing South Bay subscriber/station pairs in `legacy_alert_grants`. A rollout marker makes reruns safe and prevents granting later additions. Existing unsubscribe tokens and station choices remain intact; unsubscribing cascades the grants away.
+- New anonymous free alert writes are rejected, including direct calls to the old server action. Existing free alerts need no account or payment.
+- Active Pro follows suppress overlapping legacy high alerts. Delivery dates are consulted across both lists to avoid same-day duplicates on upgrade/cancellation. A canceled member's original legacy choices continue. Existing non-overlapping free follows remain in effect.
+- Delivery remains at-least-once: SMTP acceptance followed by a database outage can result in a retry. No exactly-once delivery promise is made.
+- Old `/pro/start?from=/sandbox` links work. Invitation/receipt and unsubscribe URLs retain their routes. Sign-in, activation, sign-out, billing return, and new email links lead to California.
+
+## Release sequence
+
+1. Private consistent production backup, verify restore in PGlite. Never commit backup/customer data.
+2. Run tests and rehearse migration on isolated Neon test database; apply additive migration to production before new code.
+3. Merge first release adding California while South Bay remains available. Verify deployed free dashboard, editorial/support pages and both plan choices.
+4. Only after that verification, merge traffic-switch release: permanent South Bay and sandbox redirects, root destination, canonical sitemap/robots. Query strings are preserved; South Bay links retain `region=southbay` context. At launch all displayed stations are in that region.
+5. Verify redirects, production health and monitoring.
+
+## Analytics
+
+Global PostHog and Vercel Analytics remain in place. California emits `water_quality_dashboard_viewed`, `dashboard_view_selected`, `beach_selected`, `pro_plan_selected`, `pro_checkout_viewed`, `pro_checkout_submitted`, `pro_activation_dashboard_opened`, and `alert_preferences_updated`. Beach events include stable beach codes and `region=southbay`; no email is added. Client events measure interaction, not authoritative revenue. Stripe remains authoritative for payments. Existing reports filtered to `/southbay` must include `/california` for cross-launch comparisons.
+
+## Test isolation and operations
+
+Local ignored `.env.local` in this worktree uses the separate `neptune-pro-checkout-test` Neon branch and test Clerk/Stripe, with live billing disabled. The primary Desktop project's environment files point to production; never migrate/seed them for tests. Test branch currently expires September 29, 2026 and must be renewed/recreated before subsequent database tests.
+
+Auto preview deployment is disabled for the rollout branch because inherited Vercel preview database isolation has not been verified. Future previews require an explicitly separate database, test Clerk/Stripe, live billing off, and owner-only email testing. Never use the public route `/sandbox` as an isolation boundary.
+
+Validation: `npm run test:payments`, `npm run test:alerts`, `npm run test:california`, `npx tsc --noEmit`, `npm run lint`, `npm run build -- --webpack`. Existing lint warnings in lib/data.ts predate this release.
+
+Run `scripts/check-pro-production.mjs` with production DATABASE_URL loaded privately for read-only health checks. Inspect Vercel error logs without printing raw personal data. Monitoring runs locally and requires the computer and Codex to be available. SPF remains deferred by owner request.
+
+Rollback: stop a broken rollout before switching traffic; turn payments off if checkout fails. Prefer a forward fix. Do not restore a whole database over new purchases or roll back before the payment-first schema compatibility changes.

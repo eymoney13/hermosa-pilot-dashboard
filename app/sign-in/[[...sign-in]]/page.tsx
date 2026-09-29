@@ -27,7 +27,7 @@ export default async function SignInPage({searchParams}: {searchParams: Promise<
   if (!isClerkConfigured()) notFound();
 
   const purchaseId = (await searchParams).purchase ?? (await cookies()).get("neptune_activation")?.value;
-  let target = "/sandbox";
+  let target = "/california";
   try { if (purchaseId && (await syncPurchase(purchaseId))?.active) target = `/pro/activate?session_id=${encodeURIComponent(purchaseId)}`; } catch { /* Invalid receipt never grants access. */ }
   if (await currentUser()) redirect(target);
   return (

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:payments": "node scripts/test-payment-first.mjs",
-    "test:alerts": "node scripts/test-sandbox-alerts.mjs"
+    "test:alerts": "node scripts/test-sandbox-alerts.mjs",
+    "test:california": "node scripts/test-california.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.7",

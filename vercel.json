@@ -2,7 +2,8 @@
   "git": {
     "deploymentEnabled": {
       "codex/subscription-flow": false,
-      "codex/pro-launch-followup": false
+      "codex/pro-launch-followup": false,
+      "codex/california-rollout": false
     }
   },
   "crons": [

@@ -1,8 +1,8 @@
 "use client";
 import SandboxSupportLinks from "@/components/sandbox/SandboxSupportLinks";
 
-import { useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import posthog from "posthog-js";
 import { ArrowLeft, ArrowRight, ChevronRight, List, Map, Waves } from "lucide-react";
 import { formatMonthDayYear, orderForList, STATUS_BAND, type BeachData } from "@/lib/data";
 import type { NewsItem } from "@/lib/news";
@@ -32,6 +32,10 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
 }) {
   const [view, setView] = useState<"list" | "map" | "news">("list");
   const [selected, setSelected] = useState<string | null>(() => openForecast && entitled ? orderForList(beaches, listTopStations)[0]?.code ?? null : null);
+  useEffect(() => {
+    posthog.capture("water_quality_dashboard_viewed", {board_location:"California", region:"southbay", access: entitled ? "pro" : "free"});
+    if (openForecast && entitled) posthog.capture("pro_activation_dashboard_opened", {board_location:"California"});
+  }, [entitled, openForecast]);
   const heading = useRef<HTMLHeadingElement>(null);
   const active = beaches.find((beach) => beach.code === selected);
   const ordered = orderForList(beaches, listTopStations);
@@ -39,19 +43,19 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
     heading.current?.focus({ preventScroll: true });
     heading.current?.scrollIntoView({ block: "start" });
   });
-  const openBeach = (code: string) => { setSelected(code); focusHeading(); };
-  const switchView = (next: typeof view) => { setView(next); setSelected(null); };
+  const openBeach = (code: string) => { setSelected(code); posthog.capture("beach_selected", { board_location: "California", region: "southbay", beach_code: code, source: view }); focusHeading(); };
+  const switchView = (next: typeof view) => { setView(next); setSelected(null); posthog.capture("dashboard_view_selected", { board_location: "California", region: "southbay", view: next }); };
 
   return (
     <main className={s.root}>
-      <div className={s.sandboxNote}><div><strong>Sandbox</strong><span>South Bay readings · experimental design</span><Link href="/southbay">Live board <ArrowRight size={13} /></Link></div></div>
+
       <header className={s.header}>
         <a href="https://projectneptune.co" aria-label="Project Neptune home"><ProjectNeptuneLogo size={22} /></a>
         <div className={s.account}>{entitled && <span className={s.proBadge}>PRO</span>}{account}<SandboxMenu /></div>
       </header>
       <div className={s.content}>
         <div className={s.masthead}>
-          <div><p className={s.eyebrow}><Waves size={16} /> Daily water-quality</p><h1>Neptune Index</h1><p className={s.intro}>Know what you&apos;re going into.</p></div>
+          <div><p className={s.eyebrow}><Waves size={16} /> Daily water-quality</p><h1>Neptune Index</h1><p className={s.intro}>Know what you&apos;re going into.</p><p className={s.supporting}>California · Currently covering South Bay</p></div>
           <div className={s.dateline}><span>Daily forecast</span><strong>{predictionDate ? formatMonthDayYear(predictionDate) : "Awaiting readings"}</strong></div>
         </div>
         <div className={s.toolbar}>
@@ -89,10 +93,10 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             beach, and a list of every beach they follow is a different job; on
             News it has nothing to do with what is on screen. */}
         {entitled && alertsEnabled && !active && view !== "news" && (
-          <SandboxYourNeptune location="sandbox" beaches={beaches.map((b) => ({ code: b.code, name: b.name }))} />
+          <SandboxYourNeptune location="california" beaches={beaches.map((b) => ({ code: b.code, name: b.name }))} />
         )}
       </div>
-      <div className={s.faq}>{faq}</div>
+      <div className={s.faq}><p className={s.supporting}>Already receiving free South Bay emails? Your existing beach alerts continue. New beach alerts are included with Neptune Pro.</p>{faq}</div>
       <footer className={s.footer}><Waves size={20} /><p>Know the water. Enjoy the coast.</p><small>Forecasts are estimates based on environmental data. For official beach advisories, consult <a href={advisory.href} target="_blank" rel="noopener noreferrer">{advisory.label}</a>.</small><SandboxSupportLinks /></footer>
     </main>
   );

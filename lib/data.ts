@@ -258,7 +258,14 @@ export const LOCATIONS: Record<string, LocationConfig> = {
   },
 };
 
-// Helper: resolve a slug to a config, or undefined.
+// Public geography is independent of the existing backend data directory.
+LOCATIONS.california = {
+  ...LOCATIONS.southbay,
+  slug: "california",
+  displayName: "California",
+  dataSlug: "southbay",
+};
+
 export function getLocation(slug: string): LocationConfig | undefined {
   return LOCATIONS[slug];
 }

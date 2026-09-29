@@ -7,9 +7,9 @@ import { ArrowLeft, ArrowUpRight, Menu, X } from "lucide-react";
 import s from "./SandboxEditorial.module.css";
 
 export const sandboxLinks = [
-  { href: "/sandbox/how-it-works", label: "How Neptune Works" },
-  { href: "/sandbox/stories", label: "Why It Matters" },
-  { href: "/sandbox/team", label: "Meet the Team" },
+  { href: "/california/how-it-works", label: "How Neptune Works" },
+  { href: "/california/stories", label: "Why It Matters" },
+  { href: "/california/team", label: "Meet the Team" },
 ];
 
 export default function SandboxMenu() {
@@ -71,7 +71,7 @@ export default function SandboxMenu() {
               when a fourth entry needed its own "Transparency" heading. */}
           {sandboxLinks.map((link) => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? "page" : undefined} onClick={close}>{link.label}<ArrowUpRight size={17} aria-hidden="true" /></Link>)}
         </nav>
-        <Link href="/sandbox" className={s.drawerBack} onClick={close}><ArrowLeft size={17} aria-hidden="true" />Back to Water Quality</Link>
+        <Link href="/california" className={s.drawerBack} onClick={close}><ArrowLeft size={17} aria-hidden="true" />Back to Water Quality</Link>
       </dialog>
     </>
   );
