@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { ClerkProvider } from "@clerk/nextjs";
+import DashboardClerkProvider from "@/components/DashboardClerkProvider";
 import { isClerkConfigured } from "@/lib/clerkConfig";
 import "./globals.css";
 
@@ -43,5 +43,5 @@ export default function RootLayout({
   // same way the unconfigured PostHog instrumentation took down the dev server
   // earlier. Nothing here needs an account, so nothing here should break
   // without one.
-  return isClerkConfigured() ? <ClerkProvider>{page}</ClerkProvider> : page;
+  return isClerkConfigured() ? <DashboardClerkProvider>{page}</DashboardClerkProvider> : page;
 }
