@@ -1,5 +1,8 @@
+import { currentUser } from "@clerk/nextjs/server";
+import { syncPurchase } from "@/lib/purchase";
+import { cookies } from "next/headers";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SignIn } from "@clerk/nextjs";
 import { isClerkConfigured } from "@/lib/clerkConfig";
 
@@ -15,16 +18,21 @@ export const metadata: Metadata = {
   title: "Sign in · Neptune Pro",
   // Nothing to gain from indexing a sign-in form.
   robots: { index: false, follow: false },
+  referrer: "no-referrer",
 };
 
-export default function SignInPage() {
+export default async function SignInPage({searchParams}: {searchParams: Promise<{purchase?: string}>}) {
   // 404 rather than a broken widget when Clerk is not wired up. A page that
   // renders a dead form is worse than a page that admits it is not there.
   if (!isClerkConfigured()) notFound();
 
+  const purchaseId = (await searchParams).purchase ?? (await cookies()).get("neptune_activation")?.value;
+  let target = "/sandbox";
+  try { if (purchaseId && (await syncPurchase(purchaseId))?.active) target = `/pro/activate?session_id=${encodeURIComponent(purchaseId)}`; } catch { /* Invalid receipt never grants access. */ }
+  if (await currentUser()) redirect(target);
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-16">
-      <SignIn />
+      <SignIn routing="hash" forceRedirectUrl={target} signUpUrl="/pro/recover" />
     </main>
   );
 }

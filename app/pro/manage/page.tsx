@@ -1,3 +1,4 @@
+import { isPaymentFirstEnabled } from "@/lib/purchase";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
@@ -35,7 +36,7 @@ export default async function ProManagePage({
   if (!isClerkConfigured() || !isStripeConfigured()) notFound();
   // Same switch. A portal session is a Stripe object too, and it exposes
   // invoices and cancellation, so it stays shut with the rest.
-  if (!isLiveBillingEnabled()) notFound();
+  if (!isLiveBillingEnabled() && !isPaymentFirstEnabled()) notFound();
 
   // Same gate as /pro/start, and for the same reason. This value becomes
   // Stripe's return_url, so it must be a relative path; and it must name a

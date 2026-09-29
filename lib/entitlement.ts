@@ -43,9 +43,8 @@ export async function isEntitled(): Promise<boolean> {
     // Fails CLOSED. subscriptionsEnforced() is keyed on the database, which
     // production always has, so a production deploy that somehow lost its
     // Stripe keys withholds Pro rather than handing it to everyone with an
-    // account. Only a machine with no database at all treats being signed in
-    // as enough, and that machine has nothing to sell anyway.
-    if (!subscriptionsEnforced()) return true;
+    // account. A missing database also fails closed: signing in alone never grants Pro.
+    if (!subscriptionsEnforced()) return false;
     try {
       return await hasLiveSubscription(userId);
     } catch (err) {
@@ -57,5 +56,5 @@ export async function isEntitled(): Promise<boolean> {
   }
 
   const jar = await cookies();
-  return jar.get(DEV_COOKIE)?.value === "1";
+  return process.env.NODE_ENV === "development" && jar.get(DEV_COOKIE)?.value === "1";
 }

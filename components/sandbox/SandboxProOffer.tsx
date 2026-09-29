@@ -3,9 +3,8 @@ import s from "./SandboxDashboard.module.css";
 
 // Sandbox-only Pro upgrade card.
 //
-// The checkout gating below is UNCHANGED and deliberately untouched: the link
-// is only rendered when checkoutReady, which already folds in the live-billing
-// kill switch. Everything else here is presentation.
+// checkoutReady comes from the sandbox-only payment-first gate. Test checkout
+// requires test keys; live checkout still requires the live-billing switch.
 const CTA = "Join Neptune Pro for $5/month";
 
 export default function SandboxProOffer({ checkoutReady, alertsEnabled }: { checkoutReady: boolean; alertsEnabled: boolean }) {
