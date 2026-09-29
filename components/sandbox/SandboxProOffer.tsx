@@ -28,6 +28,7 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled }: { chec
             one word a reader needs into small grey type and said nothing the
             feature list does not already say. */}
         <h2 className={s.proHeadline}>Neptune Pro</h2>
+        <p className={s.proMission}>Our mission is to build the most accurate real-time beach water quality platform to help prevent millions of oceanborne illnesses a year and make checking the water as easy as checking the weather. We’re just getting started; joining Neptune Pro helps bring that mission to life.</p>
 
         <ul className={s.proFeatures}>
           {features.map((f) => (
