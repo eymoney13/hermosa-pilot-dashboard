@@ -1,7 +1,8 @@
 {
   "git": {
     "deploymentEnabled": {
-      "codex/subscription-flow": false
+      "codex/subscription-flow": false,
+      "codex/pro-launch-followup": false
     }
   },
   "crons": [

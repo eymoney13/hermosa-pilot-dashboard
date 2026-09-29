@@ -28,6 +28,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<{f
       <button className="mt-6 rounded bg-teal-800 px-5 py-3 text-white">Continue to secure checkout</button>
       {query.error && <p role="alert" className="mt-4">Checkout is temporarily unavailable. Check your email entry and try again later. If you already paid, recover your purchase below.</p>}
     </form>
+    <p className="mt-4 text-sm text-gray-600">Full refund within 7 days of your first purchase. For refunds or support, email <a className="underline" href="mailto:ethan@projectneptune.co">ethan@projectneptune.co</a>.</p>
     <p className="mt-6"><Link href="/pro/recover" className="underline">Already paid? Activate your purchase</Link></p>
     <p className="mt-4"><Link href="/sandbox" className="underline">Back to free water quality</Link></p>
   </main>;

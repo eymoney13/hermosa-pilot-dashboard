@@ -92,7 +92,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
         )}
       </div>
       <div className={s.faq}>{faq}</div>
-      <footer className={s.footer}><Waves size={20} /><p>Know the water. Enjoy the coast.</p><small>Forecasts are estimates based on environmental data. For official beach advisories, consult <a href={advisory.href} target="_blank" rel="noopener noreferrer">{advisory.label}</a>.</small></footer>
+      <footer className={s.footer}><Waves size={20} /><p>Know the water. Enjoy the coast.</p><small>Forecasts are estimates based on environmental data. For official beach advisories, consult <a href={advisory.href} target="_blank" rel="noopener noreferrer">{advisory.label}</a>.</small><p><a href="mailto:ethan@projectneptune.co">Support: ethan@projectneptune.co</a></p></footer>
     </main>
   );
 }

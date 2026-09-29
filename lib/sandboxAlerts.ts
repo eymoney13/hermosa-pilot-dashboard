@@ -52,7 +52,8 @@ export async function setAlertStations(
   emailRaw: string,
   location: string,
   stationCodes: string[],
-  validStations: string[]
+  validStations: string[],
+  clerkUserId: string
 ): Promise<{ ok: boolean; stations?: string[]; error?: string }> {
   const email = normalizeEmail(emailRaw);
   if (!isValidEmail(email)) return { ok: false, error: "Invalid email address." };
@@ -75,6 +76,13 @@ export async function setAlertStations(
     RETURNING id
   `;
   const subscriberId = subscriber.id as number;
+  if (location === "sandbox") {
+    await sql`
+      INSERT INTO sandbox_alert_delivery (subscriber_id, clerk_user_id)
+      VALUES (${subscriberId}, ${clerkUserId})
+      ON CONFLICT (subscriber_id) DO UPDATE SET clerk_user_id = EXCLUDED.clerk_user_id
+    `;
+  }
 
   await sql`DELETE FROM alert_subscriptions WHERE subscriber_id = ${subscriberId}`;
   await sql`
