@@ -1,6 +1,6 @@
 # Payment-first subscriptions — local implementation, not launched
 
-Branch: `codex/subscription-flow`, based on `origin/main` at `c3f047d`.
+Branch: `codex/subscription-flow`, rebased onto `origin/main` at `8df39a9`.
 Worktree: `/Users/ethanyoung/.codex/worktrees/subscription-flow/hermosa-pilot-dashboard`.
 No deployment, merge, real charge, or production database migration has been performed.
 A Stripe test purchase succeeded and a real activation email was sent to the approved
