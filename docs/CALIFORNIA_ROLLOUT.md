@@ -36,3 +36,9 @@ Validation: `npm run test:payments`, `npm run test:alerts`, `npm run test:califo
 Run `scripts/check-pro-production.mjs` with production DATABASE_URL loaded privately for read-only health checks. Inspect Vercel error logs without printing raw personal data. Monitoring runs locally and requires the computer and Codex to be available. SPF remains deferred by owner request.
 
 Rollback: stop a broken rollout before switching traffic; turn payments off if checkout fails. Prefer a forward fix. Do not restore a whole database over new purchases or roll back before the payment-first schema compatibility changes.
+
+## Verified release record
+
+Release one: PR91, merge 56fa919, production deployment dpl_6VqkCt7JaXsWTbKyXs7gxBhaUW7w. California free dashboard, policy pages, monthly/annual checkout entry, old sandbox checkout entry and recovery returned 200 after deployment Ready. No subscription health anomalies. Private backup `/tmp/neptune-before-california-1790658287513.json` restored in PGlite; production migration preserved 198 subscribers / 598 grandfathered pairs and 2 subscription records.
+
+Release two changes root to California, returns permanent 308 from `/southbay` to `/california?region=southbay` and from `/sandbox/:path*` to `/california/:path*`. The existing `#sandbox-pro` anchor remains intentionally for saved links. Old invitation and unsubscribe endpoint paths stay unchanged. Monitoring now expects these redirects and checks California, both plans, policies and sitemap/robots.

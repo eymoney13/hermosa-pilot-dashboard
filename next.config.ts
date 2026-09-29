@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      { source: "/southbay", destination: "/california?region=southbay", permanent: true },
+      { source: "/sandbox/:path*", destination: "/california/:path*", permanent: true },
+    ];
+  },
   // Reverse proxy for PostHog so ad blockers don't drop client events.
   async rewrites() {
     return [
