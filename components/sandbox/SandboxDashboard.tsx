@@ -39,6 +39,20 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   const heading = useRef<HTMLHeadingElement>(null);
   const active = beaches.find((beach) => beach.code === selected);
   const ordered = orderForList(beaches, listTopStations);
+  const countyStations: [string, string[]][] = [
+    ["Los Angeles County", ["DPH 002B", "DHS103", "DHS104", "SMB-3-5", "SMB-3-6", "DPH 122", "SMB-2-10", "SMB-2-11", "SMB-2-13", "DHS112B", "DHS113", "DHS114", "DHS115", "DHS116", "SMB-7-9"]],
+    ["Orange County", ["OSB04", "0", "BNB05", "DSB4Z"]],
+    ["San Mateo County", ["Francis State Beach"]],
+    ["Santa Cruz County", ["O490"]],
+    ["San Luis Obispo County", ["PB5"]],
+    ["Santa Barbara County", ["WP0000037"]],
+    ["Ventura County", ["13000"]],
+    ["San Diego County", ["CSD_S8"]],
+  ];
+  const knownCodes = new Set(countyStations.flatMap(([, codes]) => codes));
+  const countyGroups = countyStations.map(([county, codes]) => ({ county, beaches: ordered.filter((beach) => codes.includes(beach.code)) })).filter((group) => group.beaches.length > 0);
+  const unassigned = ordered.filter((beach) => !knownCodes.has(beach.code));
+  if (unassigned.length) countyGroups.push({ county: "Other beaches", beaches: unassigned });
   const focusHeading = () => requestAnimationFrame(() => {
     heading.current?.focus({ preventScroll: true });
     heading.current?.scrollIntoView({ block: "start" });
@@ -88,7 +102,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             <div className={s.sectionHeading}><h2 ref={heading} tabIndex={-1}>{view === "map" ? "Explore the coast" : "Find your beach"}</h2><span>{beaches.length} beaches</span></div>
             <p className={s.supporting}>Predicted bacteria levels. Choose a beach for its daily outlook.</p>
             {view === "map" ? <div className={s.map}><OverviewMapClient labelMinZoom={14} beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} /></div> : (
-              <ul className={s.beaches}>{ordered.map((beach) => <li key={beach.code}><button onClick={() => openBeach(beach.code)}><span className={s.beachName}>{beach.name}</span><span className={`${s.band} ${bandClass(beach.status)}`}><span className={s.dot} />{bandLabel(beach.status)}</span><ChevronRight size={18} aria-hidden="true" /></button></li>)}</ul>
+              <div className={s.countyGroups}>{countyGroups.map((group) => <section key={group.county} aria-label={group.county}><h3 className={s.countyHeading}>{group.county}<span>{group.beaches.length} {group.beaches.length === 1 ? "beach" : "beaches"}</span></h3><ul className={s.beaches}>{group.beaches.map((beach) => <li key={beach.code}><button onClick={() => openBeach(beach.code)}><span className={s.beachName}>{beach.name}</span><span className={`${s.band} ${bandClass(beach.status)}`}><span className={s.dot} />{bandLabel(beach.status)}</span><ChevronRight size={18} aria-hidden="true" /></button></li>)}</ul></section>)}</div>
             )}
             <div className={s.legend} aria-label="Neptune Index categories">{(["Normal", "Slightly elevated", "Not recommended"] as const).map((status) => <span key={status} className={bandClass(status)}><i className={s.dot} />{STATUS_BAND[status].short} bacteria</span>)}</div>
             <p className={s.caveat}>Forecasts are estimates, not current lab results. Always follow official beach advisories.</p>
