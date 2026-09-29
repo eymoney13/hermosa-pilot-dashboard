@@ -21,7 +21,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<{f
   }
   return <main className="mx-auto max-w-lg px-6 py-20">
     <p className="text-sm text-teal-700">Neptune Pro</p><h1 className="mt-3 text-3xl font-semibold">More insight before you get in.</h1>
-    <p className="mt-5">Forecasts, water-quality history, deeper insights, and beach alerts.</p>
+    <p className="mt-5">3-day forecasts, alerts, what&apos;s affecting the water quality, and history</p>
     <nav aria-label="Billing interval" className="mt-6 grid grid-cols-2 gap-3">
       {(["monthly", "yearly"] as const).map(option => <Link key={option} prefetch={false} aria-current={plan === option ? "page" : undefined} href={`/pro/start?from=/sandbox&plan=${option}`} className={`rounded-lg border p-4 ${plan === option ? "border-teal-800 bg-teal-50 ring-1 ring-teal-800" : "border-gray-300"}`}>
         <span className="block font-semibold">{option === "monthly" ? "Monthly" : "Annual"}</span><span className="block mt-1">{PRO_PLANS[option].label}</span>{option === "yearly" && <span className="block mt-1 text-xs text-teal-800">Save $20 per year</span>}
