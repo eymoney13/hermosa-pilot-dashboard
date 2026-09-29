@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-29T11:58:45Z",
+  "generated_at": "2026-09-29T18:53:12Z",
   "location": {
     "id": "DHS113",
     "name": "Manhattan Beach",
@@ -7,7 +7,7 @@
   },
   "today": {
     "date": "2026-09-29",
-    "probability": 38,
+    "probability": 33,
     "band": "slightly_elevated"
   },
   "dashboard_url": "https://dashboard.projectneptune.co/southbay"
