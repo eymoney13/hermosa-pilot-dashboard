@@ -80,12 +80,13 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
           </nav>
 
         </div>
-        {!entitled && !active && view !== "news" && (
+        {!entitled && !active && view === "list" && (
           <aside className={s.proBanner} aria-label="Explore Neptune Pro">
             <div><strong>Checking the water should be as easy as checking the weather.</strong><p>3-day forecasts, email alerts, and water-quality history.</p></div>
             <a href="#sandbox-pro">Explore Neptune Pro <ArrowRight size={16} aria-hidden="true" /></a>
           </aside>
         )}
+        {!entitled && !active && view === "map" && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} />}
         {active ? (
           <>
             <div className={s.beachNav}>
@@ -108,7 +109,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             <p className={s.caveat}>Forecasts are estimates, not current lab results. Always follow official beach advisories.</p>
           </section>
         )}
-        {!entitled && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} />}
+        {!entitled && (active || view !== "map") && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} />}
         {/* List and map only. Inside a beach card the reader is looking at one
             beach, and a list of every beach they follow is a different job; on
             News it has nothing to do with what is on screen. */}
