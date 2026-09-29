@@ -51,11 +51,11 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
 
       <header className={s.header}>
         <a href="https://projectneptune.co" aria-label="Project Neptune home"><ProjectNeptuneLogo size={22} /></a>
-        <div className={s.account}>{entitled && <span className={s.proBadge}>PRO</span>}{account}<SandboxMenu /></div>
+        <div className={s.account}>{!entitled && <a className={s.headerPro} href="#sandbox-pro">Get Pro</a>}{entitled && <span className={s.proBadge}>PRO</span>}{account}<SandboxMenu /></div>
       </header>
       <div className={s.content}>
         <div className={s.masthead}>
-          <div><p className={s.eyebrow}><Waves size={16} /> Daily water-quality</p><h1>Neptune Index</h1><p className={s.intro}>Know what you&apos;re going into.</p><p className={s.supporting}>California · Currently covering South Bay</p></div>
+          <div><p className={s.eyebrow}><Waves size={16} /> Daily water-quality</p><h1>Neptune Index</h1><p className={s.intro}>Know what you&apos;re going into.</p></div>
           <div className={s.dateline}><span>Daily forecast</span><strong>{predictionDate ? formatMonthDayYear(predictionDate) : "Awaiting readings"}</strong></div>
         </div>
         <div className={s.toolbar}>
@@ -64,8 +64,14 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             <button aria-current={!active && view === "map" ? "page" : undefined} onClick={() => switchView("map")}><Map size={17} /> Map</button>
             {newsEnabled && <button aria-current={!active && view === "news" ? "page" : undefined} onClick={() => switchView("news")}>News</button>}
           </nav>
-          {!entitled && <a className={s.proLink} href="#sandbox-pro">Explore Pro <ArrowRight size={15} /></a>}
+
         </div>
+        {!entitled && !active && view !== "news" && (
+          <aside className={s.proBanner} aria-label="Explore Neptune Pro">
+            <div><strong>Checking the water should be as easy as checking the weather.</strong><p>3-day forecasts, email alerts, and water-quality history.</p></div>
+            <a href="#sandbox-pro">Explore Neptune Pro <ArrowRight size={16} aria-hidden="true" /></a>
+          </aside>
+        )}
         {active ? (
           <>
             <div className={s.beachNav}>

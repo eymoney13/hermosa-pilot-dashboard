@@ -313,3 +313,12 @@
 .annualChoice:hover { background: rgba(255,255,255,.06); }
 .annualChoice:focus-visible { outline: 3px solid #edf9bd; outline-offset: 3px; }
 .annualChoice:disabled { opacity: .6; cursor: not-allowed; }
+
+.proMission { max-width: 65ch; margin: 0 0 24px; font-size: 14px; line-height: 1.65; color: inherit; }
+
+.headerPro { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--teal); border-radius: 5px; color: var(--teal); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.proBanner { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 20px; padding: 18px 20px; background: #edf3eb; border-left: 3px solid var(--teal); }
+.proBanner strong { font-size: 15px; font-weight: 600; }
+.proBanner p { margin-top: 4px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.proBanner a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--teal); font-size: 13px; font-weight: 650; white-space: nowrap; }
+@media (max-width: 600px) { .proBanner { align-items: flex-start; flex-direction: column; gap: 4px; padding: 14px 16px; } .account { gap: 8px; } .headerPro { padding: 0 10px; } }
