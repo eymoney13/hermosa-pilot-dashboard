@@ -96,7 +96,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
           <SandboxYourNeptune location="california" beaches={beaches.map((b) => ({ code: b.code, name: b.name }))} />
         )}
       </div>
-      <div className={s.faq}><p className={s.supporting}>Already receiving free South Bay emails? Your existing beach alerts continue. New beach alerts are included with Neptune Pro.</p>{faq}</div>
+      <div className={s.faq}>{faq}</div>
       <footer className={s.footer}><Waves size={20} /><p>Know the water. Enjoy the coast.</p><small>Forecasts are estimates based on environmental data. For official beach advisories, consult <a href={advisory.href} target="_blank" rel="noopener noreferrer">{advisory.label}</a>.</small><SandboxSupportLinks /></footer>
     </main>
   );
