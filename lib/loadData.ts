@@ -83,6 +83,16 @@ interface ForecastRow {
   [key: string]: unknown;
 }
 
+// Papa is configured with dynamicTyping, so a StationCode of "0" arrives as the
+// NUMBER 0 — which is falsy. Huntington State Beach's code really is the digit
+// zero, so a plain truthiness guard silently dropped its row from every map
+// below and the beach never rendered. Presence, not truthiness, is the test.
+function stationKey(raw: unknown): string | null {
+  if (raw === null || raw === undefined) return null;
+  const key = String(raw).trim();
+  return key === "" ? null : key;
+}
+
 async function readCsv<T>(slug: string, relPath: string): Promise<T[]> {
   const filePath = path.join(process.cwd(), "public", "data", slug, relPath);
   const text = await readFile(filePath, "utf8");
@@ -401,11 +411,11 @@ export async function loadDashboardData(
   // beach scores its own forecast-vs-lab accuracy from its own history.
   const accuracyByCode = new Map<string, RawAccuracySample[]>();
   for (const row of accuracyRows) {
-    if (!row?.StationCode || !row?.date) continue;
+    const code = stationKey(row?.StationCode);
+    if (code === null || !row?.date) continue;
     const excProbability = Number(row.exc_probability);
     const labMpn = Number(row.actual_mpn);
     if (Number.isNaN(excProbability) || Number.isNaN(labMpn)) continue;
-    const code = String(row.StationCode);
     const list = accuracyByCode.get(code) ?? [];
     list.push({ date: String(row.date), excProbability, labMpn });
     accuracyByCode.set(code, list);
@@ -416,15 +426,18 @@ export async function loadDashboardData(
 
   const nowcastByCode = new Map<string, NowcastRow>();
   for (const row of nowcastRows) {
-    if (row?.StationCode) nowcastByCode.set(String(row.StationCode), row);
+    const code = stationKey(row?.StationCode);
+    if (code !== null) nowcastByCode.set(code, row);
   }
   const forecastByCode = new Map<string, ForecastRow>();
   for (const row of forecastRows) {
-    if (row?.StationCode) forecastByCode.set(String(row.StationCode), row);
+    const code = stationKey(row?.StationCode);
+    if (code !== null) forecastByCode.set(code, row);
   }
   const historyByCode = new Map<string, ForecastRow>();
   for (const row of historyRows) {
-    if (row?.StationCode) historyByCode.set(String(row.StationCode), row);
+    const code = stationKey(row?.StationCode);
+    if (code !== null) historyByCode.set(code, row);
   }
 
   const beaches: BeachData[] = [];
