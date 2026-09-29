@@ -14,11 +14,13 @@ export default function OverviewMapClient({
   beaches,
   fallbackCenter,
   binaryVerdict,
+  labelMinZoom = 0,
   onSelect,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
   binaryVerdict: boolean;
+  labelMinZoom?: number;
   onSelect: (code: string) => void;
 }) {
   return (
@@ -26,6 +28,7 @@ export default function OverviewMapClient({
       <OverviewMap
         beaches={beaches}
         fallbackCenter={fallbackCenter}
+        labelMinZoom={labelMinZoom}
         binaryVerdict={binaryVerdict}
         onSelect={onSelect}
       />

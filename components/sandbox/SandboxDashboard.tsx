@@ -81,7 +81,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
           <section className={s.overview}>
             <div className={s.sectionHeading}><h2 ref={heading} tabIndex={-1}>{view === "map" ? "Explore the coast" : "Find your beach"}</h2><span>{beaches.length} beaches</span></div>
             <p className={s.supporting}>Predicted bacteria levels. Choose a beach for its daily outlook.</p>
-            {view === "map" ? <div className={s.map}><OverviewMapClient beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} /></div> : (
+            {view === "map" ? <div className={s.map}><OverviewMapClient labelMinZoom={14} beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} /></div> : (
               <ul className={s.beaches}>{ordered.map((beach) => <li key={beach.code}><button onClick={() => openBeach(beach.code)}><span className={s.beachName}>{beach.name}</span><span className={`${s.band} ${bandClass(beach.status)}`}><span className={s.dot} />{bandLabel(beach.status)}</span><ChevronRight size={18} aria-hidden="true" /></button></li>)}</ul>
             )}
             <div className={s.legend} aria-label="Neptune Index categories">{(["Normal", "Slightly elevated", "Not recommended"] as const).map((status) => <span key={status} className={bandClass(status)}><i className={s.dot} />{STATUS_BAND[status].short} bacteria</span>)}</div>

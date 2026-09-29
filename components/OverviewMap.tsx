@@ -372,10 +372,12 @@ function placeLabels(
 function BeachLabels({
   beaches,
   dotHalf,
+  labelMinZoom,
   onSelect,
 }: {
   beaches: BeachData[];
   dotHalf: { x: number; y: number };
+  labelMinZoom: number;
   onSelect: (code: string) => void;
 }) {
   const map = useMap();
@@ -387,10 +389,12 @@ function BeachLabels({
   const previous = useRef(new Map<string, { dir: number; ring: number }>());
 
   const recompute = useCallback(() => {
-    const next = placeLabels(map, beaches, dotHalf, previous.current);
+    const next = map.getZoom() >= labelMinZoom
+      ? placeLabels(map, beaches, dotHalf, previous.current)
+      : [];
     previous.current = new Map(next.map((p) => [p.code, { dir: p.dir, ring: p.ring }]));
     setPlacements(next);
-  }, [map, beaches, dotHalf]);
+  }, [map, beaches, dotHalf, labelMinZoom]);
 
   useEffect(() => {
     // Deferred rather than called inline: placement reads container pixel
@@ -490,11 +494,13 @@ export default function OverviewMap({
   beaches,
   fallbackCenter,
   binaryVerdict,
+  labelMinZoom = 0,
   onSelect,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
   binaryVerdict: boolean;
+  labelMinZoom?: number;
   onSelect: (code: string) => void;
 }) {
   const center = useMemo<[number, number]>(() => {
@@ -532,6 +538,7 @@ export default function OverviewMap({
           rather than all hanging off the same side. Rendered after the dots so
           they stack above them. */}
       <BeachLabels
+        labelMinZoom={labelMinZoom}
         beaches={beaches}
         dotHalf={
           binaryVerdict
