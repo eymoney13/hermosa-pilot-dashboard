@@ -141,8 +141,16 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     // GO-LIVE, Sep 2026: extended from the 8 South Bay stations to every beach
     // that cleared test specificity > 0.84 AND sensitivity > 0.70 in
     // outputs/beach_performance.csv (23 of them), plus the stations already on
-    // the board. DHS110 and DHS111 come out of the hidden block above because
-    // they cleared the bar; DHS112 did not and stays hidden.
+    // the board.
+    //
+    // DHS110 and DHS111 are the two exceptions. Both cleared the bar, but they
+    // stay in the hidden block above and are NOT displayed — owner's call. The
+    // reasoning there still holds and is why the bar alone did not earn them a
+    // pin: DHS110 duplicates SMB-2-11 (468 m apart, same call on all 75
+    // co-sampled days), and both cleared on almost no evidence — 2 exceedances
+    // for DHS110, 1 for DHS111. They keep publishing, so re-adding either here
+    // is a one-line change with no backfill. DHS112 never cleared the bar and
+    // is unchanged.
     //
     // The roster now runs San Diego to Half Moon Bay. That is aimed at
     // /california (which reads this same config via dataSlug) — this board is
@@ -164,8 +172,6 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       "SMB-3-5",
       "SMB-3-6",
       "DPH 122",              // ▲ 5/6
-      "DHS110",               // ▲▲ 2/2
-      "DHS111",               // ▲▲ 1/1
       "SMB-2-10",
       "SMB-2-11",
       "SMB-2-13",
@@ -197,8 +203,6 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       "SMB-3-5": "Venice Beach (Brooks Ave.)",
       "SMB-3-6": "Venice Beach (Windward Ave.)",
       "DPH 122": "Playa del Rey",
-      DHS110: "Dockweiler State Beach (North)",
-      DHS111: "Dockweiler State Beach (Central)",
       "SMB-2-10": "Dockweiler State Beach (Culver Blvd.)",
       "SMB-2-11": "Dockweiler State Beach (Westchester Storm Drain)",
       "SMB-2-13": "Dockweiler State Beach (Imperial HWY Storm Drain)",
@@ -255,8 +259,16 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     // GO-LIVE, Sep 2026: extended from the 8 South Bay stations to every beach
     // that cleared test specificity > 0.84 AND sensitivity > 0.70 in
     // outputs/beach_performance.csv (23 of them), plus the stations already on
-    // the board. DHS110 and DHS111 come out of the hidden block above because
-    // they cleared the bar; DHS112 did not and stays hidden.
+    // the board.
+    //
+    // DHS110 and DHS111 are the two exceptions. Both cleared the bar, but they
+    // stay in the hidden block above and are NOT displayed — owner's call. The
+    // reasoning there still holds and is why the bar alone did not earn them a
+    // pin: DHS110 duplicates SMB-2-11 (468 m apart, same call on all 75
+    // co-sampled days), and both cleared on almost no evidence — 2 exceedances
+    // for DHS110, 1 for DHS111. They keep publishing, so re-adding either here
+    // is a one-line change with no backfill. DHS112 never cleared the bar and
+    // is unchanged.
     //
     // The roster now runs San Diego to Half Moon Bay. That is aimed at
     // /california (which reads this same config via dataSlug) — this board is
@@ -278,8 +290,6 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       "SMB-3-5",
       "SMB-3-6",
       "DPH 122",              // ▲ 5/6
-      "DHS110",               // ▲▲ 2/2
-      "DHS111",               // ▲▲ 1/1
       "SMB-2-10",
       "SMB-2-11",
       "SMB-2-13",
@@ -311,8 +321,6 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       "SMB-3-5": "Venice Beach (Brooks Ave.)",
       "SMB-3-6": "Venice Beach (Windward Ave.)",
       "DPH 122": "Playa del Rey",
-      DHS110: "Dockweiler State Beach (North)",
-      DHS111: "Dockweiler State Beach (Central)",
       "SMB-2-10": "Dockweiler State Beach (Culver Blvd.)",
       "SMB-2-11": "Dockweiler State Beach (Westchester Storm Drain)",
       "SMB-2-13": "Dockweiler State Beach (Imperial HWY Storm Drain)",
