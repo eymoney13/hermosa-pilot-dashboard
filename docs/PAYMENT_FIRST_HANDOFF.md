@@ -250,3 +250,24 @@ Draft review: https://github.com/eymoney13/hermosa-pilot-dashboard/pull/86.
 Post-rebase verification passed: 23 tests, TypeScript, lint (two existing warnings),
 and production build. The PR is mergeable. No GitHub deployment was created for
 the pushed review commit when checked. Local preview remains on port 3105.
+
+## Production preparation update — September 28, 2026
+
+The user explicitly deferred SPF because they do not currently have DNS access.
+SPF is a follow-up, not a blocker to continued preparation. Existing Google DKIM
+and DMARC records were observed; delivered-message authentication and inbox checks
+remain part of the pre-payment launch checks. No DNS changes were made.
+
+Saved in Vercel for Production only (pending the next deployment):
+- `NEXT_PUBLIC_SITE_URL=https://dashboard.projectneptune.co`
+- `PRO_ACTIVATION_EMAIL_FROM=ethan@projectneptune.co`
+
+Changed Clerk's application display name from `clerk-emerald-elephant` to
+`Neptune Pro`. This application-level branding applies across its instances.
+No credentials or authentication policies were changed. Production Invite-only
+must still be coordinated with the new application release.
+
+No merge, deployment, production database migration, or live-billing enablement
+was performed. Earlier statements that all production settings are unchanged
+describe the earlier test phase; the two environment settings and display-name
+change above are the subsequent authorized preparation changes.
