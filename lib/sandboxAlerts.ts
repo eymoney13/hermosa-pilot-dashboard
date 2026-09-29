@@ -2,17 +2,9 @@ import "server-only";
 import { neon } from "@neondatabase/serverless";
 import { isValidEmail, normalizeEmail } from "./alerts";
 
-// Reading and editing one person's alert list, a beach at a time.
-//
-// SEPARATE FILE ON PURPOSE. lib/alerts.ts is shared with /southbay's signup
-// form and is off-limits for this UI work, so nothing here modifies it — the
-// two helpers it already exports are imported so both paths agree on what one
-// address is.
-//
-// It also cannot do the job on its own: subscribe() rejects an empty station
-// list ("Select at least one beach"), which is correct for a form whose only
-// submit means "here is my whole selection", but makes "unsubscribe from my
-// last beach" impossible to express. That case needs the delete below.
+// California Pro follows retain the historical "sandbox" storage namespace.
+// Public route changes never move subscriber IDs or invalidate unsubscribe tokens.
+// This is production storage, not a test database. Tests use a separate Neon branch.
 
 function db() {
   const url = process.env.DATABASE_URL;
@@ -25,6 +17,7 @@ export async function listAlertStations(
   emailRaw: string,
   location: string
 ): Promise<string[]> {
+  location = location === "california" ? "sandbox" : location;
   const email = normalizeEmail(emailRaw);
   if (!isValidEmail(email)) return [];
   const rows = (await db()`
@@ -55,6 +48,7 @@ export async function setAlertStations(
   validStations: string[],
   clerkUserId: string
 ): Promise<{ ok: boolean; stations?: string[]; error?: string }> {
+  location = location === "california" ? "sandbox" : location;
   const email = normalizeEmail(emailRaw);
   if (!isValidEmail(email)) return { ok: false, error: "Invalid email address." };
 

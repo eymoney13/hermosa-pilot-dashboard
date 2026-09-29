@@ -18,6 +18,9 @@ export async function subscribeToAlerts(
   formData: FormData
 ): Promise<AlertFormState> {
   const location = String(formData.get("location") ?? "");
+  if (["southbay", "sandbox", "california"].includes(location)) {
+    return { status: "error", message: "New email alerts are part of Neptune Pro. Manage them on the California dashboard. Existing free alerts continue." };
+  }
   const config = getLocation(location);
   if (!config || !featuresFor(location).beachAlerts) {
     return { status: "error", message: "Email alerts aren't available here." };

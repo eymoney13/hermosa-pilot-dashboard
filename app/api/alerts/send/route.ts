@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     const results = await sendAllAlerts(today, dryRun);
     // Surfaces in Vercel function logs, so a morning with no mail can be told
     // apart from a morning the job never ran.
-    console.log("[cron/alerts]", JSON.stringify({ today, dryRun, results }));
+    console.log("[cron/alerts]", JSON.stringify({ today, dryRun, results: results.map(({ wouldNotify, ...summary }) => ({ ...summary, ...(wouldNotify ? { wouldNotifyCount: wouldNotify.length } : {}) })) }));
     const failed = results.reduce((n, r) => n + r.failed, 0);
     return Response.json(
       { today, dryRun, results },

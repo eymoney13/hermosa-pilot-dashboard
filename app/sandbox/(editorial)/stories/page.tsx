@@ -4,7 +4,7 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { EditorialSection, PageHero } from "@/components/sandbox/SandboxEditorial";
 import s from "@/components/sandbox/SandboxEditorial.module.css";
 
-export const metadata: Metadata = { title: "Why It Matters · Sandbox" };
+export const metadata: Metadata = { title: "Why It Matters · Neptune" };
 
 // FIRST DRAFT.
 //
@@ -62,7 +62,7 @@ export default function StoriesPage() {
       <h3>A forecast for the water</h3>
       <p>Neptune uses years of official bacteria test results and current environmental conditions to estimate the chance of elevated bacteria at each beach. We turn that forecast into a simple Neptune Index so people can make a more informed choice.</p>
       <p>It complements official advisories and closures. It does not replace them.</p>
-      <Link className={s.inlineTeal} href="/sandbox/how-it-works">
+      <Link className={s.inlineTeal} href="/california/how-it-works">
         See how the forecast is built
         <ArrowRight size={15} aria-hidden="true" />
       </Link>
@@ -84,7 +84,7 @@ export default function StoriesPage() {
       <h2>Built for the people who love the water.</h2>
       <p>Surfers, swimmers, parents, volleyball players, and anyone who plans their day around the beach deserve information they can understand and use. We&rsquo;re starting in the South Bay and building Neptune with feedback from the communities who use these beaches.</p>
       <div className={s.ctaRow}>
-        <Link className={s.ctaPrimary} href="/sandbox">
+        <Link className={s.ctaPrimary} href="/california">
           Check your beach
           <ArrowRight size={16} aria-hidden="true" />
         </Link>

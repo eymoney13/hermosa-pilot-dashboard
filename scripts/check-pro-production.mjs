@@ -3,7 +3,7 @@
 import {neon} from '@neondatabase/serverless';
 const origin='https://dashboard.projectneptune.co';
 const report={checkedAt:new Date().toISOString(),pages:{},subscriptions:null};
-for(const path of ['/sandbox','/southbay','/pro/start?from=/sandbox&plan=monthly','/pro/recover']) {
+for(const path of ['/california','/california/terms','/california/privacy','/sandbox','/southbay','/pro/start?from=/california&plan=monthly','/pro/start?from=/california&plan=yearly','/pro/start?from=/sandbox&plan=monthly','/pro/recover']) {
  const response=await fetch(origin+path,{signal:AbortSignal.timeout(20000),redirect:'manual'});
  report.pages[path]=response.status;
 }

@@ -22,7 +22,7 @@ export async function startPurchase(plan: ProPlan, rawEmail: string): Promise<st
   const email = normalizedEmail(rawEmail);
   if (!validEmail(email)) throw new Error("Enter a valid checkout email");
   const user = await currentUser();
-  if (user && await hasLiveSubscription(user.id)) return `${siteUrl()}/sandbox`;
+  if (user && await hasLiveSubscription(user.id)) return `${siteUrl()}/california`;
   const paid = await db()`SELECT checkout_session_id FROM pro_subscriptions
     WHERE checkout_email = ${email} AND status IN ('active', 'trialing', 'past_due')
     LIMIT 1`;
@@ -71,7 +71,7 @@ export async function startPurchase(plan: ProPlan, rawEmail: string): Promise<st
     line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: cents,
       recurring: { interval }, product_data: { name: "Neptune Pro" } } }],
     success_url: `${siteUrl()}/pro/activate?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${siteUrl()}/sandbox#sandbox-pro`,
+    cancel_url: `${siteUrl()}/california#sandbox-pro`,
   }, { idempotencyKey: `neptune-purchase-${attempt.attempt_id}` });
   await db()`UPDATE pro_checkout_attempts SET checkout_session_id = ${session.id} WHERE email = ${email} AND attempt_id = ${attempt.attempt_id}`;
   if (!session.url) throw new Error("Checkout is unavailable");

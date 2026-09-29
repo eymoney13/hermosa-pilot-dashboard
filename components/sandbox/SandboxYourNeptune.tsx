@@ -1,5 +1,6 @@
 "use client";
 
+import posthog from "posthog-js";
 import { useEffect, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { addBeachAlerts, getMyAlerts, setBeachAlert } from "@/app/actions/sandboxAlerts";
@@ -40,7 +41,7 @@ export default function SandboxYourNeptune({
   }, [location]);
 
   const apply = (r: { ok: boolean; stations?: string[]; error?: string }) => {
-    if (r.ok) { setStations(r.stations ?? []); setError(null); }
+    if (r.ok) { setStations(r.stations ?? []); setError(null); posthog.capture("alert_preferences_updated", {board_location:"California",region:"southbay",beach_codes:r.stations ?? [],beach_count:r.stations?.length ?? 0}); }
     else setError(r.error ?? "Something went wrong.");
   };
 

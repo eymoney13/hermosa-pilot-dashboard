@@ -1,3 +1,5 @@
+"use client";
+import posthog from "posthog-js";
 import Link from "next/link";
 import s from "./SandboxDashboard.module.css";
 
@@ -55,8 +57,8 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled }: { chec
 
         {checkoutReady ? (
           <div className={s.planChoices}>
-            <Link prefetch={false} className={s.primary} href="/pro/start?plan=monthly&from=%2Fsandbox">{CTA}</Link>
-            <Link prefetch={false} className={s.annualChoice} href="/pro/start?plan=yearly&from=%2Fsandbox">Join for $40/year <span>Save $20 compared with monthly</span></Link>
+            <Link onClick={() => posthog.capture("pro_plan_selected", {plan:"monthly",board_location:"California"})} prefetch={false} className={s.primary} href="/pro/start?plan=monthly&from=%2Fcalifornia">{CTA}</Link>
+            <Link onClick={() => posthog.capture("pro_plan_selected", {plan:"yearly",board_location:"California"})} prefetch={false} className={s.annualChoice} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $40/year <span>Save $20 compared with monthly</span></Link>
           </div>
         ) : (
           <>

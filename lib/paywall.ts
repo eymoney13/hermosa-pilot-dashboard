@@ -156,5 +156,5 @@ export function paywalledReturnPath(from: string | undefined): string | null {
   const slug = from.split("/").filter(Boolean)[0];
   if (!slug || !getLocation(slug)) return null;
   if (!featuresFor(slug).paywall) return null;
-  return `/${slug}`;
+  return slug === "sandbox" ? "/california" : `/${slug}`;
 }

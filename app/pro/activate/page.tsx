@@ -24,7 +24,7 @@ export default async function Activate({searchParams}: {searchParams: Promise<{s
     }
     let activated = false;
     try { activated = await activatePurchase(sessionId); } catch { /* Conflicting claim: fail closed. */ }
-    if (activated) { (await cookies()).delete("neptune_activation"); redirect("/sandbox?pro=activated"); }
+    if (activated) { (await cookies()).delete("neptune_activation"); redirect("/california?pro=activated"); }
     redirect("/pro/activate?error=identity");
   }
   return <main className="mx-auto max-w-lg px-6 py-20">
@@ -39,6 +39,6 @@ export default async function Activate({searchParams}: {searchParams: Promise<{s
       {user && <p className="mt-4 text-sm">Manage your verified email addresses from your account menu on the dashboard.</p>}
     </> : <p className="mt-5">We couldn’t confirm an active paid purchase. If payment is processing, refresh in a moment. If you already paid, recover your activation link below—do not pay again.</p>}
     <p className="mt-6"><Link className="underline" href="/pro/recover">Recover activation link</Link></p>
-    <p className="mt-4"><Link className="underline" href="/sandbox">Back to water quality</Link></p>
+    <p className="mt-4"><Link className="underline" href="/california">Back to water quality</Link></p>
   </main>;
 }

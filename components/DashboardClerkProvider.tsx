@@ -6,12 +6,12 @@ import type { ReactNode } from "react";
 
 export default function DashboardClerkProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const inSandbox = pathname === "/sandbox" || pathname?.startsWith("/sandbox/");
+  const inSandbox = ["/sandbox", "/california", "/pro"].some(path => pathname === path || pathname?.startsWith(`${path}/`));
 
   // Clerk configures UserButton sign-out at the provider level. Preserve the
   // default on other boards; sandbox members return to its anonymous free view.
   return (
-    <ClerkProvider afterSignOutUrl={inSandbox ? "/sandbox" : undefined}>
+    <ClerkProvider afterSignOutUrl={inSandbox ? "/california" : undefined}>
       {children}
     </ClerkProvider>
   );
