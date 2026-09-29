@@ -54,10 +54,14 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled }: { chec
         </ul>
 
         {checkoutReady ? (
-          <Link prefetch={false} className={s.primary} href="/pro/start?plan=monthly&from=%2Fsandbox">{CTA}</Link>
+          <div className={s.planChoices}>
+            <Link prefetch={false} className={s.primary} href="/pro/start?plan=monthly&from=%2Fsandbox">{CTA}</Link>
+            <Link prefetch={false} className={s.annualChoice} href="/pro/start?plan=yearly&from=%2Fsandbox">Join for $40/year <span>Save $20 compared with monthly</span></Link>
+          </div>
         ) : (
           <>
             <button className={s.primary} disabled>{CTA}</button>
+            <button className={s.annualChoice} disabled>Join for $40/year</button>
             <p className={s.checkoutNote}>Checkout is currently unavailable in this preview.</p>
           </>
         )}

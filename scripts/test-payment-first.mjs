@@ -35,6 +35,7 @@ const invitations = [], knownEmails = new Set();
 const stripe = {
   checkout: {sessions: {
     retrieve: async id => { if (!sessions.has(id)) throw Error('missing'); return structuredClone(sessions.get(id)); },
+    expire: async id => { const session=sessions.get(id); if (session.status !== 'open') throw Error('not open'); session.status='expired'; return structuredClone(session); },
     create: async (params, opts) => {
       if (keys.has(opts.idempotencyKey)) return keys.get(opts.idempotencyKey);
       const id = `cs_test_${++creations}`;
@@ -84,6 +85,18 @@ check('unpaid or foreign checkout cannot fulfill', () => {
 const first = await purchase.startPurchase('monthly',' Buyer@example.com ');
 const retry = await purchase.startPurchase('monthly','buyer@example.com');
 check('duplicate checkout submission reuses one Stripe session', () => { assert.equal(first,retry); assert.equal(creations,1); });
+await purchase.startPurchase('monthly','annual-buyer@example.com');
+const oldMonthly = sessions.get('cs_test_2');
+await purchase.startPurchase('yearly','annual-buyer@example.com');
+const annual = sessions.get('cs_test_3');
+check('switching monthly to annual expires the old checkout and bills $40/year', () => {
+  assert.equal(oldMonthly.status,'expired');
+  assert.equal(annual.line_items[0].price_data.unit_amount,4000);
+  assert.equal(annual.line_items[0].price_data.recurring.interval,'year');
+  assert.equal(annual.metadata.plan,'yearly');
+});
+const annualRetry = await purchase.startPurchase('yearly','annual-buyer@example.com');
+check('annual retries reuse the same checkout', () => assert.equal(annualRetry, annual.url));
 const session = sessions.get('cs_test_1');
 check('checkout is anonymous, fixed price, and returns to activation', () => {
   assert.equal(session.client_reference_id,undefined); assert.equal(session.line_items[0].price_data.unit_amount,500);
