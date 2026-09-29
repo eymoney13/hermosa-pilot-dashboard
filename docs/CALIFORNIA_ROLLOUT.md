@@ -27,7 +27,7 @@ Global PostHog and Vercel Analytics remain in place. California emits `water_qua
 
 ## Test isolation and operations
 
-Local ignored `.env.local` in this worktree uses the separate `neptune-pro-checkout-test` Neon branch and test Clerk/Stripe, with live billing disabled. The primary Desktop project's environment files point to production; never migrate/seed them for tests. Test branch currently expires September 29, 2026 and must be renewed/recreated before subsequent database tests.
+Local ignored `.env.local` in this worktree uses the separate `neptune-pro-checkout-test` Neon branch and test Clerk/Stripe, with live billing disabled. The primary Desktop project's environment files point to production; never migrate/seed them for tests. The isolated test branch expiration was removed during rollout; Neon now shows Never. It remains separate from production.
 
 Auto preview deployment is disabled for the rollout branch because inherited Vercel preview database isolation has not been verified. Future previews require an explicitly separate database, test Clerk/Stripe, live billing off, and owner-only email testing. Never use the public route `/sandbox` as an isolation boundary.
 
@@ -42,3 +42,5 @@ Rollback: stop a broken rollout before switching traffic; turn payments off if c
 Release one: PR91, merge 56fa919, production deployment dpl_6VqkCt7JaXsWTbKyXs7gxBhaUW7w. California free dashboard, policy pages, monthly/annual checkout entry, old sandbox checkout entry and recovery returned 200 after deployment Ready. No subscription health anomalies. Private backup `/tmp/neptune-before-california-1790658287513.json` restored in PGlite; production migration preserved 198 subscribers / 598 grandfathered pairs and 2 subscription records.
 
 Release two changes root to California, returns permanent 308 from `/southbay` to `/california?region=southbay` and from `/sandbox/:path*` to `/california/:path*`. The existing `#sandbox-pro` anchor remains intentionally for saved links. Old invitation and unsubscribe endpoint paths stay unchanged. Monitoring now expects these redirects and checks California, both plans, policies and sitemap/robots.
+
+PostHog web analytics confirmed California traffic and saved the preset **Neptune California + legacy dashboards** including /california, /southbay and /sandbox. Production release two (PR92) verified redirects and healthy pages; an explicit bare /sandbox redirect normalizes Vercel’s empty-wildcard trailing slash.
