@@ -137,17 +137,68 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     // hop where it was two of ~0.9 km. That is in line with the rest of the
     // board (1.57, 1.65 and 2.56 km between its other neighbours), so the
     // spacing stays even — there is just one less pin in the middle.
+    //
+    // GO-LIVE, Sep 2026: extended from the 8 South Bay stations to every beach
+    // that cleared test specificity > 0.84 AND sensitivity > 0.70 in
+    // outputs/beach_performance.csv (23 of them), plus the stations already on
+    // the board. DHS110 and DHS111 come out of the hidden block above because
+    // they cleared the bar; DHS112 did not and stays hidden.
+    //
+    // The roster now runs San Diego to Half Moon Bay. That is aimed at
+    // /california (which reads this same config via dataSlug) — this board is
+    // still titled "South Bay, CA", so the geography and the title no longer
+    // agree here. Splitting the two rosters is the fix when someone has time.
+    //
+    // 14 of the 23 cleared the sensitivity bar on fewer than 10 test
+    // exceedances, marked ▲ below; five of those on 1–3 samples, marked ▲▲.
+    // Their sensitivity is not a measurement. Do not quote it as accuracy.
     stations: [
+      "Francis State Beach",  // ▲ 3/4
+      "O490",                 // ▲ 3/4
+      "PB5",
+      "WP0000037",
+      "13000",
+      "DPH 002B",             // ▲ 3/4
+      "DHS103",               // ▲ 6/8
+      "DHS104",               // ▲ 5/7
+      "SMB-3-5",
+      "SMB-3-6",
+      "DPH 122",              // ▲ 5/6
+      "DHS110",               // ▲▲ 2/2
+      "DHS111",               // ▲▲ 1/1
       "SMB-2-10",
       "SMB-2-11",
       "SMB-2-13",
       "DHS112B",
       "DHS113",
-      "DHS114",
+      "DHS114",               // ▲▲ 1/1
       "DHS115",
       "DHS116",
+      "OSB04",                // ▲ 4/5
+      "SMB-7-9",              // ▲ 4/5
+      "0",                    // Huntington State Beach — its station code is the digit zero
+      "BNB05",                // ▲▲ 1/1
+      "DSB4Z",                // ▲ 5/7
+      "CSD_S8",               // ▲▲ 3/3
     ],
     beachNames: {
+      // Names below are taken from the monitoring programmes' own station names
+      // in outputs/nowcast_latest.csv. Where a code carries no public name
+      // (SMB-*, DPH *), the entry is the beach the coordinates fall on — those
+      // are the ones to check with the owner before they are quoted anywhere.
+      "Francis State Beach": "Half Moon Bay - Francis State Beach",
+      O490: "Cowell Beach, Santa Cruz",
+      PB5: "Pismo State Beach",
+      WP0000037: "Goleta Beach",
+      "13000": "Surfers Point at Seaside, Ventura",
+      "DPH 002B": "Malibu - Surfrider Beach",
+      DHS103: "Will Rogers State Beach",
+      DHS104: "Santa Monica State Beach",
+      "SMB-3-5": "Venice Beach (Brooks Ave.)",
+      "SMB-3-6": "Venice Beach (Windward Ave.)",
+      "DPH 122": "Playa del Rey",
+      DHS110: "Dockweiler State Beach (North)",
+      DHS111: "Dockweiler State Beach (Central)",
       "SMB-2-10": "Dockweiler State Beach (Culver Blvd.)",
       "SMB-2-11": "Dockweiler State Beach (Westchester Storm Drain)",
       "SMB-2-13": "Dockweiler State Beach (Imperial HWY Storm Drain)",
@@ -156,6 +207,12 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       DHS114: "Hermosa Beach - 26th St",
       DHS115: "Hermosa Beach - Herondo St",
       DHS116: "Redondo Beach - Topaz",
+      OSB04: "Seal Beach - Surfside",
+      "SMB-7-9": "Outer Cabrillo Beach",
+      "0": "Huntington State Beach",
+      BNB05: "Newport Bay",
+      DSB4Z: "Doheny State Beach (Drain 4)",
+      CSD_S8: "San Diego - Station S8",
     },
     // The List leads with the four city beaches - Manhattan, both Hermosa
     // stations and Redondo - and puts the Dockweiler pins under them. Strict
@@ -194,17 +251,68 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     displayName: "South Bay Sandbox, CA",
     dataSlug: "southbay",
     noindex: true,
+    //
+    // GO-LIVE, Sep 2026: extended from the 8 South Bay stations to every beach
+    // that cleared test specificity > 0.84 AND sensitivity > 0.70 in
+    // outputs/beach_performance.csv (23 of them), plus the stations already on
+    // the board. DHS110 and DHS111 come out of the hidden block above because
+    // they cleared the bar; DHS112 did not and stays hidden.
+    //
+    // The roster now runs San Diego to Half Moon Bay. That is aimed at
+    // /california (which reads this same config via dataSlug) — this board is
+    // still titled "South Bay, CA", so the geography and the title no longer
+    // agree here. Splitting the two rosters is the fix when someone has time.
+    //
+    // 14 of the 23 cleared the sensitivity bar on fewer than 10 test
+    // exceedances, marked ▲ below; five of those on 1–3 samples, marked ▲▲.
+    // Their sensitivity is not a measurement. Do not quote it as accuracy.
     stations: [
+      "Francis State Beach",  // ▲ 3/4
+      "O490",                 // ▲ 3/4
+      "PB5",
+      "WP0000037",
+      "13000",
+      "DPH 002B",             // ▲ 3/4
+      "DHS103",               // ▲ 6/8
+      "DHS104",               // ▲ 5/7
+      "SMB-3-5",
+      "SMB-3-6",
+      "DPH 122",              // ▲ 5/6
+      "DHS110",               // ▲▲ 2/2
+      "DHS111",               // ▲▲ 1/1
       "SMB-2-10",
       "SMB-2-11",
       "SMB-2-13",
       "DHS112B",
       "DHS113",
-      "DHS114",
+      "DHS114",               // ▲▲ 1/1
       "DHS115",
       "DHS116",
+      "OSB04",                // ▲ 4/5
+      "SMB-7-9",              // ▲ 4/5
+      "0",                    // Huntington State Beach — its station code is the digit zero
+      "BNB05",                // ▲▲ 1/1
+      "DSB4Z",                // ▲ 5/7
+      "CSD_S8",               // ▲▲ 3/3
     ],
     beachNames: {
+      // Names below are taken from the monitoring programmes' own station names
+      // in outputs/nowcast_latest.csv. Where a code carries no public name
+      // (SMB-*, DPH *), the entry is the beach the coordinates fall on — those
+      // are the ones to check with the owner before they are quoted anywhere.
+      "Francis State Beach": "Half Moon Bay - Francis State Beach",
+      O490: "Cowell Beach, Santa Cruz",
+      PB5: "Pismo State Beach",
+      WP0000037: "Goleta Beach",
+      "13000": "Surfers Point at Seaside, Ventura",
+      "DPH 002B": "Malibu - Surfrider Beach",
+      DHS103: "Will Rogers State Beach",
+      DHS104: "Santa Monica State Beach",
+      "SMB-3-5": "Venice Beach (Brooks Ave.)",
+      "SMB-3-6": "Venice Beach (Windward Ave.)",
+      "DPH 122": "Playa del Rey",
+      DHS110: "Dockweiler State Beach (North)",
+      DHS111: "Dockweiler State Beach (Central)",
       "SMB-2-10": "Dockweiler State Beach (Culver Blvd.)",
       "SMB-2-11": "Dockweiler State Beach (Westchester Storm Drain)",
       "SMB-2-13": "Dockweiler State Beach (Imperial HWY Storm Drain)",
@@ -213,6 +321,12 @@ export const LOCATIONS: Record<string, LocationConfig> = {
       DHS114: "Hermosa Beach - 26th St",
       DHS115: "Hermosa Beach - Herondo St",
       DHS116: "Redondo Beach - Topaz",
+      OSB04: "Seal Beach - Surfside",
+      "SMB-7-9": "Outer Cabrillo Beach",
+      "0": "Huntington State Beach",
+      BNB05: "Newport Bay",
+      DSB4Z: "Doheny State Beach (Drain 4)",
+      CSD_S8: "San Diego - Station S8",
     },
     // Copied from South Bay so the board starts as a faithful duplicate. This
     // is one of the things most worth reordering here first.
