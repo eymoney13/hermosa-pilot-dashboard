@@ -1,3 +1,4 @@
+import { syncPurchase, refreshPurchaseSubscription, sendRecovery } from "@/lib/purchase";
 import {
   constructWebhookEvent,
   isProPlan,
@@ -63,8 +64,15 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     switch (event.type) {
+      case "checkout.session.async_payment_succeeded":
       case "checkout.session.completed": {
         const session = event.data.object;
+        if (session.metadata?.flow === "payment_first_v1") {
+          const purchase = await syncPurchase(session.id);
+          if (purchase?.active) await sendRecovery(purchase.email, true);
+          break;
+        }
+        if (session.payment_status !== "paid") break;
         // Either carrier will do; both are set at creation precisely so this
         // never depends on one of them surviving.
         const clerkUserId =
@@ -101,7 +109,8 @@ export async function POST(request: Request): Promise<Response> {
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const sub = event.data.object;
-        await updateSubscriptionStatus(sub.id, sub.status, periodEnd(sub));
+        if (sub.metadata?.flow === "payment_first_v1") await refreshPurchaseSubscription(sub.id);
+        else await updateSubscriptionStatus(sub.id, sub.status, periodEnd(sub));
         break;
       }
     }

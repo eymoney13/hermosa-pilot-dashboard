@@ -14,7 +14,7 @@ import SandboxMenu from "./SandboxMenu";
 import SandboxYourNeptune from "./SandboxYourNeptune";
 import s from "./SandboxDashboard.module.css";
 
-export default function SandboxDashboard({ beaches, predictionDate, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, account, faq, news, newsEnabled, advisory }: {
+export default function SandboxDashboard({ beaches, predictionDate, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, openForecast = false, account, faq, news, newsEnabled, advisory }: {
   beaches: BeachData[];
   predictionDate: string | null;
   fallbackCenter: [number, number];
@@ -22,6 +22,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   entitled: boolean;
   alertsEnabled: boolean;
   checkoutReady: boolean;
+  openForecast?: boolean;
   account: ReactNode;
   faq: ReactNode;
   news: NewsItem[];
@@ -29,7 +30,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   advisory: { label: string; href: string };
 }) {
   const [view, setView] = useState<"list" | "map" | "news">("list");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(() => openForecast && entitled ? orderForList(beaches, listTopStations)[0]?.code ?? null : null);
   const heading = useRef<HTMLHeadingElement>(null);
   const active = beaches.find((beach) => beach.code === selected);
   const ordered = orderForList(beaches, listTopStations);

@@ -36,13 +36,13 @@ const STRIPE_API_VERSION = "2026-08-26.dahlia";
 // Lazy, never at module scope: Next evaluates top-level module code at build
 // time, and a build without keys must not crash. It just must not sell
 // anything.
-function stripe(): Stripe {
+export function stripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
   return new Stripe(key, { apiVersion: STRIPE_API_VERSION });
 }
 
-function db() {
+export function subscriptionDb() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not configured");
   return neon(url);
@@ -83,7 +83,7 @@ export function isStripeConfigured(): boolean {
  * alone. It is the fail-closed half: production always has DATABASE_URL, so
  * production always requires a real subscription — even if the Stripe keys
  * went missing, which would otherwise hand Pro to everyone with an account.
- * Only a machine with no database at all falls back to "signed in is enough".
+ * Missing database configuration never grants Pro access.
  */
 export function subscriptionsEnforced(): boolean {
   return Boolean(process.env.DATABASE_URL);
@@ -117,12 +117,12 @@ export function entitlementFrom(row: SubscriptionRow | undefined): boolean {
 
 /** Does this account hold a live subscription? */
 export async function hasLiveSubscription(clerkUserId: string): Promise<boolean> {
-  const rows = (await db()`
+  const rows = (await subscriptionDb()`
     SELECT status, current_period_end
       FROM pro_subscriptions
      WHERE clerk_user_id = ${clerkUserId}
   `) as SubscriptionRow[];
-  return entitlementFrom(rows[0]);
+  return rows.some(entitlementFrom);
 }
 
 /**
@@ -172,9 +172,18 @@ export async function createCheckoutSession(
   return session.url;
 }
 
-function siteUrl(): string {
+export function siteUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
-  if (explicit) return explicit.replace(/\/+$/, "");
+  if (explicit) {
+    const parsed = new URL(explicit);
+    if (parsed.username || parsed.password || parsed.search || parsed.hash ||
+        (parsed.pathname !== "/" && parsed.pathname !== "") ||
+        (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname)))) {
+      throw new Error("NEXT_PUBLIC_SITE_URL must be the dashboard origin");
+    }
+    return parsed.origin;
+  }
+  if (process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_")) throw new Error("Set NEXT_PUBLIC_SITE_URL to the dashboard origin before live billing");
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   if (vercel) return `https://${vercel}`;
   return "http://localhost:3000";
@@ -193,7 +202,7 @@ export async function recordSubscription(input: {
   plan: ProPlan | null;
 }): Promise<void> {
   const plan = input.plan ?? "monthly";
-  await db()`
+  await subscriptionDb()`
     INSERT INTO pro_subscriptions
       (clerk_user_id, stripe_customer_id, stripe_subscription_id, status,
        current_period_end, price_cents, plan)
@@ -201,7 +210,7 @@ export async function recordSubscription(input: {
       (${input.clerkUserId}, ${input.customerId}, ${input.subscriptionId},
        ${input.status}, ${input.currentPeriodEnd?.toISOString() ?? null},
        ${PRO_PLANS[plan].cents}, ${plan})
-    ON CONFLICT (clerk_user_id) DO UPDATE
+    ON CONFLICT (stripe_subscription_id) DO UPDATE
       SET stripe_customer_id     = COALESCE(EXCLUDED.stripe_customer_id,
                                             pro_subscriptions.stripe_customer_id),
           stripe_subscription_id = COALESCE(EXCLUDED.stripe_subscription_id,
@@ -226,7 +235,7 @@ export async function updateSubscriptionStatus(
   status: string,
   currentPeriodEnd: Date | null
 ): Promise<void> {
-  await db()`
+  await subscriptionDb()`
     UPDATE pro_subscriptions
        SET status             = ${status},
            current_period_end = ${currentPeriodEnd?.toISOString() ?? null},
@@ -246,10 +255,12 @@ export async function updateSubscriptionStatus(
 export async function getStripeCustomerId(
   clerkUserId: string
 ): Promise<string | null> {
-  const rows = (await db()`
+  const rows = (await subscriptionDb()`
     SELECT stripe_customer_id
       FROM pro_subscriptions
      WHERE clerk_user_id = ${clerkUserId}
+     ORDER BY CASE WHEN status IN ('active', 'trialing', 'past_due') THEN 0 ELSE 1 END, updated_at DESC
+     LIMIT 1
   `) as Array<{ stripe_customer_id: string | null }>;
   return rows[0]?.stripe_customer_id ?? null;
 }

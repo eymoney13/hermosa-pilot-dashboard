@@ -56,8 +56,10 @@ export async function generateMetadata({
 
 export default async function LocationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ location: string }>;
+  searchParams: Promise<{ pro?: string }>;
 }) {
   const { location } = await params;
   const config = getLocation(location);
@@ -101,6 +103,8 @@ export default async function LocationPage({
   // Presentation only. The live boards retain the original render path below;
   // sandbox receives exactly the same server-redacted data as before.
   if (location === "sandbox") {
+    const { isPaymentFirstEnabled } = await import("@/lib/purchase");
+    const openForecast = entitled && (await searchParams).pro === "activated";
     return (
       <SandboxDashboard
         beaches={beaches}
@@ -109,7 +113,8 @@ export default async function LocationPage({
         listTopStations={config.listTopStations}
         entitled={entitled}
         alertsEnabled={alertsEnabled}
-        checkoutReady={isClerkConfigured() && isStripeConfigured() && isLiveBillingEnabled()}
+        openForecast={openForecast}
+        checkoutReady={isClerkConfigured() && isStripeConfigured() && isPaymentFirstEnabled()}
         account={<AccountControl location={config.slug} />}
         faq={<FaqAccordion />}
         news={news}
