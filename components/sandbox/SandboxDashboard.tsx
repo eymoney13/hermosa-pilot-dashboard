@@ -1,4 +1,5 @@
 "use client";
+import SandboxSupportLinks from "@/components/sandbox/SandboxSupportLinks";
 
 import { useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
@@ -92,7 +93,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
         )}
       </div>
       <div className={s.faq}>{faq}</div>
-      <footer className={s.footer}><Waves size={20} /><p>Know the water. Enjoy the coast.</p><small>Forecasts are estimates based on environmental data. For official beach advisories, consult <a href={advisory.href} target="_blank" rel="noopener noreferrer">{advisory.label}</a>.</small></footer>
+      <footer className={s.footer}><Waves size={20} /><p>Know the water. Enjoy the coast.</p><small>Forecasts are estimates based on environmental data. For official beach advisories, consult <a href={advisory.href} target="_blank" rel="noopener noreferrer">{advisory.label}</a>.</small><SandboxSupportLinks /></footer>
     </main>
   );
 }

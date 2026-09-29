@@ -1,4 +1,5 @@
 import "server-only";
+import { sendSandboxAlerts } from "./sandboxAlertSend";
 import nodemailer, { type Transporter } from "nodemailer";
 import { neon } from "@neondatabase/serverless";
 import { LOCATIONS, type BeachData, type LocationConfig } from "./data";
@@ -158,6 +159,8 @@ export async function sendAlertsForLocation(
       skipped: `stale forecast (${predictionDate}, expected ${today})`,
     };
   }
+
+  if (config.slug === "sandbox") return sendSandboxAlerts(beaches, predictionDate, dryRun, sendEmail);
 
   const elevated = beaches.filter((b) => b.status === "Not recommended");
   base.elevated = elevated.map((b) => b.code);

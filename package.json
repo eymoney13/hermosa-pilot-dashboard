@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:payments": "node scripts/test-payment-first.mjs"
+    "test:payments": "node scripts/test-payment-first.mjs",
+    "test:alerts": "node scripts/test-sandbox-alerts.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.7",

@@ -34,9 +34,9 @@ async function authorise(location: string) {
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress;
   // No verified address on the account means there is nowhere to send an alert.
-  if (!email) return { error: "Your account has no email address." as const };
+  if (!email || user?.primaryEmailAddress?.verification?.status !== "verified") return { error: "Your account has no email address." as const };
 
-  return { config, email };
+  return { config, email, userId: user.id };
 }
 
 /** The member's current list, for first render. */
@@ -71,7 +71,7 @@ export async function setBeachAlert(
     const next = on
       ? [...new Set([...current, stationCode])]
       : current.filter((c) => c !== stationCode);
-    const result = await setAlertStations(auth.email, auth.config.slug, next, valid);
+    const result = await setAlertStations(auth.email, auth.config.slug, next, valid, auth.userId);
     return result.ok
       ? { ok: true, stations: result.stations }
       : { ok: false, error: result.error };
@@ -95,7 +95,8 @@ export async function addBeachAlerts(
       auth.email,
       auth.config.slug,
       [...new Set([...current, ...stationCodes])],
-      valid
+      valid,
+      auth.userId
     );
     return result.ok
       ? { ok: true, stations: result.stations }
