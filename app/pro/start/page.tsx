@@ -1,3 +1,4 @@
+import SandboxSupportLinks from "@/components/sandbox/SandboxSupportLinks";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { isClerkConfigured } from "@/lib/clerkConfig";
@@ -31,5 +32,6 @@ export default async function Start({ searchParams }: { searchParams: Promise<{f
     <p className="mt-4 text-sm text-gray-600">Full refund within 7 days of your first purchase. For refunds or support, email <a className="underline" href="mailto:ethan@projectneptune.co">ethan@projectneptune.co</a>.</p>
     <p className="mt-6"><Link href="/pro/recover" className="underline">Already paid? Activate your purchase</Link></p>
     <p className="mt-4"><Link href="/sandbox" className="underline">Back to free water quality</Link></p>
+    <SandboxSupportLinks />
   </main>;
 }

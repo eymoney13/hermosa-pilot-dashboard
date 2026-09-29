@@ -45,8 +45,8 @@ Natural high-to-low production forecast transition has not yet occurred/been ver
 ## Support and policy
 
 Owner approved full refund within 7 days of first purchase. Checkout displays that
-promise with ethan@projectneptune.co support. Broader policy draft is in
-NEPTUNE_POLICY_REVIEW.md and must not be published without owner review.
+promise with ethan@projectneptune.co support. Owner approved the exact broader subscription/privacy draft in
+NEPTUNE_POLICY_REVIEW.md; /sandbox/terms and /sandbox/privacy publish that wording.
 A refund request is handled manually in Stripe after confirming the purchase and
 eligibility; refunding alone does not cancel renewal. Confirm the buyer’s desired
 cancellation and handle both deliberately. Never promise a refund-processing time
@@ -78,7 +78,6 @@ Google DKIM record and DMARC p=none were observed; do not claim header PASS from
 
 ## Remaining human checks
 
-- Approve/edit broader subscription/privacy draft before publishing those pages.
 - Provide an external inbox owned by Ethan for one authorized deliverability test.
 - Real phone: signed-out free dashboard, existing paid-account sign-in, forecast,
   alert follow/unfollow, billing portal. No second purchase required. A full fresh
