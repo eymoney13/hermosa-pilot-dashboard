@@ -105,6 +105,12 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             {view === "map" ? <div className={s.map}><OverviewMapClient labelMinZoom={11} beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} /></div> : (
               <div className={s.countyGroups}>{countyGroups.map((group) => <section key={group.county} aria-label={group.county}><h3 className={s.countyHeading}>{group.county}<span>{group.beaches.length} {group.beaches.length === 1 ? "beach" : "beaches"}</span></h3><ul className={s.beaches}>{group.beaches.map((beach) => <li key={beach.code}><button onClick={() => openBeach(beach.code)}><span className={s.beachName}>{beach.name}</span><span className={`${s.band} ${bandClass(beach.status)}`}><span className={s.dot} />{bandLabel(beach.status)}</span><ChevronRight size={18} aria-hidden="true" /></button></li>)}</ul></section>)}</div>
             )}
+            {view === "map" && (
+              <div className={s.beachRequest}>
+                <p>Don’t see your beach?</p>
+                <a href="mailto:ethan@projectneptune.co?subject=Request%20a%20beach%20for%20Neptune&body=Hi%20Neptune%2C%0A%0AI%E2%80%99d%20love%20to%20see%20this%20beach%20added%3A%0A%0ABeach%20name%3A%20%0ACity%20or%20county%3A%20%0A">Request your beach <ArrowRight size={16} aria-hidden="true" /></a>
+              </div>
+            )}
             <div className={s.legend} aria-label="Neptune Index categories">{(["Normal", "Slightly elevated", "Not recommended"] as const).map((status) => <span key={status} className={bandClass(status)}><i className={s.dot} />{STATUS_BAND[status].short} bacteria</span>)}</div>
             <p className={s.caveat}>Forecasts are estimates, not current lab results. Always follow official beach advisories.</p>
           </section>
