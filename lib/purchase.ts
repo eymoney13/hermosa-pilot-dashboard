@@ -30,10 +30,19 @@ export async function startPurchase(plan: ProPlan, rawEmail: string): Promise<st
   if (paid.length) return `${siteUrl()}/pro/recover`;
   // Before replacing an expired attempt, reconcile a completed checkout whose
   // webhook or browser return was lost. Never charge again for that purchase.
-  const previous = await db()`SELECT checkout_session_id FROM pro_checkout_attempts WHERE email = ${email}`;
+  const previous = await db()`SELECT checkout_session_id, attempt_id, plan FROM pro_checkout_attempts WHERE email = ${email}`;
   if (previous[0]?.checkout_session_id) {
     const receipt = await syncPurchase(previous[0].checkout_session_id);
     if (receipt?.active) return `${siteUrl()}/pro/recover`;
+    if (previous[0].plan !== plan) {
+      // Close the old payment page before offering a different interval. If
+      // payment wins this race, Stripe rejects expiration and we fail closed.
+      const oldSession = await stripe().checkout.sessions.retrieve(previous[0].checkout_session_id);
+      if (oldSession.status === "complete") return `${siteUrl()}/pro/recover`;
+      if (oldSession.status === "open") await stripe().checkout.sessions.expire(oldSession.id);
+      await db()`UPDATE pro_checkout_attempts SET expires_at = now() - interval '1 second'
+        WHERE email = ${email} AND attempt_id = ${previous[0].attempt_id}`;
+    }
   }
   const attempts = await db()`INSERT INTO pro_checkout_attempts (email, attempt_id, plan, expires_at)
     VALUES (${email}, ${randomUUID()}, ${plan}, now() + interval '1 hour')
@@ -44,6 +53,9 @@ export async function startPurchase(plan: ProPlan, rawEmail: string): Promise<st
       expires_at = CASE WHEN pro_checkout_attempts.expires_at < now() THEN EXCLUDED.expires_at ELSE pro_checkout_attempts.expires_at END
     RETURNING attempt_id, plan, expires_at, checkout_session_id` as Array<{attempt_id: string; plan: ProPlan; expires_at: string; checkout_session_id: string | null}>;
   const attempt = attempts[0];
+  // A concurrent first submission may still be creating a different plan's
+  // session. Never silently charge that interval; the buyer can retry.
+  if (attempt.plan !== plan) throw new Error("A different checkout is being prepared; please retry");
   // Reuse an existing session before creating: expires_at must be >=30 minutes
   // when Stripe first creates it, but subsequent POSTs may arrive later.
   const existing = attempt.checkout_session_id ? await stripe().checkout.sessions.retrieve(attempt.checkout_session_id) : null;
