@@ -104,6 +104,10 @@ export default async function LocationPage({
   // Presentation only. The live boards retain the original render path below;
   // sandbox receives exactly the same server-redacted data as before.
   if (location === "sandbox" || location === "california") {
+    // Withhold the Pro summary before serializing data to the browser.
+    for (const beach of beaches) {
+      if (beach.locked) beach.summary = undefined;
+    }
     const { isPaymentFirstEnabled } = await import("@/lib/purchase");
     const openForecast = entitled && (await searchParams).pro === "activated";
     return (
