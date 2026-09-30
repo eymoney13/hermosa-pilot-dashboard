@@ -331,3 +331,8 @@
 .beachRequest { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .beachRequest p { font-size: 15px; font-weight: 500; }
 .beachRequest a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid var(--teal); border-radius: 5px; color: var(--teal); font-size: 13px; font-weight: 600; }
+
+.summaryBlur { display: grid; gap: 12px; margin: 20px 0; filter: blur(4px); user-select: none; pointer-events: none; }
+.summaryBlur span { display: block; height: 12px; background: #c9d5d1; border-radius: 4px; }
+.summaryBlur span:nth-child(2) { width: 92%; }
+.summaryBlur span:last-child { width: 68%; }
