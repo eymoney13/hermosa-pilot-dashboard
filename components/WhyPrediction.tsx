@@ -147,6 +147,7 @@ export default function WhyPrediction({
   hideContributingFactors = false,
   showAccuracyPercent = false,
   locked = false,
+  prominentToggle = false,
 }: {
   // Everything that sits above the contributing factors in this panel: the
   // probability readout, the risk key, and the week by the numbers. Passed as a
@@ -155,6 +156,7 @@ export default function WhyPrediction({
   // splitting them across two files to move a block down the page would have
   // been the expensive way to do it.
   figures?: ReactNode;
+  prominentToggle?: boolean;
   factors: string[];
   // The same ranking as `factors`, carrying the direction the model gave each
   // one. Supplies the "how" under each listed factor.
@@ -252,14 +254,14 @@ export default function WhyPrediction({
         }}
         aria-expanded={open}
         aria-controls="why-prediction-panel"
-        className="w-full py-3 flex justify-between items-center text-xs uppercase tracking-wider text-gray-500 hover:text-gray-700 transition-colors"
+        className={prominentToggle ? "w-full min-h-16 py-4 flex justify-between items-center gap-4 text-left text-base font-semibold text-gray-900 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-700 transition-colors cursor-pointer" : "w-full py-3 flex justify-between items-center text-xs uppercase tracking-wider text-gray-500 hover:text-gray-700 transition-colors"}
       >
         {/* Capitalised in CSS, not typed in capitals: a screen reader gets
             the sentence as written rather than spelling out an acronym, and
             the source stays readable. tracking-wider because caps set at
             normal spacing close up — the same pairing the section labels
             inside this panel already use. */}
-        <span>What&rsquo;s affecting the water quality?</span>
+        <span>What&rsquo;s affecting the water quality?{prominentToggle && <span className="mt-1 block text-xs font-normal normal-case tracking-normal text-gray-500">{open ? "Hide details" : "Explore the factors behind this reading"}</span>}</span>
         <ChevronDown
           className={`h-4 w-4 transition-transform duration-200 ${
             open ? "rotate-180" : ""

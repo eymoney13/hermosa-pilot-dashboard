@@ -316,12 +316,13 @@
 
 .proMission { max-width: 65ch; margin: 0 0 24px; font-size: 14px; line-height: 1.65; color: inherit; }
 
-.headerPro { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--teal); border-radius: 5px; color: var(--teal); font-size: 13px; font-weight: 600; white-space: nowrap; }
-.proBanner { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 20px; padding: 18px 20px; background: #edf3eb; border-left: 3px solid var(--teal); }
+.headerPro { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border: 1px solid #2C8487; border-radius: 5px; background: #2C8487; color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.proBanner { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 20px; padding: 18px 20px; background: #EAF4F3; color: #173A3C; border: 1px solid #cce2df; border-radius: 10px; }
 .proBanner strong { font-size: 15px; font-weight: 600; }
 .proBanner p { margin-top: 4px; font-size: 13px; line-height: 1.5; color: var(--muted); }
-.proBanner a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--teal); font-size: 13px; font-weight: 650; white-space: nowrap; }
-@media (max-width: 600px) { .proBanner { align-items: flex-start; flex-direction: column; gap: 4px; padding: 14px 16px; } .account { gap: 8px; } .headerPro { padding: 0 10px; } }
+.proBanner a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 5px; background: #2C8487; color: #fff; font-size: 13px; font-weight: 650; white-space: nowrap; }
+.proBanner a:hover { background: #246f72; }
+@media (max-width: 600px) { .proBanner { align-items: flex-start; flex-direction: column; gap: 12px; padding: 14px 16px; } .account { gap: 8px; } .headerPro { padding: 0 10px; } }
 
 .countyGroups { margin-top: 28px; display: grid; gap: 32px; }
 .countyHeading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 17px; font-weight: 600; }
@@ -330,9 +331,18 @@
 
 .beachRequest { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .beachRequest p { font-size: 15px; font-weight: 500; }
-.beachRequest a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid var(--teal); border-radius: 5px; color: var(--teal); font-size: 13px; font-weight: 600; }
+.beachRequest a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid #2C8487; border-radius: 5px; background: #2C8487; color: #fff; font-size: 13px; font-weight: 600; }
 
 .summaryBlur { display: grid; gap: 12px; margin: 20px 0; filter: blur(4px); user-select: none; pointer-events: none; }
 .summaryBlur span { display: block; height: 12px; background: #c9d5d1; border-radius: 4px; }
 .summaryBlur span:nth-child(2) { width: 92%; }
 .summaryBlur span:last-child { width: 68%; }
+
+.listReading { display: grid; justify-items: center; gap: 4px; }
+.listBandLabel { display: inline-flex; align-items: center; gap: 8px; }
+.listProbability { color: inherit; font-size: 11px; line-height: 1.4; }
+
+.annualPrimary { flex-direction: column; gap: 3px; }
+.annualPrimary span { font-size: 12px; font-weight: 500; }
+
+.coverageNote { margin-top: 6px; font-size: 12px; line-height: 1.5; color: var(--teal); }

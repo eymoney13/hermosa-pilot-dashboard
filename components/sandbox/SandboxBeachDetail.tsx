@@ -4,10 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Lock } from "lucide-react";
 import { formatMonthDayYear, RISK_TIERS, riskTier, STATUS_BAND, type BeachData, type Status } from "@/lib/data";
 import { buildWindowCells, weekdayShort } from "@/lib/window";
-import { buildSummary } from "@/lib/summary";
 import InfoTooltip from "../InfoTooltip";
 import WhyPrediction from "../WhyPrediction";
-import ForecastAccuracy from "../ForecastAccuracy";
 import s from "./SandboxDashboard.module.css";
 import NeptuneMark from "./NeptuneMark";
 
@@ -77,7 +75,7 @@ function Figures({ probability }: { probability: number }) {
           <div key={tier.label}>
             <span className={s.keySwatch} style={{ backgroundColor: tier.color }} aria-hidden="true" />
             <dt>{tier.range}%</dt>
-            <dd>{tier.label}</dd>
+            <dd>Likely {tier.label.toLowerCase()}</dd>
           </div>
         ))}
       </dl>
@@ -85,7 +83,14 @@ function Figures({ probability }: { probability: number }) {
   );
 }
 
-export default function SandboxBeachDetail({ beach }: { beach: BeachData }) {
+function distanceScore(a: BeachData, b: BeachData) {
+  const rad = Math.PI / 180;
+  return Math.sin((b.latitude - a.latitude) * rad / 2) ** 2
+    + Math.cos(a.latitude * rad) * Math.cos(b.latitude * rad)
+    * Math.sin((b.longitude - a.longitude) * rad / 2) ** 2;
+}
+
+export default function SandboxBeachDetail({ beach, beaches, onSelect }: { beach: BeachData; beaches: BeachData[]; onSelect: (code: string) => void }) {
   const cells = buildWindowCells(beach);
   const [selectedDate, setSelectedDate] = useState(beach.predictionDate);
 
@@ -109,19 +114,28 @@ export default function SandboxBeachDetail({ beach }: { beach: BeachData }) {
   // Locked cells contain placeholders, not readings; they can never be selected.
   const active = cells.find((cell) => cell.day.date === selectedDate && !cell.day.locked) ?? cells.find((cell) => cell.type === "today")!;
   const day = active.day;
-  const summary = beach.locked ? beach.summary ?? [] : buildSummary({ name: beach.proseName, verdict: null, date: day.date, timeframe: active.type, noRecentSample: beach.noRecentSample, drivers: day.drivers ?? beach.drivers, conditions: day.conditions ?? beach.conditions, forecast: beach.forecast, status: day.status });
+  const meaning = day.status === "Normal"
+    ? "There’s a low chance of unsafe bacteria levels in the water. Conditions can change; check official advisories before entering the water."
+    : day.status === "Slightly elevated"
+      ? "There’s a moderate chance of unsafe bacteria levels in the water. Check official advisories and consider nearby beaches with lower predicted levels."
+      : "There’s a high chance of unsafe bacteria levels in the water. Consider postponing water activities and check official advisories.";
+  const nearby = Number.isFinite(beach.latitude) && Number.isFinite(beach.longitude)
+    ? beaches.filter((candidate) => candidate.code !== beach.code && Number.isFinite(candidate.latitude) && Number.isFinite(candidate.longitude))
+      .sort((a, b) => distanceScore(beach, a) - distanceScore(beach, b) || a.code.localeCompare(b.code)).slice(0, 3)
+    : [];
   const explanation = day.status === "Normal" ? "Bacteria levels are predicted to be below the swimming threshold." : day.status === "Slightly elevated" ? "Bacteria levels may be elevated, but are predicted to remain below the swimming threshold." : "Bacteria levels are predicted to exceed the swimming threshold.";
   return <div className={s.detail}>
     <section className={`${s.reading} ${bandClass(day.status)}`} aria-label="Selected forecast">
       <p className={s.eyebrow}>Neptune Index <span> / {active.type === "today" ? "Today’s forecast" : active.type === "past" ? "Past forecast" : "Forecast"}</span></p>
-      <h3>{bandLabel(day.status)}</h3><p className={s.readingDate}>{formatMonthDayYear(day.date)}</p><p>{explanation}<InfoTooltip title="EPA swimming threshold" body={THRESHOLD_TOOLTIP_BODY} iconColor={STATUS_ICON_COLOR[day.status]} iconClassName="h-3.5 w-3.5" ariaLabel="About the EPA swimming threshold" /></p><ExceedanceBar probability={day.probability} />
+      <h3>{STATUS_BAND[day.status].short} risk</h3><p className={s.readingDate}>{formatMonthDayYear(day.date)}</p><p>{explanation}<InfoTooltip title="EPA swimming threshold" body={THRESHOLD_TOOLTIP_BODY} iconColor={STATUS_ICON_COLOR[day.status]} iconClassName="h-3.5 w-3.5" ariaLabel="About the EPA swimming threshold" /></p><ExceedanceBar probability={day.probability} />
     </section>
     <section className={s.week} aria-label="Forecast days">
       <div className={s.sectionHeading}><h3>7-Day Window</h3>{beach.locked && <span className={s.proBadge}>PRO FORECAST</span>}</div>
       <div className={s.days} ref={days}>{cells.map(({ day: cell, type }) => cell.locked ? <div key={cell.date} className={s.lockedDay} aria-label={`${formatMonthDayYear(cell.date)}: available with Neptune Pro`}><span className={s.dayName}>{weekdayShort(cell.date)}</span><span className={s.dayBand}><Lock size={15} /></span><small className={s.dayDate}>{shortDate(cell.date)}</small></div> : <button key={cell.date} onClick={() => setSelectedDate(cell.date)} aria-pressed={cell.date === day.date} aria-label={`${formatMonthDayYear(cell.date)}: ${bandLabel(cell.status)}`} className={`${s.day} ${bandClass(cell.status)}`}><span className={s.dayName}>{type === "today" ? "Today" : weekdayShort(cell.date)}</span><span className={s.dayBand}>{/* Both rendered, one hidden by CSS rather than picked in JS: choosing by viewport at render time would disagree with the server and blow up hydration. display:none also keeps the hidden copy out of the accessibility tree, so a screen reader hears the word once — and the button's aria-label already carries the full "Moderate bacteria" either way. */}<span className={s.bandFull}>{STATUS_BAND[cell.status].short}</span><span className={s.bandAbbr}>{STATUS_BAND[cell.status].abbr}</span></span><small className={s.dayDate}>{shortDate(cell.date)}</small></button>)}</div>
       {beach.locked && <a className={s.inlineLink} href="#sandbox-pro">See beyond today with Pro <ArrowRight size={15} /></a>}
     </section>
-    {beach.locked ? <section className={s.summary} aria-label="What we’re seeing — Neptune Pro"><h3>What we’re seeing</h3><div className={s.summaryBlur} aria-hidden="true"><span /><span /><span /></div><a className={s.inlineLink} href="#sandbox-pro"><Lock size={15} /> Unlock today’s insights with Pro <ArrowRight size={15} /></a></section> : summary.length > 0 && <section className={s.summary}><h3>What we’re seeing</h3>{summary.map((paragraph, index) => <p key={index}>{paragraph}</p>)}</section>}
-    {beach.locked ? <><div className={s.lockedExplanation}><Lock size={20} /><div><h3>What’s affecting the water quality?</h3><p>Explore environmental drivers, available lab results, and the forecast’s track record with Neptune Pro.</p><a className={s.inlineLink} href="#sandbox-pro">Unlock with Pro <ArrowRight size={15} /></a></div></div><ForecastAccuracy accuracy={beach.accuracy} hidePercent={false} showOverallPercent locked /></> : <WhyPrediction figures={<Figures probability={day.probability} />} factors={day.factors ?? []} drivers={day.drivers ?? beach.drivers} conditions={day.conditions ?? beach.conditions} lastResult={day.lastResult ?? null} daysSinceSample={day.daysSinceSample ?? null} predictionDate={day.date} accuracy={beach.accuracy} hidePercent={false} showAccuracyPercent />}
+    <section className={s.summary}><h3>What this means</h3><p>{meaning}</p></section>
+    {<WhyPrediction prominentToggle figures={<Figures probability={day.probability} />} factors={day.factors ?? []} drivers={day.drivers ?? beach.drivers} conditions={day.conditions ?? beach.conditions} lastResult={day.lastResult ?? null} daysSinceSample={day.daysSinceSample ?? null} predictionDate={day.date} accuracy={beach.accuracy} hidePercent={false} showAccuracyPercent />}
+    {nearby.length > 0 && <section><h3>Nearby beaches</h3><ul className={s.beaches}>{nearby.map((neighbor) => <li key={neighbor.code}><button onClick={() => onSelect(neighbor.code)}><span className={s.beachName}>{neighbor.name}</span><span className={`${s.band} ${s.listReading} ${bandClass(neighbor.status)}`}><span>{STATUS_BAND[neighbor.status].short} risk</span></span><ArrowRight size={16} aria-hidden="true" /></button></li>)}</ul></section>}
   </div>;
 }

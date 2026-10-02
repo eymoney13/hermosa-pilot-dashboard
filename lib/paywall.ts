@@ -47,6 +47,7 @@ function lockDay(day: ForecastDay): ForecastDay {
 
 export interface RedactOptions {
   entitled: boolean;
+  publicTodayInsights?: boolean;
   features: FeatureFlags;
 }
 
@@ -59,13 +60,22 @@ export interface RedactOptions {
  */
 export function redactForEntitlement(
   beaches: BeachData[],
-  { entitled, features }: RedactOptions
+  { entitled, features, publicTodayInsights = false }: RedactOptions
 ): BeachData[] {
   if (!features.paywall || entitled) return beaches;
-  return beaches.map((beach) => redactBeach(beach, features));
+  return beaches.map((beach) => redactBeach(beach, features, publicTodayInsights));
 }
 
-function redactBeach(beach: BeachData, features: FeatureFlags): BeachData {
+function redactBeach(beach: BeachData, features: FeatureFlags, publicTodayInsights: boolean): BeachData {
+  if (publicTodayInsights) {
+    return {
+      ...beach,
+      locked: true,
+      summary: features.predictionSummary ? freeSummary(beach, features) : undefined,
+      pastDays: beach.pastDays.map(lockDay),
+      forecast: beach.forecast.map(lockDay),
+    };
+  }
   return {
     ...beach,
     locked: true,
