@@ -345,4 +345,11 @@
 .annualPrimary { flex-direction: column; gap: 3px; }
 .annualPrimary span { font-size: 12px; font-weight: 500; }
 
-.coverageNote { margin-top: 6px; font-size: 12px; line-height: 1.5; color: var(--teal); }
+.coverageNote { margin-top: -4px; font-family: inherit; font-size: clamp(26px, 4vw, 38px); line-height: 1.1; letter-spacing: -.055em; font-weight: 600; color: var(--ink); }
+
+.coverageNote + .proOffer { margin-top: 60px; }
+
+@media (max-width: 600px) {
+  .beachRequest { flex-direction: column; align-items: stretch; gap: 12px; text-align: center; }
+  .beachRequest a { width: 100%; }
+}

@@ -14,7 +14,7 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled }: { chec
   // using the free board, so listing what they have back to them spends half
   // the space saying nothing and makes the card read like a pricing page.
   const features = [
-    alertsEnabled ? "Elevated bacteria email alerts" : null,
+    alertsEnabled ? "High risk alerts" : null,
     "3-day forecasts",
   ].filter(Boolean) as string[];
 
