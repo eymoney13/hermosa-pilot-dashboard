@@ -1,3 +1,4 @@
+import { isCoveredStation } from "./californiaCoverage";
 import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -590,7 +591,7 @@ export async function loadDashboardData(
       ? generatedAtRaw.toISOString()
       : String(generatedAtRaw ?? "").trim() || null;
 
-  return { beaches, predictionDate, generatedAt };
+  return { beaches: beaches.filter(beach => isCoveredStation(config.slug, beach.code)), predictionDate, generatedAt };
 }
 
 // The station codes a location currently renders — the same roster
@@ -600,5 +601,5 @@ export async function loadDashboardData(
 export async function loadStationCodes(
   config: LocationConfig
 ): Promise<string[]> {
-  return (await resolveRoster(config)).map((b) => b.code);
+  return (await resolveRoster(config)).map((b) => b.code).filter(code => isCoveredStation(config.slug, code));
 }
