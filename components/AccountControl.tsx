@@ -21,10 +21,12 @@ import {
 // failing to compile, which took every paywalled board to a 500.
 export default async function AccountControl({
   location,
+  hideAvatar = false,
 }: {
   // Where the billing portal should drop them back. The board they were on,
   // not a fixed guess.
   location: string;
+  hideAvatar?: boolean;
 }) {
   if (!isClerkConfigured()) return null;
 
@@ -61,7 +63,7 @@ export default async function AccountControl({
           Manage subscription
         </Link>
       )}
-      <UserButton />
+      {!hideAvatar && <UserButton />}
     </div>
   );
 }

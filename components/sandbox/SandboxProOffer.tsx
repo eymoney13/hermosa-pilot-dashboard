@@ -16,8 +16,6 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled }: { chec
   const features = [
     alertsEnabled ? "Elevated bacteria email alerts" : null,
     "3-day forecasts",
-    "Water-quality history",
-    "What’s affecting the water quality",
   ].filter(Boolean) as string[];
 
   return (
@@ -58,13 +56,13 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled }: { chec
 
         {checkoutReady ? (
           <div className={s.planChoices}>
-            <Link onClick={() => posthog.capture("pro_plan_selected", {plan:"monthly",board_location:"California"})} prefetch={false} className={s.primary} href="/pro/start?plan=monthly&from=%2Fcalifornia">{CTA}</Link>
-            <Link onClick={() => posthog.capture("pro_plan_selected", {plan:"yearly",board_location:"California"})} prefetch={false} className={s.annualChoice} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $40/year <span>Save $20 compared with monthly</span></Link>
+            <Link onClick={() => posthog.capture("pro_plan_selected", {plan:"yearly",board_location:"California"})} prefetch={false} className={`${s.primary} ${s.annualPrimary}`} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $40/year <span>Save 33% with annual billing</span></Link>
+            <Link onClick={() => posthog.capture("pro_plan_selected", {plan:"monthly",board_location:"California"})} prefetch={false} className={s.annualChoice} href="/pro/start?plan=monthly&from=%2Fcalifornia">{CTA}</Link>
           </div>
         ) : (
           <>
-            <button className={s.primary} disabled>{CTA}</button>
-            <button className={s.annualChoice} disabled>Join for $40/year</button>
+            <button className={`${s.primary} ${s.annualPrimary}`} disabled>Join for $40/year <span>Save 33% with annual billing</span></button>
+            <button className={s.annualChoice} disabled>{CTA}</button>
             <p className={s.checkoutNote}>Checkout is currently unavailable in this preview.</p>
           </>
         )}

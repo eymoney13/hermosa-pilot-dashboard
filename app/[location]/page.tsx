@@ -99,15 +99,12 @@ export default async function LocationPage({
   const beaches = redactForEntitlement(allBeaches, {
     entitled,
     features,
+    publicTodayInsights: location === "sandbox" || location === "california",
   });
 
   // Presentation only. The live boards retain the original render path below;
   // sandbox receives exactly the same server-redacted data as before.
   if (location === "sandbox" || location === "california") {
-    // Withhold the Pro summary before serializing data to the browser.
-    for (const beach of beaches) {
-      if (beach.locked) beach.summary = undefined;
-    }
     const { isPaymentFirstEnabled } = await import("@/lib/purchase");
     const openForecast = entitled && (await searchParams).pro === "activated";
     return (
@@ -120,7 +117,7 @@ export default async function LocationPage({
         alertsEnabled={alertsEnabled}
         openForecast={openForecast}
         checkoutReady={isClerkConfigured() && isStripeConfigured() && isPaymentFirstEnabled()}
-        account={<AccountControl location={config.slug} />}
+        account={<AccountControl location={config.slug} hideAvatar={entitled} />}
         faq={<FaqAccordion />}
         news={news}
         newsEnabled={newsEnabled}

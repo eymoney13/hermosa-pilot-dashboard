@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
+import { LocateFixed, LoaderCircle } from "lucide-react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { STATUS_BAND, VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
 import {
@@ -490,17 +491,67 @@ function FitAll({ beaches }: { beaches: BeachData[] }) {
   return null;
 }
 
+function NearbyLocation({ beaches }: { beaches: BeachData[] }) {
+  const map = useMap();
+  const interacted = useRef(false);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const focus = useCallback((latitude: number, longitude: number) => {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+    const nearest = beaches.filter(b => Number.isFinite(b.latitude) && Number.isFinite(b.longitude))
+      .map(b => ({ beach: b, distance: map.distance([latitude, longitude], [b.latitude, b.longitude]) }))
+      .sort((a, b) => a.distance - b.distance).slice(0, 3);
+    if (!nearest.length || nearest[0].distance > 300000) return false;
+    map.fitBounds(L.latLngBounds(nearest.map(({ beach }) => [beach.latitude, beach.longitude] as [number, number])), { padding: [56, 56], maxZoom: 14 });
+    return true;
+  }, [beaches, map]);
+  useEffect(() => {
+    const controller = new AbortController();
+    const container = map.getContainer();
+    const mark = () => { interacted.current = true; };
+    container.addEventListener("pointerdown", mark);
+    container.addEventListener("wheel", mark);
+    container.addEventListener("keydown", mark);
+    fetch("/api/map-location", { cache: "no-store", signal: controller.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(location => {
+        if (!controller.signal.aborted && !interacted.current && location && focus(location.latitude, location.longitude)) setMessage("Showing beaches near your approximate location.");
+      }).catch(() => {});
+    return () => {
+      controller.abort();
+      container.removeEventListener("pointerdown", mark);
+      container.removeEventListener("wheel", mark);
+      container.removeEventListener("keydown", mark);
+    };
+  }, [map, focus]);
+  const locate = () => {
+    interacted.current = true;
+    if (!navigator.geolocation) { setMessage("Location is unavailable. You can browse the map manually."); return; }
+    setBusy(true);
+    navigator.geolocation.getCurrentPosition(position => {
+      setBusy(false);
+      setMessage(focus(position.coords.latitude, position.coords.longitude) ? "Showing your closest monitored beaches." : "No monitored beaches nearby. Browse the California map.");
+    }, () => { setBusy(false); setMessage("Couldn’t access your location. You can browse the map manually."); }, { timeout: 10000, maximumAge: 300000 });
+  };
+  return <div className="absolute right-3 top-3 z-[1000]" onPointerDown={e => e.stopPropagation()} onDoubleClick={e => e.stopPropagation()}>
+    <button type="button" disabled={busy} onClick={locate} aria-label={busy ? "Finding your location" : "Use my location"} aria-busy={busy} className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60">{busy ? <LoaderCircle size={22} className="animate-spin" aria-hidden="true" /> : <LocateFixed size={22} aria-hidden="true" />}</button>
+    {message && <p role="status" className="sr-only">{message}</p>}
+  </div>;
+}
+
 export default function OverviewMap({
   beaches,
   fallbackCenter,
   binaryVerdict,
   labelMinZoom = 0,
+  locateNearby = false,
   onSelect,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
   binaryVerdict: boolean;
   labelMinZoom?: number;
+  locateNearby?: boolean;
   onSelect: (code: string) => void;
 }) {
   const center = useMemo<[number, number]>(() => {
@@ -524,6 +575,7 @@ export default function OverviewMap({
         maxZoom={BASEMAP_MAX_ZOOM}
       />
       <FitAll beaches={beaches} />
+      {locateNearby && <NearbyLocation beaches={beaches} />}
       {beaches.map((b) => (
         <Marker
           key={b.code}

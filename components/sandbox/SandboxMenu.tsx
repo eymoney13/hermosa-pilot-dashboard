@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, Menu, X } from "lucide-react";
@@ -12,7 +12,7 @@ export const sandboxLinks = [
   { href: "/california/team", label: "Meet the Team" },
 ];
 
-export default function SandboxMenu() {
+export default function SandboxMenu({ account }: { account?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -70,6 +70,7 @@ export default function SandboxMenu() {
           {/* No slice: the array is the whole nav now. It was sliced to 3
               when a fourth entry needed its own "Transparency" heading. */}
           {sandboxLinks.map((link) => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? "page" : undefined} onClick={close}>{link.label}<ArrowUpRight size={17} aria-hidden="true" /></Link>)}
+          {account && <div className={s.menuAccount}>{account}</div>}
         </nav>
         <Link href="/california" className={s.drawerBack} onClick={close}><ArrowLeft size={17} aria-hidden="true" />Back to Water Quality</Link>
       </dialog>

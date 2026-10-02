@@ -15,17 +15,20 @@ export default function OverviewMapClient({
   fallbackCenter,
   binaryVerdict,
   labelMinZoom = 0,
+  locateNearby = false,
   onSelect,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
   binaryVerdict: boolean;
   labelMinZoom?: number;
+  locateNearby?: boolean;
   onSelect: (code: string) => void;
 }) {
   return (
     <div className="h-[460px] w-full sm:h-[560px]">
       <OverviewMap
+        locateNearby={locateNearby}
         beaches={beaches}
         fallbackCenter={fallbackCenter}
         labelMinZoom={labelMinZoom}

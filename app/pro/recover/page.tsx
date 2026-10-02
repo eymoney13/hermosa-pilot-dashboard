@@ -17,6 +17,6 @@ export default async function Recover({searchParams}: {searchParams: Promise<{se
       {query.error && <p role="alert" className="mt-4">We couldn’t send the link. Check your email and try again later.</p>}
     </form>}
     <p className="mt-6"><Link href="/sign-in" className="underline">Already activated? Sign in</Link></p>
-    <p className="mt-4"><Link href="/california" className="underline">Back to free water quality</Link></p>
+    <p className="mt-4"><Link href="/california" className="underline">Back</Link></p>
   </main>;
 }
