@@ -10,6 +10,7 @@ import type { NewsItem } from "@/lib/news";
 import ProjectNeptuneLogo from "../ProjectNeptuneLogo";
 import OverviewMapClient from "../OverviewMapClient";
 import NewsTab from "../NewsTab";
+import BeachNeighborNav from "@/components/BeachNeighborNav";
 import SandboxBeachDetail, { bandClass } from "./SandboxBeachDetail";
 import SandboxProOffer from "./SandboxProOffer";
 import SandboxMenu from "./SandboxMenu";
@@ -94,6 +95,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
               <label><span className={s.srOnly}>Choose a beach</span><select value={active.code} onChange={(event) => openBeach(event.target.value)}>{ordered.map((beach) => <option key={beach.code} value={beach.code}>{beach.name}</option>)}</select></label>
             </div>
             <h2 ref={heading} tabIndex={-1} className={s.beachHeading}>{active.name}</h2>
+            <BeachNeighborNav beach={active} beaches={beaches} onSelect={openBeach} />
             <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} />
           </>
         ) : beaches.length === 0 ? (
