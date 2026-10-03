@@ -39,6 +39,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
     if (openForecast && entitled) posthog.capture("pro_activation_dashboard_opened", {board_location:"California"});
   }, [entitled, openForecast]);
   const heading = useRef<HTMLHeadingElement>(null);
+  const beachNavigation = useRef<HTMLDivElement>(null);
   const active = beaches.find((beach) => beach.code === selected);
   const ordered = orderForList(beaches, listTopStations);
   const countyStations: [string, string[]][] = [
@@ -57,7 +58,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   if (unassigned.length) countyGroups.push({ county: "Other beaches", beaches: unassigned });
   const focusHeading = () => requestAnimationFrame(() => {
     heading.current?.focus({ preventScroll: true });
-    heading.current?.scrollIntoView({ block: "start" });
+    (beachNavigation.current ?? heading.current)?.scrollIntoView({ block: "start" });
   });
   const openBeach = (code: string) => { setSelected(code); posthog.capture("beach_selected", { board_location: "California", region: "southbay", beach_code: code, source: view }); focusHeading(); };
   const switchView = (next: typeof view) => { setView(next); setSelected(null); posthog.capture("dashboard_view_selected", { board_location: "California", region: "southbay", view: next }); };
@@ -94,8 +95,10 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
               <button onClick={() => { setSelected(null); focusHeading(); }}><ArrowLeft size={17} /> Back to {view === "map" ? "map" : "beaches"}</button>
               <label><span className={s.srOnly}>Choose a beach</span><select value={active.code} onChange={(event) => openBeach(event.target.value)}>{ordered.map((beach) => <option key={beach.code} value={beach.code}>{beach.name}</option>)}</select></label>
             </div>
+            <div ref={beachNavigation} className={s.beachNavigation}>
+              <BeachNeighborNav beach={active} beaches={beaches} onSelect={openBeach} />
+            </div>
             <h2 ref={heading} tabIndex={-1} className={s.beachHeading}>{active.name}</h2>
-            <BeachNeighborNav beach={active} beaches={beaches} onSelect={openBeach} />
             <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} />
           </>
         ) : beaches.length === 0 ? (
