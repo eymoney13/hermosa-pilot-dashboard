@@ -58,8 +58,16 @@ const CANONICAL: Record<string, string> = {
   "Low tide level": "Low tide level",
   tide_sample: "Tide level at sample time",
   "Tide level at sample time": "Tide level at sample time",
-  hours_since_high: "Hours since high tide",
-  "Hours since high tide": "Hours since high tide",
+  // Renamed for readers. "Hours since high tide" reads as a live countdown, but
+  // the feature is fixed: hours from the day's high tide to 10:00 local, the
+  // hour the lab samples are drawn (SAMPLE_HOUR in process_tide_data.py). A
+  // reader checking the board at 3pm was being shown a number anchored to 10am
+  // under a name that implied it was still ticking. 10:00 is a stand-in for the
+  // county's sampling hour, not a prediction time. The old spellings stay as
+  // keys so archived snapshots, which history_3day.csv replays, still resolve.
+  hours_since_high: "High tide timing",
+  "Hours since high tide": "High tide timing",
+  "High tide timing": "High tide timing",
   tide_spring: "Spring tide conditions",
   "Spring tide conditions": "Spring tide conditions",
 

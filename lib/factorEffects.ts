@@ -68,11 +68,28 @@ const EFFECTS: Record<string, Effect> = {
     raising: "The tide right now is concentrating bacteria close to shore.",
     lowering: "The tide right now is spreading bacteria away from shore.",
   },
-  "Hours since high tide": {
+  // Both lines name mid-morning on purpose. The number is hours from the high
+  // tide to 10:00 local, not to now, and without saying so the sentence reads
+  // as a live countdown that is wrong by mid-afternoon.
+  //
+  // "Mid-morning" and not "the reading" or "the sample": 10:00 is a fixed
+  // stand-in for when the county draws its water, not a prediction timestamp
+  // and not a test that happened today (most days there is no sample at all).
+  // Real collection times run roughly 07:00-12:45, median 09:30, with only 44%
+  // within an hour of 10:00 -- so the anchor is approximate, and a phrase
+  // implying a specific event would overstate it.
+  //
+  // `raising` used to say "Enough time has passed since high tide for bacteria
+  // to build up near shore", which described the opposite end of the scale from
+  // the one that actually raises risk. A SHORT gap is the dangerous one: on dry
+  // South Bay days exceedance runs 6.0% within 2h of high tide against 0.7% at
+  // 10-12h, and the model agrees -- its own predicted risk falls from 39.3% to
+  // 19.8% across that span (corr -0.43 within 0-12h).
+  "High tide timing": {
     raising:
-      "Enough time has passed since high tide for bacteria to build up near shore.",
+      "High tide came only a short time before mid-morning, so the water had just washed over the dirtiest sand.",
     lowering:
-      "The time since high tide has given the water a chance to clear itself.",
+      "High tide came hours before mid-morning, leaving time for the water to clear.",
   },
   "Spring tide conditions": {
     raising:
