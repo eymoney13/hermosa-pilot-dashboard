@@ -99,7 +99,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
               <BeachNeighborNav beach={active} beaches={beaches} onSelect={openBeach} />
             </div>
             <h2 ref={heading} tabIndex={-1} className={s.beachHeading}>{active.name}</h2>
-            <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} />
+            <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} advisory={advisory} />
           </>
         ) : beaches.length === 0 ? (
           <div className={s.empty}><h2>No readings published yet.</h2><p>The daily forecast will appear here when it is available.</p></div>
