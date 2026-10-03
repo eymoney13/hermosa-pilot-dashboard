@@ -68,9 +68,16 @@ const EFFECTS: Record<string, Effect> = {
     raising: "The tide right now is concentrating bacteria close to shore.",
     lowering: "The tide right now is spreading bacteria away from shore.",
   },
-  // Both lines name the morning reading on purpose. The number is hours from
-  // the high tide to 10:00, not to now, and without saying so the sentence
-  // reads as a live countdown that is wrong by mid-afternoon.
+  // Both lines name mid-morning on purpose. The number is hours from the high
+  // tide to 10:00 local, not to now, and without saying so the sentence reads
+  // as a live countdown that is wrong by mid-afternoon.
+  //
+  // "Mid-morning" and not "the reading" or "the sample": 10:00 is a fixed
+  // stand-in for when the county draws its water, not a prediction timestamp
+  // and not a test that happened today (most days there is no sample at all).
+  // Real collection times run roughly 07:00-12:45, median 09:30, with only 44%
+  // within an hour of 10:00 -- so the anchor is approximate, and a phrase
+  // implying a specific event would overstate it.
   //
   // `raising` used to say "Enough time has passed since high tide for bacteria
   // to build up near shore", which described the opposite end of the scale from
@@ -80,9 +87,9 @@ const EFFECTS: Record<string, Effect> = {
   // 19.8% across that span (corr -0.43 within 0-12h).
   "High tide timing": {
     raising:
-      "High tide came only a short time before the morning reading, so the water had just washed over the dirtiest sand.",
+      "High tide came only a short time before mid-morning, so the water had just washed over the dirtiest sand.",
     lowering:
-      "High tide came hours before the morning reading, leaving time for the water to clear.",
+      "High tide came hours before mid-morning, leaving time for the water to clear.",
   },
   "Spring tide conditions": {
     raising:
