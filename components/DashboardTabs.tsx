@@ -12,6 +12,7 @@ import NewsTab from "./NewsTab";
 import OverviewMapClient from "./OverviewMapClient";
 import BeachList from "./BeachList";
 import BeachPicker from "./BeachPicker";
+import BeachNeighborNav from "./BeachNeighborNav";
 import BoardHeading from "./BoardHeading";
 
 const STATUS_UNDERLINE: Record<string, string> = {
@@ -100,7 +101,7 @@ export default function DashboardTabs({
 
   const selectBeach = (
     code: string,
-    source: "list" | "map" | "picker" | "tab",
+    source: "list" | "map" | "picker" | "tab" | "neighbor",
     scroll = false
   ) => {
     setActiveCode(code);
@@ -324,6 +325,10 @@ export default function DashboardTabs({
               </div>
             </div>
           )}
+
+          {beaches.length > 1 && <div className="mx-auto w-full max-w-3xl px-6 sm:px-10 pt-6">
+            <BeachNeighborNav beach={active} beaches={beaches} onSelect={(code) => selectBeach(code, "neighbor")} />
+          </div>}
 
           <BeachCard
             beach={active}
