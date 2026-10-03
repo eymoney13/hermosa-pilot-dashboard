@@ -202,3 +202,35 @@ export function isEnvironmentalFactor(label: string | null | undefined): boolean
   if (label == null) return false;
   return !NON_ENVIRONMENTAL_FACTORS.has(String(label).trim());
 }
+
+// Real conditions the model uses, but not reasons worth giving a reader.
+//
+// Unlike NON_ENVIRONMENTAL_FACTORS above, these ARE things happening at the
+// beach. They are withheld because the ranking overstates what they do, not
+// because they are metadata — so they stay in the model, and stay in `drivers`
+// for the written summary's topic selection. Only the ranked list a reader is
+// told are "top contributing factors" drops them.
+//
+// Air temperature: it ranks high on dry summer days, almost always as
+// "decreasing risk", which reads as "the heat is cleaning the water". It is
+// not. Across 11,738 South Bay samples (2004–2026) the raw effect is enormous
+// — 0.06x the odds of exceedance per +10°C, adjusted for month and station —
+// but that is the rain confound: cold days here are storm days, and storm
+// runoff is the real driver. Hold rain constant (none that day, none in the
+// prior three) and it vanishes: 0.85x per +10°C, 95% CI 0.48–1.39, an interval
+// straddling 1. The label also collapses temp_max/temp_min/temp_mean and their
+// lags (see CANONICAL above), so it cannot even be tied to a reading a reader
+// could check. On 2026-10-03, during a heat wave, it was ranked the #2 or #3
+// reason the South Bay water was clean; the factor beneath it was "Rainfall
+// today", which is the honest answer.
+const UNLISTED_FACTORS = new Set<string>(["Air temperature"]);
+
+/**
+ * Whether a factor belongs in the reader-facing "Top contributing factors"
+ * list. Applied on top of isEnvironmentalFactor, which answers a different
+ * question (is this a condition at all).
+ */
+export function isListedFactor(label: string | null | undefined): boolean {
+  if (label == null) return false;
+  return !UNLISTED_FACTORS.has(String(label).trim());
+}

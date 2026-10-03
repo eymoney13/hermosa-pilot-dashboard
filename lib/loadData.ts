@@ -23,7 +23,7 @@ import {
   type Status,
   type Verdict,
 } from "./data";
-import { factorLabel, isEnvironmentalFactor } from "./factors";
+import { factorLabel, isEnvironmentalFactor, isListedFactor } from "./factors";
 import { normalizeInsight } from "./insight";
 
 interface NowcastRow {
@@ -300,6 +300,10 @@ function buildFactors(raws: unknown[], limit = DISPLAYED_FACTORS): string[] {
     // history / sampling metadata) — the latest lab result is shown separately.
     if (canonical == null || seen.has(canonical)) continue;
     if (!isEnvironmentalFactor(canonical)) continue;
+    // Withheld from the reader-facing ranking but left in the model and in
+    // buildDrivers — see UNLISTED_FACTORS. Skipping before the push means the
+    // next factor down is promoted rather than the list coming up short.
+    if (!isListedFactor(canonical)) continue;
     seen.add(canonical);
     factors.push(canonical);
     if (factors.length === limit) break;
