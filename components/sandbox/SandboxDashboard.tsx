@@ -35,7 +35,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   newsEnabled: boolean;
   advisory: { label: string; href: string };
 }) {
-  const [view, setView] = useState<"list" | "map" | "news">("list");
+  const [view, setView] = useState<"list" | "map" | "news">("map");
   const [selected, setSelected] = useState<string | null>(() => openForecast && entitled ? orderForList(beaches, listTopStations)[0]?.code ?? null : null);
   useEffect(() => {
     posthog.capture("water_quality_dashboard_viewed", {board_location:"California", region:"southbay", access: entitled ? "pro" : "free"});
