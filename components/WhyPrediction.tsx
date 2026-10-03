@@ -148,6 +148,8 @@ export default function WhyPrediction({
   showAccuracyPercent = false,
   locked = false,
   prominentToggle = false,
+  title,
+  showAccuracy = true,
 }: {
   // Everything that sits above the contributing factors in this panel: the
   // probability readout, the risk key, and the week by the numbers. Passed as a
@@ -157,6 +159,8 @@ export default function WhyPrediction({
   // been the expensive way to do it.
   figures?: ReactNode;
   prominentToggle?: boolean;
+  title?: string;
+  showAccuracy?: boolean;
   factors: string[];
   // The same ranking as `factors`, carrying the direction the model gave each
   // one. Supplies the "how" under each listed factor.
@@ -224,7 +228,7 @@ export default function WhyPrediction({
   // Note this deliberately does NOT fall through to the early return below.
   // That return exists for days with nothing to show, and reaching it here would
   // take the accuracy panel out with the factors, the opposite of the intent.
-  if (hideContributingFactors && !labResult && !figures) {
+  if (showAccuracy && hideContributingFactors && !labResult && !figures) {
     return (
       <div className="border-t border-gray-100 pt-6">
         <ForecastAccuracy
@@ -261,7 +265,7 @@ export default function WhyPrediction({
             the source stays readable. tracking-wider because caps set at
             normal spacing close up — the same pairing the section labels
             inside this panel already use. */}
-        <span>What&rsquo;s affecting the water quality?{prominentToggle && <span className="mt-1 block text-xs font-normal normal-case tracking-normal text-gray-500">{open ? "Hide details" : "Explore the factors behind this reading"}</span>}</span>
+        <span>{title ?? "What’s affecting the water quality?"}{prominentToggle && !title && <span className="mt-1 block text-xs font-normal normal-case tracking-normal text-gray-500">{open ? "Hide details" : "Explore the factors behind this reading"}</span>}</span>
         <ChevronDown
           className={`h-4 w-4 transition-transform duration-200 ${
             open ? "rotate-180" : ""
@@ -344,12 +348,12 @@ export default function WhyPrediction({
               </div>
             )}
 
-            <ForecastAccuracy
+            {showAccuracy && <ForecastAccuracy
               accuracy={accuracy}
               hidePercent={hidePercent}
               showOverallPercent={showAccuracyPercent}
               locked={locked}
-            />
+            />}
           </div>
         </div>
       </div>
