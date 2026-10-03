@@ -17,6 +17,9 @@ import SandboxMenu from "./SandboxMenu";
 import SandboxYourNeptune from "./SandboxYourNeptune";
 import s from "./SandboxDashboard.module.css";
 
+const ORANGE_COUNTY_STATIONS = ["OSB04", "0", "BNB05", "DSB4Z"];
+const ORANGE_COUNTY_ADVISORY = { label: "OC Beach Info", href: "https://ocbeachinfo.com/" };
+
 export default function SandboxDashboard({ beaches, predictionDate, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, openForecast = false, account, faq, news, newsEnabled, advisory }: {
   beaches: BeachData[];
   predictionDate: string | null;
@@ -41,10 +44,11 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   const heading = useRef<HTMLHeadingElement>(null);
   const beachNavigation = useRef<HTMLDivElement>(null);
   const active = beaches.find((beach) => beach.code === selected);
+  const activeAdvisory = active && ORANGE_COUNTY_STATIONS.includes(active.code) ? ORANGE_COUNTY_ADVISORY : advisory;
   const ordered = orderForList(beaches, listTopStations);
   const countyStations: [string, string[]][] = [
     ["Los Angeles County", ["DPH 002B", "DHS103", "DHS104", "SMB-3-5", "SMB-3-6", "DPH 122", "SMB-2-10", "SMB-2-11", "SMB-2-13", "DHS112B", "DHS113", "DHS114", "DHS115", "DHS116", "SMB-7-9"]],
-    ["Orange County", ["OSB04", "0", "BNB05", "DSB4Z"]],
+    ["Orange County", ORANGE_COUNTY_STATIONS],
     ["San Mateo County", ["Francis State Beach"]],
     ["Santa Cruz County", ["O490"]],
     ["San Luis Obispo County", ["PB5"]],
@@ -99,7 +103,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
               <BeachNeighborNav beach={active} beaches={beaches} onSelect={openBeach} />
             </div>
             <h2 ref={heading} tabIndex={-1} className={s.beachHeading}>{active.name}</h2>
-            <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} advisory={advisory} />
+            <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} advisory={activeAdvisory} />
           </>
         ) : beaches.length === 0 ? (
           <div className={s.empty}><h2>No readings published yet.</h2><p>The daily forecast will appear here when it is available.</p></div>
@@ -130,7 +134,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
         )}
       </div>
       <div className={s.faq}>{faq}</div>
-      <footer className={s.footer}><Waves size={20} /><p>Know the water. Enjoy the coast.</p><small>Forecasts are estimates based on environmental data. For official beach advisories, consult <a href={advisory.href} target="_blank" rel="noopener noreferrer">{advisory.label}</a>.</small><SandboxSupportLinks /></footer>
+      <footer className={s.footer}><Waves size={20} /><p>Know the water. Enjoy the coast.</p><small>Forecasts are estimates based on environmental data. For official beach advisories, consult <a href={activeAdvisory.href} target="_blank" rel="noopener noreferrer">{activeAdvisory.label}</a>.</small><SandboxSupportLinks /></footer>
     </main>
   );
 }
