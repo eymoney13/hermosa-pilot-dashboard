@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "How Neptune Works · Neptune" };
 const STEPS = [
   {
     title: "Learn from years of lab results",
-    body: "Neptune starts with the official record: years of Enterococcus samples collected and tested by the agencies that monitor these beaches. That history is what teaches the model how a beach behaves.",
+    body: "Neptune starts with the official record: years of enterococcus samples collected and tested by the agencies that monitor these beaches. ",
   },
   {
     title: "Add what the ocean is doing now",
@@ -25,11 +25,11 @@ const STEPS = [
   },
   {
     title: "Estimate the chance of an exceedance",
-    body: `A machine-learning model weighs those conditions against what it learned and produces one number per beach: the chance that bacteria exceed the applicable safe-swimming threshold, ${EPA_MPN_THRESHOLD} MPN/100mL for ocean water.`,
+    body: `A model weighs those conditions against what it learned and produces a prediction per beach: the chance that bacteria exceed the applicable safe-swimming threshold, ${EPA_MPN_THRESHOLD} MPN/100mL for ocean water. >104MPN = unsafe levels of bacteria. <104MPN = safe levels of bacteria.`,
   },
   {
-    title: "Publish it, then check the homework",
-    body: "That estimate becomes the Neptune Index you see on the board. When the next official lab result arrives, Neptune compares it against what it predicted for that day, so the track record is visible rather than asserted.",
+    title: "Publish it, then verify",
+    body: "That estimate becomes the Neptune Index you see on the board. When the next official lab result arrives, Neptune compares it against what it predicted for that day, so the track record is visible rather than asserted. Neptune publishes a prediction everyday of the year. Tests are done roughly once a week, so we can only verify on the days there were tests done.",
   },
 ];
 
@@ -39,7 +39,7 @@ const COMPARE = [
     sub: "What the agencies do",
     points: [
       "Measures a real water sample",
-      "Tells you about one spot, at the moment it was collected",
+      "Result is the amount of bacteria in that sample",
       "Takes 24–48 hours to come back",
       "Usually taken about once a week",
     ],
@@ -51,14 +51,14 @@ const COMPARE = [
       "Estimates, using conditions and past results",
       "Covers today and the next three days",
       "Updates once a day",
-      "Never touches the water",
+      "Is a probability of unsafe bacteria levels that day",
     ],
   },
 ];
 
 const FAQ = [
   {
-    q: "What is Enterococcus?",
+    q: "What is enterococcus?",
     a: "A group of bacteria that lives in the guts of people and animals. It is hard to test seawater for every germ that might make you ill, so agencies test for Enterococcus instead and use it as an indicator: more of it suggests a greater chance that sewage or runoff has reached the water. Finding it does not identify any particular illness or organism. It is a signal worth paying attention to, not a diagnosis.",
   },
   {
@@ -81,12 +81,12 @@ export default function HowItWorksPage() {
       title="How Neptune Works"
       section="About Neptune / 01"
       headline="Neptune forecasts the chance of elevated bacteria at your beach: today, and for the next three days."
-      intro="No water testing kit, no lab. Just the official sampling record, the conditions driving the ocean right now, and a model that has learned how the two fit together."
+      intro="No water testing kit, no lab. Just the official sampling record, the conditions driving the ocean right now, and a model that learns how the two fit together."
     />
 
     <EditorialSection number="01" title="Why a forecast helps">
       <p>Official testing is the ground truth, and Neptune would not exist without it. But it has a gap built into it: samples are typically collected about once a week, and the lab needs another 24 to 48 hours to grow and count what is in them.</p>
-      <p>So the number posted today describes water that was scooped up days ago. In between, it rains, tides turn, and swells arrive. That is the space a forecast fills.</p>
+      <p>So the number posted today describes water that was scooped up days ago. It gives you a rearview mirror into how the water was. In between samples and results, it rains, tides turn, and swells arrive. That is the space a forecast fills, what the water should be like today, and in the future.</p>
 
       {/* The gap, drawn rather than described. Two tracks on one timeline: the
           sampling track is sparse and lands late, the forecast track is
@@ -122,7 +122,7 @@ export default function HowItWorksPage() {
     </EditorialSection>
 
     <EditorialSection number="03" title="What the risk levels mean">
-      <p>The Neptune Index is a percentage. It is our model&rsquo;s estimated probability that Enterococcus exceeds {EPA_MPN_THRESHOLD} MPN/100mL at that beach. A lower percentage means an exceedance is less likely. A higher percentage means it is more likely.</p>
+      <p>The Neptune Index is a percentage. It is our model’s estimated probability that enterococcus exceeds {EPA_MPN_THRESHOLD} MPN/100mL at that beach. A lower percentage means an exceedance is less likely. A higher percentage means it is more likely.</p>
 
       {/* Read straight off RISK_TIERS so the bands and colors here can never
           drift from the legend on the board. */}
@@ -137,9 +137,9 @@ export default function HowItWorksPage() {
       </ul>
 
       <p>Those labels come from the relationship we see in the record. When past forecasts are lined up against the official lab results that followed them, samples predicted in the lower ranges have tended to come back with lower bacteria levels, and samples predicted in the higher ranges have tended to come back higher.</p>
-      <p>So the labels describe a likelihood, and how that likelihood has borne out. They are not measured bacteria counts, and no reading here is a measurement of the water you are standing in.</p>
+      <p>So the labels describe a likelihood, and how that likelihood has borne out. They are not measured bacteria counts, is it the probability of unsafe levels of bacteria for that day. </p>
 
-      <p className={s.annotation}>A Low reading means conditions look unfavorable for high bacteria, not that the water has been tested and cleared. A High reading is a reason for caution, not a closure. Official advisories and closures take precedence over anything on this page.</p>
+      <p className={s.annotation}>A low reading means conditions look unfavorable for high bacteria, not that the water has been tested and cleared. A high reading is a reason for caution, not a closure. Official advisories and closures take precedence over anything on this page.</p>
     </EditorialSection>
 
     <EditorialSection number="04" title="Forecast vs. lab test">
@@ -153,7 +153,7 @@ export default function HowItWorksPage() {
           </div>
         ))}
       </div>
-      <p className={s.annotation}>One measures the past precisely. The other estimates now and next. You want both.</p>
+      <p className={s.annotation}>One measures the past precisely. The other estimates now and next. We complement each other.</p>
     </EditorialSection>
 
     <EditorialSection number="05" title="How to use it">
