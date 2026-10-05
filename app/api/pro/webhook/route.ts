@@ -79,7 +79,8 @@ export async function POST(request: Request): Promise<Response> {
               dedupeKey: session.id,
               timestamp: new Date(event.created * 1000),
               properties: { ...(isProPlan(session.metadata?.plan) ? planProperties(session.metadata.plan) : {}),
-                board_location: "California", amount_cents: session.amount_total ?? null, livemode: event.livemode },
+                board_location: "California", amount_cents: session.amount_total ?? null,
+                currency: (session.currency ?? "usd").toUpperCase(), livemode: event.livemode },
             });
           }
           break;
