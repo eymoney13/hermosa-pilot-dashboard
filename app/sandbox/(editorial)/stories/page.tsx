@@ -37,8 +37,8 @@ export default function StoriesPage() {
     <PageHero
       title="Why It Matters"
       section="Why we built Neptune"
-      headline="The ocean is part of our lives. Knowing when to go in should be easier."
-      intro="We check the weather before heading out. We check the waves, too. But when it comes to the water itself, the information we need can be hard to find or already out of date."
+      headline="The ocean is mostly a mystery. But the water quality of it shouldn't be."
+      intro="We check the weather before heading out. The air quality is shown too. But when it comes to the water itself, the information we need can be hard to find or already out of date. This leads to over 7 million Americans getting sick each year from the ocean."
     />
 
     {/* The origin story gets the page's warmest treatment and its only panel.
@@ -47,13 +47,14 @@ export default function StoriesPage() {
         about a person rather than a quotation from him. */}
     <section className={s.origin}>
       <p className={s.eyebrow}>The surf trip that started it</p>
-      <p className={s.originLede}>Project Neptune began after co-founder Max became seriously ill with a staph infection following a surf trip in Mexico.</p>
+      <p className={s.originLede}>Project Neptune began after co-founder Max became seriously ill with a staph infection following a surf trip in Mexico.
+</p>
       <p>He spent eight days in the hospital receiving IV antibiotics, followed by two more weeks of treatment at home.</p>
       <p>The experience left us with a question. What if people could check the likely water quality before getting in, as easily as they check the weather?</p>
     </section>
 
     <EditorialSection number="01" title="The problem">
-      <h3>A beach can change before the next test</h3>
+      <h3>The water can change before the next test</h3>
       <p>Official water testing is essential, but a sample captures conditions at one place and time. Lab results can take a day or two, while rain, runoff, and ocean conditions keep changing.</p>
       <p>That leaves a gap between what the last test showed and what someone wants to know before going in today.</p>
     </EditorialSection>
@@ -72,8 +73,8 @@ export default function StoriesPage() {
         verified stories arrive with consent, they go here and this invitation
         moves below them. */}
     <section className={s.invite}>
-      <h2>This page is still being written</h2>
-      <p>We would rather leave this space open than fill it with words nobody said. If the water has changed a plan of yours, or cost you a day, we would like to hear about it.</p>
+      <h2>Share your story</h2>
+      <p>If the water has changed a plan of yours, got you sick, or cost you a day, we would like to hear about it.</p>
       <a className={s.inlineTeal} href={`mailto:${CONTACT}?subject=${SHARE_SUBJECT}&body=${SHARE_BODY}`}>
         Share your story
         <ArrowUpRight size={15} aria-hidden="true" />
@@ -82,7 +83,7 @@ export default function StoriesPage() {
 
     <section className={s.closing}>
       <h2>Built for the people who love the water.</h2>
-      <p>Surfers, swimmers, parents, volleyball players, and anyone who plans their day around the beach deserve information they can understand and use. We&rsquo;re starting in the South Bay and building Neptune with feedback from the communities who use these beaches.</p>
+      <p>Swimmers, parents, surfers, and anyone who gets in the water deserve information they can understand and use. We’re starting in the Los Angeles region and building Neptune with feedback from the communities who use these beaches.</p>
       <div className={s.ctaRow}>
         <Link className={s.ctaPrimary} href="/california">
           Check your beach

@@ -92,20 +92,20 @@ function NameRow({ name, linkedin }: { name: string; linkedin?: string }) {
 
 const FOUNDERS = [
   {
-    name: "Ethan Young",
-    slug: "ethan-young",
-    linkedin: "https://www.linkedin.com/in/ethan-young-b67a4b228/",
-    initial: "E",
-    role: "Co-founder",
-    bio: "Ethan grew up in Hermosa Beach, where the ocean and the South Bay community have always been part of his life. He is focused on getting Neptune into the hands of the people who use these beaches, listening to their feedback, and making the forecast genuinely useful.",
-  },
-  {
     name: "Max Lynch",
     slug: "max-lynch",
     linkedin: "https://www.linkedin.com/in/maxwelllynch/",
     initial: "M",
     role: "Co-founder",
-    bio: "After becoming seriously ill following a surf trip in Mexico, Max began asking why it was so difficult to know what was happening in the water before getting in. That experience helped spark Project Neptune. He works on turning water-quality data and environmental conditions into forecasts people can understand and use.",
+    bio: "After becoming seriously ill following a surf trip in Mexico, Max began asking why it was so difficult to know what was happening in the water before getting in. That experience helped spark Project Neptune. He is focused on getting Neptune into the hands of the people who use these beaches, listening to their feedback, and making the forecast genuinely useful.",
+  },
+  {
+    name: "Ethan Young",
+    slug: "ethan-young",
+    linkedin: "https://www.linkedin.com/in/ethan-young-b67a4b228/",
+    initial: "E",
+    role: "Co-founder",
+    bio: "Ethan grew up in Hermosa Beach, where the ocean and the South Bay community have always been part of his life. He works on turning water-quality data and environmental conditions into forecasts people can understand and use.",
   },
 ];
 
@@ -123,7 +123,7 @@ export default function TeamPage() {
       title="Meet the Team"
       section="The people behind Neptune"
       headline="We&rsquo;re building the water-quality forecast we wished existed."
-      intro="Project Neptune was founded by Ethan and Max, two people who believe checking ocean water quality should be as easy as checking the weather."
+      intro="Project Neptune was founded by Max and Ethan, two people who believe checking ocean water quality should be as easy as checking the weather."
     />
 
     <div className={s.founderGrid}>
@@ -138,7 +138,7 @@ export default function TeamPage() {
     </div>
 
     <section className={s.closing}>
-      <h2>We&rsquo;re starting with the beaches we know.</h2>
+      <h2>Starting local. Vision set on global.</h2>
       <p>We are building toward a future where anyone can check the water before they go in. If you want the longer version of why, <Link className={s.textLink} href="/california/stories">read the story behind Neptune</Link>.</p>
       <div className={s.ctaRow}>
         <Link className={s.ctaPrimary} href="/california">
