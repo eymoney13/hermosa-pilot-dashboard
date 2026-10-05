@@ -45,7 +45,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   const beachNavigation = useRef<HTMLDivElement>(null);
   const active = beaches.find((beach) => beach.code === selected);
   const activeAdvisory = active && ORANGE_COUNTY_STATIONS.includes(active.code) ? ORANGE_COUNTY_ADVISORY : advisory;
-  const ordered = orderForList(beaches, listTopStations);
+  const ordered = [...beaches].sort((a, b) => b.latitude - a.latitude || a.name.localeCompare(b.name));
   const countyStations: [string, string[]][] = [
     ["Los Angeles County", ["DPH 002B", "DHS103", "DHS104", "SMB-3-5", "SMB-3-6", "DPH 122", "SMB-2-10", "SMB-2-11", "SMB-2-13", "DHS112B", "DHS113", "DHS114", "DHS115", "DHS116", "SMB-7-9"]],
     ["Orange County", ORANGE_COUNTY_STATIONS],
