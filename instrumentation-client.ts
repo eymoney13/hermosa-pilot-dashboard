@@ -1,5 +1,5 @@
 import posthog from "posthog-js";
-import { acquisitionSource } from "@/lib/analytics";
+import { acquisitionCampaign, acquisitionSource } from "@/lib/analytics";
 
 const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
@@ -23,7 +23,12 @@ if (!posthogKey) {
     defaults: "2026-01-30",
     capture_exceptions: true,
     debug: process.env.NODE_ENV === "development",
+    // First touch only: a later visit must not overwrite it, and medium and
+    // campaign come from the same visit as source or not at all.
+    loaded: (ph) => {
+      if (ph.get_property("source") === undefined) {
+        ph.register({ source: acquisitionSource(), ...acquisitionCampaign() });
+      }
+    },
   });
-  // First touch only: a later internal navigation must not overwrite it.
-  posthog.register_once({ source: acquisitionSource() });
 }

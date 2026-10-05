@@ -46,3 +46,16 @@ export function acquisitionSource(): string {
   }
   return "direct";
 }
+
+// utm_medium and utm_campaign alongside source, e.g. qr / beach_sign /
+// hermosa_26th. Only set when the landing link carried them, so a later visit
+// with no UTMs cannot blank out the first one.
+export function acquisitionCampaign(): Record<string, string> {
+  const params = new URLSearchParams(window.location.search);
+  const out: Record<string, string> = {};
+  for (const [param, key] of [["utm_medium", "medium"], ["utm_campaign", "campaign"]] as const) {
+    const value = params.get(param);
+    if (value) out[key] = value.toLowerCase();
+  }
+  return out;
+}
