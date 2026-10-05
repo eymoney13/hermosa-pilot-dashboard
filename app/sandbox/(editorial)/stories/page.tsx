@@ -37,7 +37,7 @@ export default function StoriesPage() {
     <PageHero
       title="Why It Matters"
       section="Why we built Neptune"
-      headline="The ocean is mostly a mystery. But the water quality of it shouldn't be."
+      headline="The ocean is mostly a mystery. But answering &quot;will it get you sick?&quot; shouldn&#x27;t be."
       intro="We check the weather before heading out. The air quality is shown too. But when it comes to the water itself, the information we need can be hard to find or already out of date. This leads to over 7 million Americans getting sick each year from the ocean."
     />
 
