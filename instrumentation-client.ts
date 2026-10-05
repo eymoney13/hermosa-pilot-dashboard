@@ -1,4 +1,5 @@
 import posthog from "posthog-js";
+import { acquisitionSource } from "@/lib/analytics";
 
 const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
@@ -23,4 +24,6 @@ if (!posthogKey) {
     capture_exceptions: true,
     debug: process.env.NODE_ENV === "development",
   });
+  // First touch only: a later internal navigation must not overwrite it.
+  posthog.register_once({ source: acquisitionSource() });
 }

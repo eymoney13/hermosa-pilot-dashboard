@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import posthog from "posthog-js";
+import { planProperties } from "@/lib/analytics";
 
 // Only event names and plan; never read the checkout email or payment details.
 //
@@ -12,7 +13,7 @@ export default function ProCheckoutAnalytics({plan}: {plan: "monthly" | "yearly"
     const form = document.getElementById("pro-checkout-form") as HTMLFormElement | null;
     const id = form?.elements.namedItem("ph_id");
     if (id instanceof HTMLInputElement) id.value = posthog.get_distinct_id() ?? "";
-    const track = () => posthog.capture("checkout_started", {plan, board_location:"California"});
+    const track = () => posthog.capture("checkout_started", {...planProperties(plan), board_location:"California"});
     form?.addEventListener("submit", track);
     return () => form?.removeEventListener("submit", track);
   }, [plan]);

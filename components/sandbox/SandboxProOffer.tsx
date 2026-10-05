@@ -2,6 +2,8 @@
 import posthog from "posthog-js";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import type { BeachData } from "@/lib/data";
+import { beachProperties, planProperties, type CtaLocation } from "@/lib/analytics";
 import s from "./SandboxDashboard.module.css";
 
 // Sandbox-only Pro upgrade card.
@@ -10,21 +12,33 @@ import s from "./SandboxDashboard.module.css";
 // requires test keys; live checkout still requires the live-billing switch.
 const CTA = "Join Neptune Pro for $5/month";
 
-export default function SandboxProOffer({ checkoutReady, alertsEnabled }: { checkoutReady: boolean; alertsEnabled: boolean }) {
+export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocation, beach }: {
+  checkoutReady: boolean;
+  alertsEnabled: boolean;
+  ctaLocation: CtaLocation;
+  // The beach on screen, when the card sits under one.
+  beach?: BeachData;
+}) {
+  const context = { board_location: "California", cta_location: ctaLocation, ...(beach ? beachProperties(beach, "southbay") : {}) };
+  const clicked = (plan: "monthly" | "yearly") => posthog.capture("pro_cta_clicked", { ...context, ...planProperties(plan) });
+
   // Seen, not merely rendered: the card often mounts below the fold, and the
-  // funnel step means the reader actually had a chance to buy.
+  // funnel step means the reader actually had a chance to buy. Seen again
+  // when the card moves to a new view or beach, so cta_location stays honest.
   const card = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = card.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     const seen = new IntersectionObserver((entries) => {
       if (!entries.some((e) => e.isIntersecting)) return;
-      posthog.capture("pro_offer_viewed", { board_location: "California", checkout_ready: checkoutReady });
+      posthog.capture("pro_offer_viewed", { ...context, checkout_ready: checkoutReady });
       seen.disconnect();
     }, { threshold: 0.5 });
     seen.observe(el);
     return () => seen.disconnect();
-  }, [checkoutReady]);
+    // context is rebuilt every render; its inputs are what matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutReady, ctaLocation, beach?.code]);
 
   // Pro only. The Free column was cut: a reader looking at this card is already
   // using the free board, so listing what they have back to them spends half
@@ -72,8 +86,8 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled }: { chec
 
         {checkoutReady ? (
           <div className={s.planChoices}>
-            <Link onClick={() => posthog.capture("pro_cta_clicked", {plan:"yearly",board_location:"California"})} prefetch={false} className={`${s.primary} ${s.annualPrimary}`} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $40/year <span>Save 33% with annual billing</span></Link>
-            <Link onClick={() => posthog.capture("pro_cta_clicked", {plan:"monthly",board_location:"California"})} prefetch={false} className={s.annualChoice} href="/pro/start?plan=monthly&from=%2Fcalifornia">{CTA}</Link>
+            <Link onClick={() => clicked("yearly")} prefetch={false} className={`${s.primary} ${s.annualPrimary}`} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $40/year <span>Save 33% with annual billing</span></Link>
+            <Link onClick={() => clicked("monthly")} prefetch={false} className={s.annualChoice} href="/pro/start?plan=monthly&from=%2Fcalifornia">{CTA}</Link>
           </div>
         ) : (
           <>

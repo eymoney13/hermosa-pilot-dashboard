@@ -1,0 +1,42 @@
+import { STATUS_BAND, type BeachData } from "./data";
+import { PRO_PLANS, type ProPlan } from "./proPlans";
+
+// Shared PostHog property shapes, so every event describes a beach or a plan
+// the same way. A few well-typed properties on a handful of events answer more
+// questions later than a new event name per question.
+
+// Where on the page a Pro prompt sat when it was seen or clicked.
+export type CtaLocation = "beach_page" | "list" | "map" | "news";
+
+export function beachProperties(beach: BeachData, region: string) {
+  return {
+    beach_id: beach.code,
+    beach_name: beach.name,
+    region,
+    // The same three words the legend shows: low / moderate / high.
+    risk_level: STATUS_BAND[beach.status].short.toLowerCase(),
+    // The 0-100 number BeachCard draws as the Neptune Index.
+    neptune_index: Math.round(Math.max(0, Math.min(1, beach.probability)) * 100),
+  };
+}
+
+export function planProperties(plan: ProPlan) {
+  return {
+    plan: plan === "yearly" ? "annual" : "monthly",
+    price: PRO_PLANS[plan].cents / 100,
+  };
+}
+
+// First-touch acquisition source, kept on every later event from this browser:
+// utm_source when the link carried one, else the referring site, else direct.
+export function acquisitionSource(): string {
+  const utm = new URLSearchParams(window.location.search).get("utm_source");
+  if (utm) return utm.toLowerCase();
+  try {
+    const host = new URL(document.referrer).hostname.replace(/^www\./, "");
+    if (host && host !== window.location.hostname.replace(/^www\./, "")) return host;
+  } catch {
+    // No referrer, or not a URL.
+  }
+  return "direct";
+}

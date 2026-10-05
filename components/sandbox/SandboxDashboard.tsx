@@ -7,6 +7,7 @@ import { UserButton } from "@clerk/nextjs";
 import { ArrowLeft, ArrowRight, ChevronRight, List, Map, Waves } from "lucide-react";
 import { formatMonthDayYear, orderForList, STATUS_BAND, type BeachData } from "@/lib/data";
 import type { NewsItem } from "@/lib/news";
+import { beachProperties } from "@/lib/analytics";
 import ProjectNeptuneLogo from "../ProjectNeptuneLogo";
 import OverviewMapClient from "../OverviewMapClient";
 import NewsTab from "../NewsTab";
@@ -64,7 +65,12 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
     heading.current?.focus({ preventScroll: true });
     (beachNavigation.current ?? heading.current)?.scrollIntoView({ block: "start" });
   });
-  const openBeach = (code: string) => { setSelected(code); posthog.capture("beach_viewed", { board_location: "California", region: "southbay", beach_code: code, source: view }); focusHeading(); };
+  const openBeach = (code: string) => {
+    setSelected(code);
+    const beach = beaches.find((b) => b.code === code);
+    if (beach) posthog.capture("beach_viewed", { board_location: "California", ...beachProperties(beach, "southbay"), entry_point: view });
+    focusHeading();
+  };
   const switchView = (next: typeof view) => { setView(next); setSelected(null); posthog.capture("dashboard_view_selected", { board_location: "California", region: "southbay", view: next }); };
 
   return (
@@ -125,7 +131,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
           </section>
         )}
         {!active && view !== "news" && <h2 className={s.coverageNote}>More California beaches coming soon!</h2>}
-        {!entitled && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} />}
+        {!entitled && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} ctaLocation={active ? "beach_page" : view} beach={active} />}
         {/* List and map only. Inside a beach card the reader is looking at one
             beach, and a list of every beach they follow is a different job; on
             News it has nothing to do with what is on screen. */}

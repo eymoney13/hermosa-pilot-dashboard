@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { ChevronLeft, Pointer } from "lucide-react";
 import posthog from "posthog-js";
 import { orderForList, VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
+import { beachProperties } from "@/lib/analytics";
 import type { FeatureFlags } from "@/lib/features";
 import type { NewsItem } from "@/lib/news";
 import BeachCard from "./BeachCard";
@@ -33,6 +34,7 @@ const posthogConfigured = Boolean(
 export default function DashboardTabs({
   beaches,
   locationLabel,
+  region,
   fallbackCenter,
   features,
   listTopStations,
@@ -42,6 +44,8 @@ export default function DashboardTabs({
 }: {
   beaches: BeachData[];
   locationLabel: string;
+  // The location slug, sent as the analytics `region`.
+  region: string;
   fallbackCenter: [number, number];
   features: FeatureFlags;
   // Station codes this board leads its List with (LocationConfig.listTopStations).
@@ -101,16 +105,19 @@ export default function DashboardTabs({
 
   const selectBeach = (
     code: string,
-    source: "list" | "map" | "picker" | "tab" | "neighbor",
+    entryPoint: "list" | "map" | "picker" | "tab" | "neighbor",
     scroll = false
   ) => {
     setActiveCode(code);
     if (scroll) scrollToTop();
-    if (posthogConfigured) {
+    const beach = beaches.find((b) => b.code === code);
+    if (posthogConfigured && beach) {
+      // entry_point, not source: `source` is the first-touch acquisition
+      // channel registered for every event in instrumentation-client.ts.
       posthog.capture("beach_viewed", {
         board_location: locationLabel,
-        beach_code: code,
-        source,
+        ...beachProperties(beach, region),
+        entry_point: entryPoint,
       });
     }
   };
