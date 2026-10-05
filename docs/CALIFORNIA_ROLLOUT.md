@@ -23,7 +23,7 @@
 
 ## Analytics
 
-Global PostHog and Vercel Analytics remain in place. California emits `water_quality_dashboard_viewed`, `dashboard_view_selected`, `beach_selected`, `pro_plan_selected`, `pro_checkout_viewed`, `pro_checkout_submitted`, `pro_activation_dashboard_opened`, and `alert_preferences_updated`. Beach events include stable beach codes and `region=southbay`; no email is added. Client events measure interaction, not authoritative revenue. Stripe remains authoritative for payments. Existing reports filtered to `/southbay` must include `/california` for cross-launch comparisons.
+Global PostHog and Vercel Analytics remain in place. California emits `water_quality_dashboard_viewed`, `dashboard_view_selected`, `beach_viewed`, `pro_offer_viewed`, `pro_cta_clicked`, `checkout_started`, `pro_activation_dashboard_opened`, and `alert_preferences_updated`. Beach events include stable beach codes and `region=southbay`; no email is added. Client events measure interaction, not authoritative revenue. Stripe remains authoritative for payments; the webhook sends a server-side `payment_succeeded` keyed to the browser's PostHog id (passed through Checkout metadata). Existing reports filtered to `/southbay` must include `/california` for cross-launch comparisons.
 
 ## Test isolation and operations
 

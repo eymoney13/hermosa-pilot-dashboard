@@ -64,7 +64,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
     heading.current?.focus({ preventScroll: true });
     (beachNavigation.current ?? heading.current)?.scrollIntoView({ block: "start" });
   });
-  const openBeach = (code: string) => { setSelected(code); posthog.capture("beach_selected", { board_location: "California", region: "southbay", beach_code: code, source: view }); focusHeading(); };
+  const openBeach = (code: string) => { setSelected(code); posthog.capture("beach_viewed", { board_location: "California", region: "southbay", beach_code: code, source: view }); focusHeading(); };
   const switchView = (next: typeof view) => { setView(next); setSelected(null); posthog.capture("dashboard_view_selected", { board_location: "California", region: "southbay", view: next }); };
 
   return (

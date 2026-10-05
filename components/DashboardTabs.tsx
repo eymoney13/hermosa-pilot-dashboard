@@ -107,7 +107,7 @@ export default function DashboardTabs({
     setActiveCode(code);
     if (scroll) scrollToTop();
     if (posthogConfigured) {
-      posthog.capture("beach_selected", {
+      posthog.capture("beach_viewed", {
         board_location: locationLabel,
         beach_code: code,
         source,
