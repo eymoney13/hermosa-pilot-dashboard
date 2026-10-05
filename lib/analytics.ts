@@ -11,6 +11,12 @@ import { PRO_PLANS, type ProPlan } from "./proPlans";
 // This is the product question: what makes someone want Pro?
 export type CtaLocation = "california_bottom" | "header_get_pro" | "list_banner" | "beach_forecast_lock";
 
+// A paid feature a free reader tried to open: locked_feature_clicked. Kept out
+// of the purchase funnel on purpose; it is diagnostic, answering which
+// information people actually want enough to pay for. Name new locks here so
+// the values stay comparable across releases.
+export type LockedFeature = "three_day_forecast" | "water_quality_history" | "email_alerts";
+
 // Which view the card sat under when it was seen or clicked.
 export type PageContext = "beach_page" | "list" | "map" | "news";
 
