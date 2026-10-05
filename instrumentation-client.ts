@@ -26,6 +26,12 @@ if (!posthogKey) {
     // First touch only: a later visit must not overwrite it, and medium and
     // campaign come from the same visit as source or not at all.
     loaded: (ph) => {
+      // Visit any page with ?neptune_internal=1 once per browser to mark it as
+      // the team's own. The project's "Internal / Test users" cohort matches
+      // this property, so the dashboards' test-account filter drops it.
+      if (new URLSearchParams(window.location.search).get("neptune_internal") === "1") {
+        ph.setPersonProperties({ $internal_or_test_user: true });
+      }
       if (ph.get_property("source") === undefined) {
         ph.register({ source: acquisitionSource(), ...acquisitionCampaign() });
       }
