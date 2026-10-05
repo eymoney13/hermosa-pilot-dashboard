@@ -42,10 +42,12 @@ function distanceScore(a: BeachData, b: BeachData) {
     * Math.sin((b.longitude - a.longitude) * rad / 2) ** 2;
 }
 
-export default function SandboxBeachDetail({ beach, beaches, onSelect, advisory }: {
+export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMoment, advisory }: {
   beach: BeachData;
   beaches: BeachData[];
   onSelect: (code: string) => void;
+  // A locked forecast cell was tapped: the reader wanted tomorrow.
+  onProMoment?: () => void;
   advisory: { label: string; href: string };
 }) {
   const [selectedDate, setSelectedDate] = useState(beach.predictionDate);
@@ -107,7 +109,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, advisory 
       {forecasts.length > 0 ? <>
         <p className={s.supporting}>Looking ahead · {dateLabel(forecasts[0].date)}–{dateLabel(forecasts[forecasts.length - 1].date)}</p>
         <div className={s.futureDays}>{forecasts.map((forecast) => forecast.locked ? (
-          <a href="#sandbox-pro" key={forecast.date} className={`${s.futureDay} ${s.futureLocked}`} aria-label={`${formatMonthDayYear(forecast.date)}: unlock forecast with Neptune Pro`}>
+          <a href="#sandbox-pro" onClick={onProMoment} key={forecast.date} className={`${s.futureDay} ${s.futureLocked}`} aria-label={`${formatMonthDayYear(forecast.date)}: unlock forecast with Neptune Pro`}>
             <span className={s.futureDayName}>{dateLabel(forecast.date, true)}</span>
             <span className={s.futureDate}>{dateLabel(forecast.date)}</span>
             <Lock size={18} aria-hidden="true" /><strong>Forecast</strong>

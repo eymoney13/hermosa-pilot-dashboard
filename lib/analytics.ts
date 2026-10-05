@@ -5,8 +5,14 @@ import { PRO_PLANS, type ProPlan } from "./proPlans";
 // the same way. A few well-typed properties on a handful of events answer more
 // questions later than a new event name per question.
 
-// Where on the page a Pro prompt sat when it was seen or clicked.
-export type CtaLocation = "beach_page" | "list" | "map" | "news";
+// The moment that brought a reader to the Pro card. The header, banner and
+// locked-forecast links only scroll to the card, so the card's own events carry
+// the moment forward; california_bottom means the reader scrolled there alone.
+// This is the product question: what makes someone want Pro?
+export type CtaLocation = "california_bottom" | "header_get_pro" | "list_banner" | "beach_forecast_lock";
+
+// Which view the card sat under when it was seen or clicked.
+export type PageContext = "beach_page" | "list" | "map" | "news";
 
 export function beachProperties(beach: BeachData, region: string) {
   return {

@@ -3,7 +3,7 @@ import posthog from "posthog-js";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { BeachData } from "@/lib/data";
-import { beachProperties, planProperties, type CtaLocation } from "@/lib/analytics";
+import { beachProperties, planProperties, type CtaLocation, type PageContext } from "@/lib/analytics";
 import s from "./SandboxDashboard.module.css";
 
 // Sandbox-only Pro upgrade card.
@@ -12,19 +12,21 @@ import s from "./SandboxDashboard.module.css";
 // requires test keys; live checkout still requires the live-billing switch.
 const CTA = "Join Neptune Pro for $5/month";
 
-export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocation, beach }: {
+export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocation, pageContext, beach }: {
   checkoutReady: boolean;
   alertsEnabled: boolean;
   ctaLocation: CtaLocation;
+  pageContext: PageContext;
   // The beach on screen, when the card sits under one.
   beach?: BeachData;
 }) {
-  const context = { board_location: "California", cta_location: ctaLocation, ...(beach ? beachProperties(beach, "southbay") : {}) };
+  const context = { board_location: "California", cta_location: ctaLocation, page_context: pageContext, ...(beach ? beachProperties(beach, "southbay") : {}) };
   const clicked = (plan: "monthly" | "yearly") => posthog.capture("pro_cta_clicked", { ...context, ...planProperties(plan) });
 
   // Seen, not merely rendered: the card often mounts below the fold, and the
   // funnel step means the reader actually had a chance to buy. Seen again
-  // when the card moves to a new view or beach, so cta_location stays honest.
+  // when the card moves to a new view or beach, or a different link sends the
+  // reader to it, so cta_location and page_context stay honest.
   const card = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = card.current;
@@ -38,7 +40,7 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocat
     return () => seen.disconnect();
     // context is rebuilt every render; its inputs are what matter.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkoutReady, ctaLocation, beach?.code]);
+  }, [checkoutReady, ctaLocation, pageContext, beach?.code]);
 
   // Pro only. The Free column was cut: a reader looking at this card is already
   // using the free board, so listing what they have back to them spends half

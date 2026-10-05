@@ -7,7 +7,7 @@ import { UserButton } from "@clerk/nextjs";
 import { ArrowLeft, ArrowRight, ChevronRight, List, Map, Waves } from "lucide-react";
 import { formatMonthDayYear, orderForList, STATUS_BAND, type BeachData } from "@/lib/data";
 import type { NewsItem } from "@/lib/news";
-import { beachProperties } from "@/lib/analytics";
+import { beachProperties, type CtaLocation } from "@/lib/analytics";
 import ProjectNeptuneLogo from "../ProjectNeptuneLogo";
 import OverviewMapClient from "../OverviewMapClient";
 import NewsTab from "../NewsTab";
@@ -42,6 +42,9 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
     posthog.capture("water_quality_dashboard_viewed", {board_location:"California", region:"southbay", access: entitled ? "pro" : "free"});
     if (openForecast && entitled) posthog.capture("pro_activation_dashboard_opened", {board_location:"California"});
   }, [entitled, openForecast]);
+  // The last link that sent the reader to the Pro card. Cleared whenever the
+  // page changes under them, so a stale click is never credited later.
+  const [proMoment, setProMoment] = useState<CtaLocation | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const beachNavigation = useRef<HTMLDivElement>(null);
   const active = beaches.find((beach) => beach.code === selected);
@@ -67,18 +70,19 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   });
   const openBeach = (code: string) => {
     setSelected(code);
+    setProMoment(null);
     const beach = beaches.find((b) => b.code === code);
     if (beach) posthog.capture("beach_viewed", { board_location: "California", ...beachProperties(beach, "southbay"), entry_point: view });
     focusHeading();
   };
-  const switchView = (next: typeof view) => { setView(next); setSelected(null); posthog.capture("dashboard_view_selected", { board_location: "California", region: "southbay", view: next }); };
+  const switchView = (next: typeof view) => { setView(next); setSelected(null); setProMoment(null); posthog.capture("dashboard_view_selected", { board_location: "California", region: "southbay", view: next }); };
 
   return (
     <main className={s.root}>
 
       <header className={s.header}>
         <a href="https://projectneptune.co" aria-label="Project Neptune home"><ProjectNeptuneLogo size={22} /></a>
-        <div className={s.account}>{!entitled && <a className={s.headerPro} href="#sandbox-pro">Get Pro</a>}{entitled && <UserButton />}<SandboxMenu account={account} /></div>
+        <div className={s.account}>{!entitled && <a className={s.headerPro} href="#sandbox-pro" onClick={() => setProMoment("header_get_pro")}>Get Pro</a>}{entitled && <UserButton />}<SandboxMenu account={account} /></div>
       </header>
       <div className={s.content}>
         <div className={s.masthead}>
@@ -96,20 +100,20 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
         {!entitled && !active && view === "list" && (
           <aside className={s.proBanner} aria-label="Join Neptune Pro">
             <div><strong>Checking the water should be as easy as checking the weather.</strong><p>3-day forecasts and email alerts.</p></div>
-            <a href="#sandbox-pro">Join Neptune Pro <ArrowRight size={16} aria-hidden="true" /></a>
+            <a href="#sandbox-pro" onClick={() => setProMoment("list_banner")}>Join Neptune Pro <ArrowRight size={16} aria-hidden="true" /></a>
           </aside>
         )}
         {active ? (
           <>
             <div className={s.beachNav}>
-              <button onClick={() => { setSelected(null); focusHeading(); }}><ArrowLeft size={17} /> Back to {view === "map" ? "map" : "beaches"}</button>
+              <button onClick={() => { setSelected(null); setProMoment(null); focusHeading(); }}><ArrowLeft size={17} /> Back to {view === "map" ? "map" : "beaches"}</button>
               <label><span className={s.srOnly}>Choose a beach</span><select value={active.code} onChange={(event) => openBeach(event.target.value)}>{ordered.map((beach) => <option key={beach.code} value={beach.code}>{beach.name}</option>)}</select></label>
             </div>
             <div ref={beachNavigation} className={s.beachNavigation}>
               <BeachNeighborNav beach={active} beaches={beaches} onSelect={openBeach} />
             </div>
             <h2 ref={heading} tabIndex={-1} className={s.beachHeading}>{active.name}</h2>
-            <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} advisory={activeAdvisory} />
+            <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} onProMoment={() => setProMoment("beach_forecast_lock")} advisory={activeAdvisory} />
           </>
         ) : beaches.length === 0 ? (
           <div className={s.empty}><h2>No readings published yet.</h2><p>The daily forecast will appear here when it is available.</p></div>
@@ -131,7 +135,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
           </section>
         )}
         {!active && view !== "news" && <h2 className={s.coverageNote}>More California beaches coming soon!</h2>}
-        {!entitled && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} ctaLocation={active ? "beach_page" : view} beach={active} />}
+        {!entitled && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} ctaLocation={proMoment ?? "california_bottom"} pageContext={active ? "beach_page" : view} beach={active} />}
         {/* List and map only. Inside a beach card the reader is looking at one
             beach, and a list of every beach they follow is a different job; on
             News it has nothing to do with what is on screen. */}
