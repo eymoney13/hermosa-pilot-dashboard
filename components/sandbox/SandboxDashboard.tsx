@@ -117,7 +117,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             {view === "map" && (
               <div className={s.beachRequest}>
                 <p>Don’t see your beach?</p>
-                <a href="mailto:ethan@projectneptune.co?subject=Request%20a%20beach%20for%20Neptune&body=Hi%20Neptune%2C%0A%0AI%E2%80%99d%20love%20to%20see%20this%20beach%20added%3A%0A%0ABeach%20name%3A%20%0ACity%20or%20county%3A%20%0A">Request your beach <ArrowRight size={16} aria-hidden="true" /></a>
+                <a href="/california/request-beach">Request your beach <ArrowRight size={16} aria-hidden="true" /></a>
               </div>
             )}
             <div className={s.legend} aria-label="Neptune Index categories">{(["Normal", "Slightly elevated", "Not recommended"] as const).map((status) => <span key={status} className={bandClass(status)}><i className={s.dot} />{STATUS_BAND[status].short} risk</span>)}</div>
