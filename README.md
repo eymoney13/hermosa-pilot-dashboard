@@ -64,3 +64,12 @@ npm run build
 Deploys on the [Vercel Platform](https://vercel.com). See the
 [Next.js deployment docs](https://nextjs.org/docs/app/building-your-application/deploying)
 for details.
+
+### Beach requests
+
+The on-site form lives at `/california/request-beach` (preview: `/sandbox/request-beach`).
+Apply its additive database schema with `node scripts/apply-beach-requests-schema.mjs` before deployment.
+Submissions store email, message, source, and creation time in `beach_requests`; sandbox requests are tagged separately.
+To export live requests privately: `node scripts/export-beach-requests.mjs /absolute/path/beach-requests.csv`.
+The export excludes sandbox records and refuses to overwrite an existing file. Requests are not marketing subscriptions.
+Run `node scripts/test-beach-requests.mjs` for storage and endpoint validation.

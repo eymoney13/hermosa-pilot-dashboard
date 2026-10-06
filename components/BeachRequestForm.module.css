@@ -1,0 +1,20 @@
+.wrap { max-width: 660px; margin: 0 auto; padding: 24px 0 72px; color: var(--ink, #203d40); }
+.back { color: var(--teal, #2c7778); font-size: 14px; text-decoration: none; }
+.eyebrow { margin-top: 44px; color: var(--teal, #2c7778); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; }
+.wrap h1 { font-size: clamp(32px, 6vw, 52px); line-height: 1.1; margin: 14px 0; font-weight: 500; }
+.intro { color: var(--muted, #697773); line-height: 1.7; font-size: 17px; }
+.form { display: flex; flex-direction: column; margin-top: 32px; gap: 12px; }
+.form label { font-size: 15px; }
+.form input, .form textarea { width: 100%; box-sizing: border-box; border: 1px solid #b4c6bb; border-radius: 10px; background: #ffffff; color: #203d40; padding: 14px 16px; font: inherit; font-size: 16px; }
+.form input { margin-bottom: 12px; }
+.form textarea { resize: vertical; min-height: 140px; }
+.form input:focus-visible, .form textarea:focus-visible, .form button:focus-visible, .wrap a:focus-visible { outline: 2px solid #2c7778; outline-offset: 4px; }
+.form input::placeholder, .form textarea::placeholder { color: #697773; }
+.form button { align-self: flex-start; border: 0; border-radius: 8px; background: #2c7778; color: #ffffff; font: inherit; font-weight: 600; padding: 14px 22px; cursor: pointer; }
+.form button:disabled { opacity: .65; cursor: wait; }
+.note { font-size: 13px; color: var(--muted, #697773); line-height: 1.6; }
+.note a, .success a { color: #2c7778; text-underline-offset: 3px; }
+.error { color: #a53226; }
+.success { margin-top: 32px; border-top: 1px solid #b4c6bb; padding-top: 24px; line-height: 1.7; }
+.success h2 { font-size: 24px; font-weight: 500; }
+.trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
