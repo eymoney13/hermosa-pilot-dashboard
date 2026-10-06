@@ -17,7 +17,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<{f
   async function checkout(form: FormData) {
     "use server";
     let url: string;
-    try { url = await startPurchase(plan, String(form.get("email") ?? "")); }
+    try { url = await startPurchase(plan, String(form.get("email") ?? ""), String(form.get("ph_id") ?? "")); }
     catch { redirect(`/pro/start?from=/california&plan=${plan}&error=1`); }
     redirect(url);
   }
@@ -32,7 +32,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<{f
     </nav>
     <p className="mt-5">{PRO_PLANS[plan].label}. Renews automatically. Cancel anytime.</p>
     <p className="mt-3 text-sm text-gray-600">Pay securely, then create your Pro account using the same email.</p>
-    <ProCheckoutAnalytics plan={plan} /><form id="pro-checkout-form" action={checkout} className="mt-6"><label htmlFor="email">Your checkout email</label>
+    <ProCheckoutAnalytics plan={plan} /><form id="pro-checkout-form" action={checkout} className="mt-6"><input type="hidden" name="ph_id" defaultValue="" /><label htmlFor="email">Your checkout email</label>
       <input id="email" name="email" type="email" required maxLength={254} autoComplete="email" className="mt-2 w-full rounded border p-3"/>
       <button className="mt-6 rounded bg-teal-800 px-5 py-3 text-white">Continue to secure checkout</button>
       {query.error && <p role="alert" className="mt-4">Checkout is temporarily unavailable. Check your email entry and try again later. If you already paid, recover your purchase below.</p>}

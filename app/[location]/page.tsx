@@ -189,6 +189,7 @@ export default async function LocationPage({
         <DashboardTabs
           beaches={beaches}
           locationLabel={config.displayName}
+          region={location}
           fallbackCenter={config.mapFallbackCenter}
           features={features}
           listTopStations={config.listTopStations}

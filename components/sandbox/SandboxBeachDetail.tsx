@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import posthog from "posthog-js";
 import { ArrowRight, ArrowUpRight, Lock } from "lucide-react";
 import { formatMonthDayYear, RISK_TIERS, riskTier, STATUS_BAND, type BeachData, type Status } from "@/lib/data";
 import { buildWindowCells } from "@/lib/window";
+import { beachProperties, type LockedFeature } from "@/lib/analytics";
 import WhyPrediction from "../WhyPrediction";
 import ForecastAccuracy from "../ForecastAccuracy";
 import s from "./SandboxDashboard.module.css";
@@ -42,10 +44,12 @@ function distanceScore(a: BeachData, b: BeachData) {
     * Math.sin((b.longitude - a.longitude) * rad / 2) ** 2;
 }
 
-export default function SandboxBeachDetail({ beach, beaches, onSelect, advisory }: {
+export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMoment, advisory }: {
   beach: BeachData;
   beaches: BeachData[];
   onSelect: (code: string) => void;
+  // A locked forecast cell was tapped: the reader wanted tomorrow.
+  onProMoment?: () => void;
   advisory: { label: string; href: string };
 }) {
   const [selectedDate, setSelectedDate] = useState(beach.predictionDate);
@@ -56,6 +60,17 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, advisory 
   };
   const today = buildWindowCells(beach).find((cell) => cell.type === "today")!.day;
   const forecasts = beach.forecast.filter((day) => day.date > beach.predictionDate).slice(0, 3);
+  // Before onProMoment: the reader asked for this specific thing, which the
+  // Pro card events alone cannot say. days_ahead 1 is "tomorrow".
+  const lockedClicked = (feature: LockedFeature, date: string) => {
+    posthog.capture("locked_feature_clicked", {
+      board_location: "California",
+      ...beachProperties(beach, "southbay"),
+      feature,
+      days_ahead: Math.round((Date.parse(date) - Date.parse(beach.predictionDate)) / 86_400_000),
+    });
+    onProMoment?.();
+  };
   // A locked date is a placeholder and must never be rendered as a reading.
   const day = forecasts.find((candidate) => candidate.date === selectedDate && !candidate.locked) ?? today;
   const isToday = day.date === today.date;
@@ -107,7 +122,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, advisory 
       {forecasts.length > 0 ? <>
         <p className={s.supporting}>Looking ahead · {dateLabel(forecasts[0].date)}–{dateLabel(forecasts[forecasts.length - 1].date)}</p>
         <div className={s.futureDays}>{forecasts.map((forecast) => forecast.locked ? (
-          <a href="#sandbox-pro" key={forecast.date} className={`${s.futureDay} ${s.futureLocked}`} aria-label={`${formatMonthDayYear(forecast.date)}: unlock forecast with Neptune Pro`}>
+          <a href="#sandbox-pro" onClick={() => lockedClicked("three_day_forecast", forecast.date)} key={forecast.date} className={`${s.futureDay} ${s.futureLocked}`} aria-label={`${formatMonthDayYear(forecast.date)}: unlock forecast with Neptune Pro`}>
             <span className={s.futureDayName}>{dateLabel(forecast.date, true)}</span>
             <span className={s.futureDate}>{dateLabel(forecast.date)}</span>
             <Lock size={18} aria-hidden="true" /><strong>Forecast</strong>

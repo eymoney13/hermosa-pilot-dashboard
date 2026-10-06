@@ -1,4 +1,6 @@
 import { syncPurchase, refreshPurchaseSubscription, sendRecovery } from "@/lib/purchase";
+import { capturePostHogEvent } from "@/lib/posthogCapture";
+import { planProperties } from "@/lib/analytics";
 import {
   constructWebhookEvent,
   isProPlan,
@@ -69,7 +71,18 @@ export async function POST(request: Request): Promise<Response> {
         const session = event.data.object;
         if (session.metadata?.flow === "payment_first_v1") {
           const purchase = await syncPurchase(session.id);
-          if (purchase?.active) await sendRecovery(purchase.email, true);
+          if (purchase?.active) {
+            await sendRecovery(purchase.email, true);
+            await capturePostHogEvent({
+              event: "payment_succeeded",
+              distinctId: session.metadata?.posthog_distinct_id ?? null,
+              dedupeKey: session.id,
+              timestamp: new Date(event.created * 1000),
+              properties: { ...(isProPlan(session.metadata?.plan) ? planProperties(session.metadata.plan) : {}),
+                board_location: "California", amount_cents: session.amount_total ?? null,
+                currency: (session.currency ?? "usd").toUpperCase(), livemode: event.livemode },
+            });
+          }
           break;
         }
         if (session.payment_status !== "paid") break;

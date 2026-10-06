@@ -15,7 +15,7 @@ function validEmail(email: string) { return email.length <= 254 && /^[^\s@]+@[^\
 
 // POST only. The database elects a single checkout attempt for an email across
 // tabs/processes. Stripe idempotency makes retries return that same checkout.
-export async function startPurchase(plan: ProPlan, rawEmail: string): Promise<string> {
+export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogId = ""): Promise<string> {
   if (!isPaymentFirstEnabled()) throw new Error("Checkout is unavailable");
   if (!process.env.PRO_ACTIVATION_EMAIL_FROM || !process.env.GMAIL_APP_PASSWORD) throw new Error("Activation email is not configured");
   siteUrl(); // Validate the return origin before creating anything at Stripe.
@@ -66,7 +66,9 @@ export async function startPurchase(plan: ProPlan, rawEmail: string): Promise<st
   const session = await stripe().checkout.sessions.create({
     mode: "subscription", customer_email: email, payment_method_types: ["card"],
     expires_at: Math.floor(new Date(attempt.expires_at).getTime() / 1000),
-    metadata: { flow: "payment_first_v1", plan: attempt.plan, attempt_id: attempt.attempt_id },
+    // Analytics join key only. Shape-checked because it arrives from the form.
+    metadata: { flow: "payment_first_v1", plan: attempt.plan, attempt_id: attempt.attempt_id,
+      ...(/^[\w$.:-]{1,200}$/.test(rawPosthogId) ? { posthog_distinct_id: rawPosthogId } : {}) },
     subscription_data: { metadata: { flow: "payment_first_v1", plan: attempt.plan } },
     line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: cents,
       recurring: { interval }, product_data: { name: "Neptune Pro" } } }],
