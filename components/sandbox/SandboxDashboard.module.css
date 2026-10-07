@@ -365,7 +365,9 @@
 .predictionNote { margin-top: 26px; display: grid; gap: 20px; font-size: 12px; line-height: 1.65; }
 .predictionNote .scaleBar { margin-top: 0; }
 .predictionNote a { display: inline-flex; align-items: center; gap: 4px; width: fit-content; text-decoration: underline; text-underline-offset: 4px; min-height: 32px; }
-.todayButton { margin-top: 16px; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; min-height: 36px; }
+.todayButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; margin-bottom: 18px; padding: 10px 16px; border: 1px solid #175e54; border-radius: 8px; background: #fff; color: #175e54; font-size: 14px; font-weight: 600; cursor: pointer; }
+.todayButton:hover { background: #eef6f3; }
+.todayButton:focus-visible { outline: 2px solid #175e54; outline-offset: 3px; }
 .predictionFigures { display: grid; grid-template-columns: 1fr 1.2fr; align-items: center; gap: 24px; padding: 28px 0; }
 .predictionFigures .exceedance { margin: 10px 0 6px; }
 .predictionFigures .exceedancePct { font-size: 36px; }
