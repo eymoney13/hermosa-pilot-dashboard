@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import posthog from "posthog-js";
-import { ArrowRight, ArrowUpRight, Lock } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Lock } from "lucide-react";
 import { formatMonthDayYear, RISK_TIERS, riskTier, STATUS_BAND, type BeachData, type Status } from "@/lib/data";
 import { buildWindowCells } from "@/lib/window";
 import { beachProperties, type LockedFeature } from "@/lib/analytics";
@@ -53,11 +53,6 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
   advisory: { label: string; href: string };
 }) {
   const [selectedDate, setSelectedDate] = useState(beach.predictionDate);
-  const reading = useRef<HTMLElement>(null);
-  const selectForecast = (date: string) => {
-    setSelectedDate(date);
-    requestAnimationFrame(() => reading.current?.scrollIntoView({ block: "start" }));
-  };
   const today = buildWindowCells(beach).find((cell) => cell.type === "today")!.day;
   const forecasts = beach.forecast.filter((day) => day.date > beach.predictionDate).slice(0, 3);
   // Before onProMoment: the reader asked for this specific thing, which the
@@ -82,10 +77,10 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
     : [];
 
   return <div className={s.detail}>
-    <section ref={reading} className={`${s.predictionHero} ${bandClass(day.status)}`} aria-label="Selected forecast">
+    <section className={`${s.predictionHero} ${bandClass(day.status)}`} aria-label="Selected forecast">
       <div className={s.predictionHeader}>
         <p className={s.eyebrow}>{isToday ? "Today’s prediction" : "Forecast"}</p>
-        <span>{dateLabel(day.date)}</span>
+        <span>{isToday ? dateLabel(day.date) : `${dateLabel(day.date, true)}, ${dateLabel(day.date)}`}</span>
       </div>
       <h3>{STATUS_BAND[day.status].short} risk</h3>
       <p className={s.predictionExplanation}>{explanation}</p>
@@ -98,7 +93,6 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
         </div>
         <p>Neptune model estimate. <a href={advisory.href} target="_blank" rel="noopener noreferrer" title={advisory.label}>Always follow official beach advisories. <ArrowUpRight size={16} aria-hidden="true" /></a></p>
       </div>
-      {!isToday && <button className={s.todayButton} onClick={() => setSelectedDate(today.date)}>Back to today’s prediction</button>}
     </section>
 
     <Figures probability={day.probability} />
@@ -118,6 +112,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
     />
 
     <section className={s.futureSection} aria-label="Next three days">
+      {!isToday && <button type="button" className={s.todayButton} onClick={() => setSelectedDate(today.date)}><ArrowLeft size={18} aria-hidden="true" />Back to today</button>}
       <div className={s.sectionHeading}><h3>Next 3 days</h3>{forecasts.some((forecast) => forecast.locked) && <span className={s.proBadge}>NEPTUNE PRO</span>}</div>
       {forecasts.length > 0 ? <>
         <p className={s.supporting}>Looking ahead · {dateLabel(forecasts[0].date)}–{dateLabel(forecasts[forecasts.length - 1].date)}</p>
@@ -128,7 +123,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
             <Lock size={18} aria-hidden="true" /><strong>Forecast</strong>
           </a>
         ) : (
-          <button key={forecast.date} type="button" className={`${s.futureDay} ${bandClass(forecast.status)}`} onClick={() => selectForecast(forecast.date)} aria-pressed={day.date === forecast.date} aria-label={`${formatMonthDayYear(forecast.date)}: ${bandLabel(forecast.status)}`}>
+          <button key={forecast.date} type="button" className={`${s.futureDay} ${bandClass(forecast.status)}`} onClick={() => setSelectedDate(forecast.date)} aria-pressed={day.date === forecast.date} aria-label={`${formatMonthDayYear(forecast.date)}: ${bandLabel(forecast.status)}`}>
             <span className={s.futureDayName}>{dateLabel(forecast.date, true)}</span>
             <span className={s.futureDate}>{dateLabel(forecast.date)}</span>
             <strong>{STATUS_BAND[forecast.status].short} risk</strong>
