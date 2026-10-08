@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { BeachData } from "@/lib/data";
+import type { MapInteraction } from "./OverviewMap";
 
 const OverviewMap = dynamic(() => import("./OverviewMap"), {
   ssr: false,
@@ -17,6 +18,7 @@ export default function OverviewMapClient({
   labelMinZoom = 0,
   locateNearby = false,
   onSelect,
+  onInteract,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
@@ -24,6 +26,7 @@ export default function OverviewMapClient({
   labelMinZoom?: number;
   locateNearby?: boolean;
   onSelect: (code: string) => void;
+  onInteract?: (kind: MapInteraction) => void;
 }) {
   return (
     <div className="h-[460px] w-full sm:h-[560px]">
@@ -34,6 +37,7 @@ export default function OverviewMapClient({
         labelMinZoom={labelMinZoom}
         binaryVerdict={binaryVerdict}
         onSelect={onSelect}
+        onInteract={onInteract}
       />
     </div>
   );

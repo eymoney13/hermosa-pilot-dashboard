@@ -121,7 +121,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
           <section className={s.overview}>
             <div className={s.sectionHeading}><h2 ref={heading} tabIndex={-1}>Today’s water quality</h2><span>{beaches.length} beaches</span></div>
             <p className={s.supporting}>Click a beach for more information.</p>
-            {view === "map" ? <div className={s.map}><OverviewMapClient locateNearby labelMinZoom={11} beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} /></div> : (
+            {view === "map" ? <div className={s.map}><OverviewMapClient locateNearby labelMinZoom={11} beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} onInteract={(interaction) => posthog.capture("map_interacted", { board_location: "California", region: "southbay", interaction })} /></div> : (
               <div className={s.countyGroups}>{countyGroups.map((group) => <section key={group.county} aria-label={group.county}><h3 className={s.countyHeading}>{group.county}<span>{group.beaches.length} {group.beaches.length === 1 ? "beach" : "beaches"}</span></h3><ul className={s.beaches}>{group.beaches.map((beach) => <li key={beach.code}><button onClick={() => openBeach(beach.code)}><span className={s.beachName}>{beach.name}</span><span className={`${s.band} ${s.listReading} ${bandClass(beach.status)}`}><span className={s.listBandLabel}><span className={s.dot} />{STATUS_BAND[beach.status].short} risk</span></span><ChevronRight size={18} aria-hidden="true" /></button></li>)}</ul></section>)}</div>
             )}
             {view === "map" && (

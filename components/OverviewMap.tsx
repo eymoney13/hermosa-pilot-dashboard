@@ -491,7 +491,34 @@ function FitAll({ beaches }: { beaches: BeachData[] }) {
   return null;
 }
 
-function NearbyLocation({ beaches }: { beaches: BeachData[] }) {
+export type MapInteraction = "pan" | "zoom" | "locate";
+
+// Reports the reader's own gestures, never the map moving itself. FitAll and
+// the approximate-location focus both zoom programmatically on load, so a zoom
+// only counts when a pointer, touch, wheel or key event came just before it.
+// Marker taps are not reported here: they open a beach, which is its own event.
+function MapInteractions({ onInteract }: { onInteract: (kind: MapInteraction) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    let gestureAt = 0;
+    const container = map.getContainer();
+    const gesture = () => { gestureAt = Date.now(); };
+    const panned = () => onInteract("pan");
+    const zoomed = () => { if (Date.now() - gestureAt < 1500) onInteract("zoom"); };
+    const kinds = ["pointerdown", "touchstart", "wheel", "keydown", "dblclick"] as const;
+    kinds.forEach((kind) => container.addEventListener(kind, gesture, { passive: true }));
+    map.on("dragstart", panned);
+    map.on("zoomstart", zoomed);
+    return () => {
+      kinds.forEach((kind) => container.removeEventListener(kind, gesture));
+      map.off("dragstart", panned);
+      map.off("zoomstart", zoomed);
+    };
+  }, [map, onInteract]);
+  return null;
+}
+
+function NearbyLocation({ beaches, onLocate }: { beaches: BeachData[]; onLocate?: () => void }) {
   const map = useMap();
   const interacted = useRef(false);
   const [message, setMessage] = useState("");
@@ -526,6 +553,7 @@ function NearbyLocation({ beaches }: { beaches: BeachData[] }) {
   }, [map, focus]);
   const locate = () => {
     interacted.current = true;
+    onLocate?.();
     if (!navigator.geolocation) { setMessage("Location is unavailable. You can browse the map manually."); return; }
     setBusy(true);
     navigator.geolocation.getCurrentPosition(position => {
@@ -546,6 +574,7 @@ export default function OverviewMap({
   labelMinZoom = 0,
   locateNearby = false,
   onSelect,
+  onInteract,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
@@ -553,7 +582,18 @@ export default function OverviewMap({
   labelMinZoom?: number;
   locateNearby?: boolean;
   onSelect: (code: string) => void;
+  // Once per mount, on the reader's first pan, zoom or locate. Optional: only
+  // boards that measure map exploration pass it.
+  onInteract?: (kind: MapInteraction) => void;
 }) {
+  const latest = useRef(onInteract);
+  useEffect(() => { latest.current = onInteract; });
+  const reported = useRef(false);
+  const interact = useCallback((kind: MapInteraction) => {
+    if (reported.current || !latest.current) return;
+    reported.current = true;
+    latest.current(kind);
+  }, []);
   const center = useMemo<[number, number]>(() => {
     if (beaches.length === 0) return fallbackCenter;
     const avgLat = beaches.reduce((s, b) => s + b.latitude, 0) / beaches.length;
@@ -575,7 +615,8 @@ export default function OverviewMap({
         maxZoom={BASEMAP_MAX_ZOOM}
       />
       <FitAll beaches={beaches} />
-      {locateNearby && <NearbyLocation beaches={beaches} />}
+      {locateNearby && <NearbyLocation beaches={beaches} onLocate={() => interact("locate")} />}
+      {onInteract && <MapInteractions onInteract={interact} />}
       {beaches.map((b) => (
         <Marker
           key={b.code}
