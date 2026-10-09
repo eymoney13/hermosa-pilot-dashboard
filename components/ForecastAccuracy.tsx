@@ -81,12 +81,16 @@ export default function ForecastAccuracy({
   hidePercent,
   showOverallPercent = false,
   locked = false,
+  cautious = false,
 }: {
   accuracy: Accuracy;
   hidePercent: boolean;
   // Headline the panel with this site's accuracy over its whole sampling
   // record, instead of describing only the last seven samples.
   showOverallPercent?: boolean;
+  // Say "past lab agreement" instead of "forecast confidence". For boards
+  // where a percentage would sound like a guarantee about today.
+  cautious?: boolean;
   // The individual lab samples were withheld for an unentitled reader (see
   // lib/paywall.ts). The headline figure still shows — it is the board's claim
   // about its own reliability, and charging for that would be charging for the
@@ -109,16 +113,19 @@ export default function ForecastAccuracy({
   // On boards carrying the whole-record figure the title states it inline
   // ("Forecast confidence: 86%") and the line beneath gives the size of the
   // record behind it. Elsewhere the title is the bare label it has always been.
-  const title =
-    overallPct !== null
+  const title = cautious
+    ? "Past lab agreement"
+    : overallPct !== null
       ? `Forecast confidence: ${overallPct}%`
       : "Forecast confidence";
 
   const summaryLine = !enough
     ? "Not enough lab samples yet to report accuracy"
-    : overallPct !== null
-      ? `Based on ${totalSamples.toLocaleString()} historical observations.`
-      : `Matched lab results in ${matches} of ${windowSize} recent samples`;
+    : cautious && overallPct !== null
+      ? `Matched ${accuracy.totalMatches.toLocaleString()} of ${totalSamples.toLocaleString()} past lab samples. Not a guarantee for today.`
+      : overallPct !== null
+        ? `Based on ${totalSamples.toLocaleString()} historical observations.`
+        : `Matched lab results in ${matches} of ${windowSize} recent samples`;
 
   // Primary signal for screen readers — never color alone.
   const stripAriaLabel = `${windowSize} recent lab samples: ${matches} matched the forecast, ${misses} did not.`;

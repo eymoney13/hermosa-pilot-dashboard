@@ -6,7 +6,9 @@ import posthog from "posthog-js";
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { ArrowLeft, ArrowRight, ChevronRight, List, Map, Waves } from "lucide-react";
-import { formatMonthDayYear, orderForList, STATUS_BAND, type BeachData } from "@/lib/data";
+import { formatMonthDayYear, orderForList, type BeachData, type Status } from "@/lib/data";
+import { lookAheadOfferLine } from "@/lib/forecastDisplay";
+import { labFreshnessLine, statusReading, type LastUpdatedDisplay } from "@/lib/waterStatus";
 import type { NewsItem } from "@/lib/news";
 import { beachProperties, type CtaLocation } from "@/lib/analytics";
 import ProjectNeptuneLogo from "../ProjectNeptuneLogo";
@@ -23,9 +25,11 @@ import s from "./SandboxDashboard.module.css";
 const ORANGE_COUNTY_STATIONS = ["OSB04", "0", "BNB05", "DSB4Z"];
 const ORANGE_COUNTY_ADVISORY = { label: "OC Beach Info", href: "https://ocbeachinfo.com/" };
 
-export default function SandboxDashboard({ beaches, predictionDate, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, openForecast = false, account, faq, news, newsEnabled, advisory }: {
+export default function SandboxDashboard({ beaches, predictionDate, updated, readingsCurrent, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, openForecast = false, account, faq, news, newsEnabled, advisory }: {
   beaches: BeachData[];
   predictionDate: string | null;
+  updated: LastUpdatedDisplay;
+  readingsCurrent: boolean;
   fallbackCenter: [number, number];
   listTopStations?: string[];
   entitled: boolean;
@@ -39,6 +43,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   advisory: { label: string; href: string };
 }) {
   const [alertsRevision, setAlertsRevision] = useState(0);
+  const [query, setQuery] = useState("");
   const [view, setView] = useState<"list" | "map" | "news">("map");
   const [selected, setSelected] = useState<string | null>(() => openForecast && entitled ? orderForList(beaches, listTopStations)[0]?.code ?? null : null);
   useEffect(() => {
@@ -67,6 +72,15 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   const countyGroups = countyStations.map(([county, codes]) => ({ county, beaches: ordered.filter((beach) => codes.includes(beach.code)) })).filter((group) => group.beaches.length > 0);
   const unassigned = ordered.filter((beach) => !knownCodes.has(beach.code));
   if (unassigned.length) countyGroups.push({ county: "Other beaches", beaches: unassigned });
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredGroups = countyGroups
+    .map((group) => ({
+      ...group,
+      beaches: group.beaches.filter((beach) => !normalizedQuery || `${beach.name} ${group.county}`.toLowerCase().includes(normalizedQuery)),
+    }))
+    .filter((group) => group.beaches.length > 0);
+  const matchedBeaches = filteredGroups.flatMap((group) => group.beaches);
+  const offerLine = lookAheadOfferLine(alertsEnabled);
   const focusHeading = () => requestAnimationFrame(() => {
     heading.current?.focus({ preventScroll: true });
     (beachNavigation.current ?? heading.current)?.scrollIntoView({ block: "start" });
@@ -93,7 +107,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
       <div className={s.content}>
         <div className={s.masthead}>
           <div><p className={s.eyebrow}><Waves size={16} /> Daily water-quality</p><h1>Neptune Index</h1><p className={s.intro}>Know what you&apos;re going into.</p></div>
-          <div className={s.dateline}><span>Daily forecast</span><strong>{predictionDate ? formatMonthDayYear(predictionDate) : "Awaiting readings"}</strong></div>
+          <div className={s.dateline}><span>Last updated</span><strong>{updated.dateTime ? <time dateTime={updated.dateTime}>{updated.text}</time> : updated.text}</strong></div>
         </div>
         <div className={s.toolbar}>
           <nav aria-label="Dashboard views" className={s.tabs}>
@@ -102,13 +116,16 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             {newsEnabled && <button aria-current={!active && view === "news" ? "page" : undefined} onClick={() => switchView("news")}>News</button>}
           </nav>
           <div className={s.mobileDateline}>
-            <span>Daily forecast</span>
-            {predictionDate ? <time dateTime={predictionDate}>{new Date(`${predictionDate}T12:00:00Z`).toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric", timeZone:"UTC"})}</time> : <span>Awaiting readings</span>}
+            <span>Updated</span>
+            {updated.dateTime ? <time dateTime={updated.dateTime}>{updated.short}</time> : <span>{updated.short}</span>}
           </div>
         </div>
+        {predictionDate && !readingsCurrent && (
+          <p className={s.stale} role="status">These readings are for {formatMonthDayYear(predictionDate)}, not today.</p>
+        )}
         {!entitled && !active && view === "list" && (
           <aside className={s.proBanner} aria-label="Join Neptune Pro">
-            <div><strong>Checking the water should be as easy as checking the weather.</strong><p>3-day forecasts and email alerts.</p></div>
+            <div><strong>Checking the water should be as easy as checking the weather.</strong><p>{offerLine}</p></div>
             <a href="#sandbox-pro" onClick={() => setProMoment("list_banner")}>Join Neptune Pro <ArrowRight size={16} aria-hidden="true" /></a>
           </aside>
         )}
@@ -128,10 +145,29 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
           <div className={s.empty}><h2>No readings published yet.</h2><p>The daily forecast will appear here when it is available.</p></div>
         ) : view === "news" ? <NewsTab items={news} /> : (
           <section className={s.overview}>
-            <div className={s.sectionHeading}><h2 ref={heading} tabIndex={-1}>Today’s water quality</h2><span>{beaches.length} beaches</span></div>
-            <p className={s.supporting}>Click a beach for more information.{alertsEnabled && <> <button type="button" className={s.emailAlertLink} onClick={() => alertSignupRef.current?.open()}>Get email alerts</button></>}</p>
-            {view === "map" ? <div className={s.map}><OverviewMapClient locateNearby labelMinZoom={11} beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} /></div> : (
-              <div className={s.countyGroups}>{countyGroups.map((group) => <section key={group.county} aria-label={group.county}><h3 className={s.countyHeading}>{group.county}<span>{group.beaches.length} {group.beaches.length === 1 ? "beach" : "beaches"}</span></h3><ul className={s.beaches}>{group.beaches.map((beach) => <li key={beach.code}><button onClick={() => openBeach(beach.code)}><span className={s.beachName}>{beach.name}</span><span className={`${s.band} ${s.listReading} ${bandClass(beach.status)}`}><span className={s.listBandLabel}><span className={s.dot} />{STATUS_BAND[beach.status].short} risk</span></span><ChevronRight size={18} aria-hidden="true" /></button></li>)}</ul></section>)}</div>
+            <div className={s.sectionHeading}><h2 ref={heading} tabIndex={-1}>Today’s water quality</h2><span>{normalizedQuery ? `${matchedBeaches.length} of ${beaches.length}` : beaches.length} beaches</span></div>
+            <p className={s.supporting}>Click a beach for today’s estimate.{alertsEnabled && <> <button type="button" className={s.emailAlertLink} onClick={() => alertSignupRef.current?.open()}>Get email alerts</button></>}</p>
+            <div className={s.searchRow}>
+              <label className={s.searchLabel}>
+                <span className={s.srOnly}>Search beaches</span>
+                <input
+                  type="search"
+                  value={query}
+                  placeholder="Search beaches"
+                  autoComplete="off"
+                  onChange={(event) => setQuery(event.target.value)}
+                  aria-controls={view === "list" ? "beach-list" : "beach-map"}
+                />
+              </label>
+              <p className={s.srOnly} role="status" aria-live="polite">{normalizedQuery ? `${matchedBeaches.length} of ${beaches.length} beaches` : `${beaches.length} beaches`}</p>
+            </div>
+            {normalizedQuery && matchedBeaches.length === 0 ? (
+              <p className={s.emptySearch} role="status">No beaches match “{query.trim()}”.</p>
+            ) : view === "map" ? <div className={s.map} id="beach-map"><OverviewMapClient locateNearby labelMinZoom={11} beaches={normalizedQuery ? matchedBeaches : beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} statusPhrase={(status: Status) => statusReading(status).title} onSelect={openBeach} /></div> : (
+              <div className={s.countyGroups} id="beach-list">{filteredGroups.map((group) => <section key={group.county} aria-label={group.county}><h3 className={s.countyHeading}>{group.county}<span>{group.beaches.length} {group.beaches.length === 1 ? "beach" : "beaches"}</span></h3><ul className={s.beaches}>{group.beaches.map((beach) => {
+                const freshness = labFreshnessLine(beach.daysSinceSample, beach.noRecentSample);
+                return <li key={beach.code}><button type="button" onClick={() => openBeach(beach.code)}><span className={s.beachIdentity}><span className={s.beachName}>{beach.name}</span>{freshness && <span className={s.sampleMeta}>{freshness}</span>}</span><span className={`${s.band} ${s.listReading} ${bandClass(beach.status)}`}><span className={s.listBandLabel}><span className={s.dot} />{statusReading(beach.status).pill}</span></span><ChevronRight size={18} aria-hidden="true" /></button></li>;
+              })}</ul></section>)}</div>
             )}
             {view === "map" && alertSignup}
             {view === "map" && (
@@ -140,8 +176,9 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
                 <Link href="/california/request-beach">Request your beach <ArrowRight size={16} aria-hidden="true" /></Link>
               </div>
             )}
-            <div className={s.legend} aria-label="Neptune Index categories">{(["Normal", "Slightly elevated", "Not recommended"] as const).map((status) => <span key={status} className={bandClass(status)}><i className={s.dot} />{STATUS_BAND[status].short} risk</span>)}</div>
-            <p className={s.caveat}>Forecasts are estimates, not current lab results. Always follow official beach advisories.</p>
+            <div className={s.legend} aria-label="Status key">{(["Normal", "Slightly elevated", "Not recommended"] as const).map((status) => <span key={status} className={bandClass(status)}><i className={s.dot} />{statusReading(status).pill}</span>)}</div>
+            <p className={s.legendNote}>Under limit, near limit, and over limit compare today’s estimate with the 104 MPN/100 mL enterococcus standard. On the map, the same three readings are labeled Low, Moderate, and High.</p>
+            <p className={s.caveat}>Estimates, not current lab results. Always follow official beach advisories.</p>
           </section>
         )}
         {!active && view !== "map" && alertSignup}

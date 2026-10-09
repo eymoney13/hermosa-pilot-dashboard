@@ -769,8 +769,12 @@ export function statusFromProb(
   // let a value like 0.497 round up to "50" on screen while still falling under
   // the 0.5 cutoff and reading "Slightly elevated".
   const pct = Math.round(prob * 100);
-  if (pct >= 50) return "Not recommended";
-  if (pct >= 30) return "Slightly elevated";
+  // Same edges the legend prints (RISK_TIERS). Reading them here means a
+  // later calibration changes the status and the key together.
+  const moderateAt = RISK_TIERS[0].maxExclusive;
+  const highAt = RISK_TIERS[1].maxExclusive;
+  if (pct >= highAt) return "Not recommended";
+  if (pct >= moderateAt) return "Slightly elevated";
   return "Normal";
 }
 

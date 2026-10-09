@@ -3,6 +3,7 @@ import posthog from "posthog-js";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { BeachData } from "@/lib/data";
+import { lookAheadProFeature } from "@/lib/forecastDisplay";
 import { beachProperties, planProperties, type CtaLocation, type PageContext } from "@/lib/analytics";
 import s from "./SandboxDashboard.module.css";
 
@@ -49,7 +50,7 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocat
   // using the free board, so listing what they have back to them spends half
   // the space saying nothing and makes the card read like a pricing page.
   const features = [
-    "3-day water quality forecasts. Plan your beach days",
+    lookAheadProFeature(),
     alertsEnabled ? "Email alerts for multiple beaches" : null,
   ].filter(Boolean) as string[];
 

@@ -54,7 +54,7 @@ export const FAQ: FaqItem[] = [
     id: "accuracy",
     question: "How accurate is the model?",
     answer: [
-      "Our model is evaluated on its ability to distinguish safe from unsafe days, and it performs well on that measure, but no forecast is perfect. We're transparent about accuracy and continually validate predictions against real measured results. Project Neptune is a decision-support tool, not a substitute for official advisories or your own judgment.",
+      "The same-day reading is the estimate that has been checked against lab samples. How often it matched those samples varies by beach, and it is not a guarantee for today. The next three days are experimental. Project Neptune is a decision-support tool, not a substitute for official advisories or your own judgment.",
     ],
   },
   {

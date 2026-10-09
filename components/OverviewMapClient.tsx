@@ -1,12 +1,17 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { BeachData } from "@/lib/data";
+import type { BeachData, Status } from "@/lib/data";
 
 const OverviewMap = dynamic(() => import("./OverviewMap"), {
   ssr: false,
   loading: () => (
-    <div className="h-full w-full bg-gray-100" aria-hidden="true" />
+    <div
+      className="flex h-full w-full items-center justify-center bg-gray-100 text-sm text-gray-600"
+      role="status"
+    >
+      Loading map…
+    </div>
   ),
 });
 
@@ -16,6 +21,7 @@ export default function OverviewMapClient({
   binaryVerdict,
   labelMinZoom = 0,
   locateNearby = false,
+  statusPhrase,
   onSelect,
 }: {
   beaches: BeachData[];
@@ -23,6 +29,8 @@ export default function OverviewMapClient({
   binaryVerdict: boolean;
   labelMinZoom?: number;
   locateNearby?: boolean;
+  /** Spoken and hover name for a pin, e.g. "Over the limit". The drawn pill stays short. */
+  statusPhrase?: (status: Status) => string;
   onSelect: (code: string) => void;
 }) {
   return (
@@ -33,6 +41,7 @@ export default function OverviewMapClient({
         fallbackCenter={fallbackCenter}
         labelMinZoom={labelMinZoom}
         binaryVerdict={binaryVerdict}
+        statusPhrase={statusPhrase}
         onSelect={onSelect}
       />
     </div>

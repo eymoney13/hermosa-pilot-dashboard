@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { LocateFixed, LoaderCircle } from "lucide-react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
-import { STATUS_BAND, VERDICT_AS_STATUS, type BeachData } from "@/lib/data";
+import { STATUS_BAND, VERDICT_AS_STATUS, type BeachData, type Status } from "@/lib/data";
 import {
   BASEMAP_ATTRIBUTION,
   BASEMAP_MAX_ZOOM,
@@ -545,6 +545,7 @@ export default function OverviewMap({
   binaryVerdict,
   labelMinZoom = 0,
   locateNearby = false,
+  statusPhrase,
   onSelect,
 }: {
   beaches: BeachData[];
@@ -552,6 +553,7 @@ export default function OverviewMap({
   binaryVerdict: boolean;
   labelMinZoom?: number;
   locateNearby?: boolean;
+  statusPhrase?: (status: Status) => string;
   onSelect: (code: string) => void;
 }) {
   const center = useMemo<[number, number]>(() => {
@@ -576,16 +578,21 @@ export default function OverviewMap({
       />
       <FitAll beaches={beaches} />
       {locateNearby && <NearbyLocation beaches={beaches} />}
-      {beaches.map((b) => (
+      {beaches.map((b) => {
+        const phrase = statusPhrase?.(b.status);
+        const accessibleName = phrase ? `${b.name}, ${phrase}` : b.name;
+        return (
         <Marker
           key={b.code}
           position={[b.latitude, b.longitude]}
           icon={dotIcon(b, binaryVerdict)}
           eventHandlers={{ click: () => onSelect(b.code) }}
           keyboard
-          title={b.name}
+          title={accessibleName}
+          alt={accessibleName}
         />
-      ))}
+        );
+      })}
       {/* Labels are a separate layer so they can be positioned around the dots
           rather than all hanging off the same side. Rendered after the dots so
           they stack above them. */}

@@ -366,6 +366,24 @@
   .beachRequest a { width: 100%; }
 }
 
+.stale { margin-top: 16px; padding: 12px 14px; border-radius: 8px; background: #f4f1e8; color: #3f4a3c; font-size: 14px; line-height: 1.5; }
+.searchRow { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.searchLabel { flex: 1; min-width: 0; }
+.searchLabel input { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; font-size: 16px; background: #fff; color: var(--ink); }
+.searchLabel input::placeholder { color: #5d6f6c; }
+.beachIdentity { display: grid; gap: 3px; min-width: 0; }
+.sampleMeta { font-size: 12px; font-weight: 450; color: #3d5558; line-height: 1.45; }
+.emptySearch { margin-top: 20px; font-size: 15px; line-height: 1.5; }
+.legendNote { margin-top: 10px; max-width: 68ch; font-size: 12px; line-height: 1.6; color: #3d5558; }
+.sampleFacts { margin-top: 18px; display: grid; gap: 6px; font-size: 14px; line-height: 1.5; }
+.limitedNote { max-width: 62ch; color: #3d5558; font-size: 13px; line-height: 1.55; }
+.scaleEnds { display: flex; justify-content: space-between; margin-top: 2px; font-size: 11px; }
+.forecastPanel { margin: 8px 0 28px; padding: 20px; border: 1px dashed #c5d0cc; border-radius: 14px; background: #f6f7f4; }
+.forecastPanelHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.experimentalBadge { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 999px; background: #e7eeea; color: #244446; font-size: 11px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+.forecastExplain { margin-top: 8px; max-width: 62ch; font-size: 14px; line-height: 1.55; color: #3d5558; }
+.forecastPick { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 14px; line-height: 1.5; }
+.forecastOmitted { margin: 8px 0 24px; font-size: 14px; line-height: 1.5; color: #3d5558; }
 .beachNavigation { margin-top: 16px; scroll-margin-top: 160px; }
 
 /* Beach detail: prediction, visible estimate, explanation, then future days. */
@@ -394,6 +412,12 @@
 .futureDay svg { margin-top: 14px; }
 .futureLocked { color: var(--muted); }
 .nearbySection { margin-top: 28px; }
+@media (max-width: 640px) {
+  .searchRow { margin-top: 12px; }
+  .forecastPanel { padding: 14px 12px; }
+  .sampleMeta { font-size: 11px; }
+  .legendNote { font-size: 11px; }
+}
 @media (max-width: 600px) {
   .predictionHero { scroll-margin-top: 160px; padding: 22px 18px; }
   .predictionHeader { gap: 8px; font-size: 11px; }
