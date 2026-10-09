@@ -7,6 +7,7 @@ const pg=new PGlite();
 for(const name of ['alerts','subscriptions','payment-first','sandbox-alerts'])await pg.exec(readFileSync(`scripts/${name}-schema.sql`,'utf8'));
 await pg.exec(`INSERT INTO alert_subscribers(email,location) VALUES ('original@example.com','southbay'); INSERT INTO alert_subscriptions VALUES (1,'A',now()),(1,'B',now());`);
 const before=(await pg.query('SELECT * FROM alert_subscribers')).rows;
+await pg.exec(readFileSync('scripts/california-free-alerts-schema.sql','utf8'));
 const migration=readFileSync('scripts/california-alerts-schema.sql','utf8');await pg.exec(migration);
 await pg.exec(`INSERT INTO alert_subscribers(email,location) VALUES ('late@example.com','southbay'); INSERT INTO alert_subscriptions VALUES (2,'A',now());`);
 await pg.exec(migration);

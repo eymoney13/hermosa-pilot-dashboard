@@ -94,6 +94,13 @@ function mailer(): Transporter {
   return transport;
 }
 
+// Reuse the alert transport for accountless ownership verification.
+export async function sendAlertVerification(to: string, code: string): Promise<void> {
+  await mailer().sendMail({from: FROM, replyTo: REPLY_TO, to,
+    subject: "Your Neptune email verification code",
+    text: `Your Neptune code is ${code}. It expires in 10 minutes. Enter it on the California dashboard to manage your beach alerts. If you did not request this, ignore this email.`});
+}
+
 // Send one message. Returns true when the SMTP server accepted it.
 async function sendEmail(
   to: string,
@@ -189,11 +196,11 @@ export async function sendAlertsForLocation(
         SELECT 1 FROM alert_subscribers paid
         JOIN alert_subscriptions px ON px.subscriber_id = paid.id
         JOIN sandbox_alert_delivery d ON d.subscriber_id = paid.id
-        JOIN pro_subscriptions p ON p.clerk_user_id = d.clerk_user_id
+        LEFT JOIN pro_subscriptions p ON p.clerk_user_id = d.clerk_user_id
         WHERE paid.email = s.email AND paid.location = 'sandbox'
           AND px.station_code = x.station_code
-          AND p.status IN ('active','trialing','past_due')
-          AND (p.current_period_end IS NULL OR p.current_period_end > now())
+          AND ((d.free_enabled AND d.clerk_user_id IS NULL) OR (p.status IN ('active','trialing','past_due')
+          AND (p.current_period_end IS NULL OR p.current_period_end > now())))
       )
       AND NOT EXISTS (
         SELECT 1 FROM alert_subscribers other

@@ -9,6 +9,7 @@ await pg.exec(readFileSync('scripts/subscriptions-schema.sql','utf8'));
 await pg.exec(readFileSync('scripts/payment-first-schema.sql','utf8'));
 await pg.exec(readFileSync('scripts/sandbox-alerts-schema.sql','utf8'));
 await pg.exec(readFileSync('scripts/sandbox-alerts-schema.sql','utf8'));
+await pg.exec(readFileSync('scripts/california-free-alerts-schema.sql','utf8'));
 const sql = async (parts,...values) => (await pg.query(parts.reduce((s,p,i)=>s+(i?`$${i}`:'')+p,''),values)).rows;
 const load = (file,mocks={}) => {
  const m={exports:{}};

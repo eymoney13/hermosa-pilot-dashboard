@@ -54,9 +54,14 @@ export async function setAlertStations(
 
   const allowed = new Set(validStations);
   const stations = [...new Set(stationCodes)].filter((c) => allowed.has(c));
-  if (stations.length > 25) return { ok: false, error: "Too many beaches selected." };
+  // Pro can follow the entire live roster; duplicates and unknown codes are removed above.
 
   const sql = db();
+
+  if (location === "sandbox") {
+    await sql`SELECT set_california_pro_alerts(${email}, ${stations}::text[], ${clerkUserId})`;
+    return { ok: true, stations };
+  }
 
   if (stations.length === 0) {
     await sql`DELETE FROM alert_subscribers WHERE email = ${email} AND location = ${location}`;
@@ -70,13 +75,6 @@ export async function setAlertStations(
     RETURNING id
   `;
   const subscriberId = subscriber.id as number;
-  if (location === "sandbox") {
-    await sql`
-      INSERT INTO sandbox_alert_delivery (subscriber_id, clerk_user_id)
-      VALUES (${subscriberId}, ${clerkUserId})
-      ON CONFLICT (subscriber_id) DO UPDATE SET clerk_user_id = EXCLUDED.clerk_user_id
-    `;
-  }
 
   await sql`DELETE FROM alert_subscriptions WHERE subscriber_id = ${subscriberId}`;
   await sql`

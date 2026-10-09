@@ -5,21 +5,21 @@ import type { SendSummary } from "./alertSend";
 import { selectSandboxAlerts, sandboxAlertEmail, type AlertState } from "./sandboxAlertPolicy";
 
 type Send = (to: string, subject: string, html: string, text: string, unsubscribe: string) => Promise<boolean>;
-// Caller has already validated forecast freshness. Only explicitly linked, paid
+// Caller has already validated forecast freshness. Verified free followers and explicitly linked paid
 // Pro followers qualify. The historical storage key remains stable across public routes.
 export async function sendSandboxAlerts(beaches: BeachData[], date: string, dryRun: boolean, send: Send): Promise<SendSummary> {
   const sql = neon(process.env.DATABASE_URL!);
   const summary: SendSummary = {location:"california", predictionDate:date, elevated:beaches.filter(b => b.status === "Not recommended").map(b => b.code), recipients:0,sent:0,failed:0,...(dryRun ? {dryRun:true,wouldNotify:[]} : {})};
   const rows = await sql`
-    SELECT s.id, s.email, s.unsubscribe_token, d.states, array_agg(x.station_code) AS stations
+    SELECT s.id, s.email, s.unsubscribe_token, d.states, d.clerk_user_id, array_agg(x.station_code) AS stations
     FROM alert_subscribers s
     JOIN sandbox_alert_delivery d ON d.subscriber_id = s.id
     JOIN alert_subscriptions x ON x.subscriber_id = s.id
-    WHERE s.location = 'sandbox' AND EXISTS (
+    WHERE s.location = 'sandbox' AND ((d.free_enabled AND d.clerk_user_id IS NULL) OR EXISTS (
       SELECT 1 FROM pro_subscriptions p WHERE p.clerk_user_id = d.clerk_user_id
       AND p.status IN ('active','trialing','past_due')
       AND (p.current_period_end IS NULL OR p.current_period_end > now())
-    ) GROUP BY s.id, d.states
+    )) GROUP BY s.id, d.states, d.clerk_user_id
   `;
   for (const row of rows) {
     let state = row.states as AlertState;
@@ -44,12 +44,14 @@ export async function sendSandboxAlerts(beaches: BeachData[], date: string, dryR
         const current = state[old.station_code];
         if (!current || old.date > current.date) state[old.station_code] = {kind:"high",date:old.date};
       }
-      const {high, cleared} = selectSandboxAlerts(followed, state, date);
+      const selected = selectSandboxAlerts(followed, state, date);
+      const high = selected.high;
+      const cleared = row.clerk_user_id ? selected.cleared : [];
       if (!high.length && !cleared.length) continue;
       summary.recipients++;
       if (dryRun) { summary.wouldNotify!.push({email:row.email,stations:[...high,...cleared].map(b => b.code)}); continue; }
       const base = "https://dashboard.projectneptune.co";
-      const mail = sandboxAlertEmail(high, cleared, date, `${base}/unsubscribe/${row.unsubscribe_token}`);
+      const mail = sandboxAlertEmail(high, cleared, date, `${base}/unsubscribe/${row.unsubscribe_token}`, Boolean(row.clerk_user_id));
       if (!(await send(row.email, mail.subject, mail.html, mail.text, `${base}/api/alerts/unsubscribe/${row.unsubscribe_token}`))) {summary.failed++;continue;}
       const next = {...state};
       for (const b of high) next[b.code] = {kind:"high",date};

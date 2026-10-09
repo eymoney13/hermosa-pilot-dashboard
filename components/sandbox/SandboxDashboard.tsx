@@ -3,6 +3,7 @@ import SandboxSupportLinks from "@/components/sandbox/SandboxSupportLinks";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import posthog from "posthog-js";
+import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { ArrowLeft, ArrowRight, ChevronRight, List, Map, Waves } from "lucide-react";
 import { formatMonthDayYear, orderForList, STATUS_BAND, type BeachData } from "@/lib/data";
@@ -15,6 +16,7 @@ import BeachNeighborNav from "@/components/BeachNeighborNav";
 import SandboxBeachDetail, { bandClass } from "./SandboxBeachDetail";
 import SandboxProOffer from "./SandboxProOffer";
 import SandboxMenu from "./SandboxMenu";
+import CaliforniaAlertSignup, { type CaliforniaAlertSignupHandle } from "@/components/CaliforniaAlertSignup";
 import SandboxYourNeptune from "./SandboxYourNeptune";
 import s from "./SandboxDashboard.module.css";
 
@@ -36,6 +38,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   newsEnabled: boolean;
   advisory: { label: string; href: string };
 }) {
+  const [alertsRevision, setAlertsRevision] = useState(0);
   const [view, setView] = useState<"list" | "map" | "news">("map");
   const [selected, setSelected] = useState<string | null>(() => openForecast && entitled ? orderForList(beaches, listTopStations)[0]?.code ?? null : null);
   useEffect(() => {
@@ -77,6 +80,9 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   };
   const switchView = (next: typeof view) => { setView(next); setSelected(null); setProMoment(null); posthog.capture("dashboard_view_selected", { board_location: "California", region: "southbay", view: next }); };
 
+  const alertSignupRef = useRef<CaliforniaAlertSignupHandle>(null);
+  const alertSignup = alertsEnabled && view !== "news" ? <CaliforniaAlertSignup ref={alertSignupRef} key={active?.code ?? view} beaches={beaches.map(b => ({code:b.code,name:b.name}))} beach={active?.code} pro={entitled} onSaved={() => setAlertsRevision(value => value + 1)} source={active ? "california_beach" : `california_${view}`} /> : null;
+
   return (
     <main className={s.root}>
 
@@ -95,7 +101,10 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             <button aria-current={!active && view === "map" ? "page" : undefined} onClick={() => switchView("map")}><Map size={17} /> Map</button>
             {newsEnabled && <button aria-current={!active && view === "news" ? "page" : undefined} onClick={() => switchView("news")}>News</button>}
           </nav>
-
+          <div className={s.mobileDateline}>
+            <span>Daily forecast</span>
+            {predictionDate ? <time dateTime={predictionDate}>{new Date(`${predictionDate}T12:00:00Z`).toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric", timeZone:"UTC"})}</time> : <span>Awaiting readings</span>}
+          </div>
         </div>
         {!entitled && !active && view === "list" && (
           <aside className={s.proBanner} aria-label="Join Neptune Pro">
@@ -113,34 +122,36 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
               <BeachNeighborNav beach={active} beaches={beaches} onSelect={openBeach} />
             </div>
             <h2 ref={heading} tabIndex={-1} className={s.beachHeading}>{active.name}</h2>
-            <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} onProMoment={() => setProMoment("beach_forecast_lock")} advisory={activeAdvisory} />
+            <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} onProMoment={() => setProMoment("beach_forecast_lock")} advisory={activeAdvisory} alertSignup={alertSignup} />
           </>
         ) : beaches.length === 0 ? (
           <div className={s.empty}><h2>No readings published yet.</h2><p>The daily forecast will appear here when it is available.</p></div>
         ) : view === "news" ? <NewsTab items={news} /> : (
           <section className={s.overview}>
             <div className={s.sectionHeading}><h2 ref={heading} tabIndex={-1}>Today’s water quality</h2><span>{beaches.length} beaches</span></div>
-            <p className={s.supporting}>Click a beach for more information.</p>
+            <p className={s.supporting}>Click a beach for more information.{alertsEnabled && <> <button type="button" className={s.emailAlertLink} onClick={() => alertSignupRef.current?.open()}>Get email alerts</button></>}</p>
             {view === "map" ? <div className={s.map}><OverviewMapClient locateNearby labelMinZoom={11} beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} /></div> : (
               <div className={s.countyGroups}>{countyGroups.map((group) => <section key={group.county} aria-label={group.county}><h3 className={s.countyHeading}>{group.county}<span>{group.beaches.length} {group.beaches.length === 1 ? "beach" : "beaches"}</span></h3><ul className={s.beaches}>{group.beaches.map((beach) => <li key={beach.code}><button onClick={() => openBeach(beach.code)}><span className={s.beachName}>{beach.name}</span><span className={`${s.band} ${s.listReading} ${bandClass(beach.status)}`}><span className={s.listBandLabel}><span className={s.dot} />{STATUS_BAND[beach.status].short} risk</span></span><ChevronRight size={18} aria-hidden="true" /></button></li>)}</ul></section>)}</div>
             )}
+            {view === "map" && alertSignup}
             {view === "map" && (
               <div className={s.beachRequest}>
                 <p>Don’t see your beach?</p>
-                <a href="/california/request-beach">Request your beach <ArrowRight size={16} aria-hidden="true" /></a>
+                <Link href="/california/request-beach">Request your beach <ArrowRight size={16} aria-hidden="true" /></Link>
               </div>
             )}
             <div className={s.legend} aria-label="Neptune Index categories">{(["Normal", "Slightly elevated", "Not recommended"] as const).map((status) => <span key={status} className={bandClass(status)}><i className={s.dot} />{STATUS_BAND[status].short} risk</span>)}</div>
             <p className={s.caveat}>Forecasts are estimates, not current lab results. Always follow official beach advisories.</p>
           </section>
         )}
+        {!active && view !== "map" && alertSignup}
         {!active && view !== "news" && <h2 className={s.coverageNote}>More California beaches coming soon!</h2>}
         {!entitled && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} ctaLocation={proMoment ?? "california_bottom"} pageContext={active ? "beach_page" : view} beach={active} />}
         {/* List and map only. Inside a beach card the reader is looking at one
             beach, and a list of every beach they follow is a different job; on
             News it has nothing to do with what is on screen. */}
         {entitled && alertsEnabled && !active && view !== "news" && (
-          <SandboxYourNeptune location="california" beaches={beaches.map((b) => ({ code: b.code, name: b.name }))} />
+          <SandboxYourNeptune key={alertsRevision} location="california" beaches={beaches.map((b) => ({ code: b.code, name: b.name }))} />
         )}
       </div>
       <div className={s.faq}>{faq}</div>
