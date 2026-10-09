@@ -21,7 +21,10 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocat
   beach?: BeachData;
 }) {
   const context = { board_location: "California", cta_location: ctaLocation, page_context: pageContext, ...(beach ? beachProperties(beach, "southbay") : {}) };
-  const clicked = (plan: "monthly" | "yearly") => posthog.capture("pro_cta_clicked", { ...context, ...planProperties(plan) });
+  const clicked = (plan: "monthly" | "yearly") => {
+    posthog.capture("pro_cta_clicked", { ...context, ...planProperties(plan) });
+    posthog.capture("alert_upgrade_clicked", {page_source:"california_pro_offer", selected_beach:beach?.code ?? null, subscriber_plan:"free"});
+  };
 
   // Seen, not merely rendered: the card often mounts below the fold, and the
   // funnel step means the reader actually had a chance to buy. Seen again
@@ -46,8 +49,8 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocat
   // using the free board, so listing what they have back to them spends half
   // the space saying nothing and makes the card read like a pricing page.
   const features = [
-    alertsEnabled ? "High risk alerts" : null,
-    "3-day forecasts",
+    "3-day water quality forecasts. Plan your beach days",
+    alertsEnabled ? "Email alerts for multiple beaches" : null,
   ].filter(Boolean) as string[];
 
   return (

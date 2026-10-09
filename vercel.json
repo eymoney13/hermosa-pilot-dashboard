@@ -1,6 +1,7 @@
 {
   "git": {
     "deploymentEnabled": {
+      "codex/california-alerts-release": false,
       "codex/subscription-flow": false,
       "codex/pro-launch-followup": false,
       "codex/california-rollout": false,
