@@ -66,21 +66,71 @@ const PERMANENT_CODES = new Set([
   "missing_required_parameter",
 ]);
 
+// Local-part@domain, no spaces or angle brackets. Deliberately loose: the
+// authority on whether an address can send is Resend's domain verification,
+// not a regex. This only catches the configuration mistakes that would
+// otherwise surface as a rejected batch.
+const EMAIL_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+
+/**
+ * The bare address inside `Name <a@b.c>`, or a bare `a@b.c`. Null if absent or
+ * malformed.
+ */
+export function fromAddressEmail(raw: string | undefined): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  const angled = value.match(/<([^>]+)>\s*$/);
+  const address = (angled ? angled[1] : value).trim();
+  return EMAIL_RE.test(address) ? address : null;
+}
+
+/**
+ * The sender for alert mail. ALERT_FROM_ADDRESS must be set explicitly.
+ *
+ * There is deliberately NO fallback to RESEND_EMAIL_DOMAIN. That variable is
+ * provisioned by the Vercel Resend Marketplace integration and points at
+ * projectneptune.co, which is registered in a DIFFERENT Resend workspace and
+ * has never been verified -- its DKIM and SPF records are not published at
+ * all. Falling back to it would build a From address on an unverified domain
+ * and have every send rejected, at the one moment nobody is watching. Failing
+ * loudly here is the cheaper outcome.
+ */
 export function resendFrom(): string {
-  // A verified sender on RESEND_EMAIL_DOMAIN. Explicit override wins so the
-  // address can be changed without a deploy.
-  const explicit = process.env.ALERT_FROM_ADDRESS;
-  if (explicit) return explicit.includes("<") ? explicit : `Project Neptune <${explicit}>`;
-  const domain = process.env.RESEND_EMAIL_DOMAIN;
-  if (!domain) throw new Error("RESEND_EMAIL_DOMAIN is not configured");
-  return `Project Neptune <alerts@${domain}>`;
+  const raw = process.env.ALERT_FROM_ADDRESS;
+  const address = fromAddressEmail(raw);
+  if (!address) {
+    throw new Error(
+      "ALERT_FROM_ADDRESS must be set to a verified sender, e.g. " +
+        '"Project Neptune <updates@alerts.projectneptune.co>". ' +
+        "RESEND_EMAIL_DOMAIN is NOT used as a fallback: it belongs to the " +
+        "Marketplace integration's workspace and is unverified."
+    );
+  }
+  const value = raw!.trim();
+  return value.includes("<") ? value : `Project Neptune <${address}>`;
+}
+
+/**
+ * The key alert mail sends under.
+ *
+ * ALERT_RESEND_API_KEY wins. RESEND_API_KEY is Marketplace-managed and belongs
+ * to the workspace the integration created, which does not own the verified
+ * sending domain -- it is kept only as a fallback so that removing the new
+ * variable restores the previous behaviour rather than crashing.
+ */
+export function resendApiKey(): string | undefined {
+  return process.env.ALERT_RESEND_API_KEY || process.env.RESEND_API_KEY || undefined;
 }
 
 export function createResendSender(
   fetchImpl: typeof fetch = fetch
 ): AlertSender {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
+  const apiKey = resendApiKey();
+  if (!apiKey) {
+    throw new Error(
+      "No Resend API key configured: set ALERT_RESEND_API_KEY (preferred) or RESEND_API_KEY"
+    );
+  }
   const from = resendFrom();
   const replyTo = process.env.ALERT_REPLY_TO ?? "ethan@projectneptune.co";
 

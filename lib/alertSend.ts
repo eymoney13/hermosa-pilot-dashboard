@@ -9,6 +9,8 @@ import { composeAlertEmail, type AlertedBeach } from "./alertMail";
 import {
   configuredProvider,
   createResendSender,
+  fromAddressEmail,
+  resendApiKey,
   type AlertSender,
   type OutboundAlert,
 } from "./alertProvider";
@@ -81,8 +83,12 @@ function db() {
 
 export function isAlertSendingConfigured(): boolean {
   if (!process.env.DATABASE_URL) return false;
+  // Same two conditions createResendSender() enforces, so the route's
+  // readiness check and the sender can never disagree about whether a run is
+  // configured. ALERT_FROM_ADDRESS is required outright -- RESEND_EMAIL_DOMAIN
+  // is deliberately not accepted as a substitute, see resendFrom().
   return configuredProvider() === "resend"
-    ? Boolean(process.env.RESEND_API_KEY && (process.env.RESEND_EMAIL_DOMAIN || process.env.ALERT_FROM_ADDRESS))
+    ? Boolean(resendApiKey() && fromAddressEmail(process.env.ALERT_FROM_ADDRESS))
     : Boolean(process.env.GMAIL_APP_PASSWORD);
 }
 
