@@ -65,6 +65,30 @@ export async function GET(request: Request) {
 
   const today = todayUtc();
 
+  // KILL SWITCH. Two separate things can reach this route with a valid secret:
+  // the GitHub notify step after the morning refresh, and the Vercel cron in
+  // vercel.json at 14:00 UTC. Both authenticate automatically, so neither can
+  // be stopped by not calling it.
+  //
+  // That matters during a provider migration more than it looks. Repairing the
+  // cached-transport bug makes the OLD Gmail path start working again, so
+  // deploying the fix with ALERT_EMAIL_PROVIDER still on gmail would quietly
+  // resume subscriber mail that has not gone out for a week. Setting
+  // ALERTS_PAUSED=1 closes both doors with one variable, before a line of this
+  // is deployed.
+  //
+  // ?test=1 is deliberately still allowed through: it only ever reaches
+  // ALERT_TEST_RECIPIENT, which is the whole point of being able to validate a
+  // transport while subscriber mail stays off.
+  const paused = process.env.ALERTS_PAUSED === "1";
+  if (paused && params.get("test") !== "1") {
+    console.log("[cron/alerts] paused; no subscriber mail attempted");
+    return Response.json(
+      { today, outcome: "paused", detail: "ALERTS_PAUSED=1" },
+      { status: 200 }
+    );
+  }
+
   // A real send to one configured internal address, recording nothing. This is
   // the rollout step between a dry run and switching production over.
   if (params.get("test") === "1") {
