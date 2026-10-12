@@ -51,8 +51,11 @@ const makeRes = (status, body, headers={}) => ({
 });
 
 function providerWith(responder){
-  process.env.RESEND_API_KEY='re_test';
+  // ALERT_FROM_ADDRESS is now required outright; RESEND_EMAIL_DOMAIN is set
+  // here deliberately to prove it is ignored rather than merely absent.
+  process.env.ALERT_RESEND_API_KEY='re_test';
   process.env.RESEND_EMAIL_DOMAIN='projectneptune.co';
+  process.env.ALERT_FROM_ADDRESS='Project Neptune <updates@alerts.projectneptune.co>';
   const mod = load('lib/alertProvider.ts',{'server-only':{}});
   return mod.createResendSender(responder);
 }
@@ -78,8 +81,9 @@ const MSG = {to:'a@example.com',subject:'s',html:'<p>h</p>',text:'t',oneClickUrl
     assert.equal(body.headers['List-Unsubscribe'],'<https://x/u>');
     assert.equal(body.headers['List-Unsubscribe-Post'],'List-Unsubscribe=One-Click');
   });
-  check('from address is on the verified Resend domain',()=>{
-    assert.match(body.from,/@projectneptune\.co>$/);
+  check('from address is the verified alerts subdomain, not the Marketplace one',()=>{
+    assert.equal(body.from,'Project Neptune <updates@alerts.projectneptune.co>');
+    assert.match(body.from,/@alerts\.projectneptune\.co>$/);
   });
 }
 {
@@ -115,6 +119,107 @@ const MSG = {to:'a@example.com',subject:'s',html:'<p>h</p>',text:'t',oneClickUrl
     assert.equal(r.ok,true); assert.equal(r.deduplicated,true);
   });
 }
+
+// ---------------------------------------------------------------------------
+// Provider/sender configuration. These guard the Resend workspace migration:
+// RESEND_API_KEY and RESEND_EMAIL_DOMAIN are Marketplace-managed and point at
+// a workspace that does NOT own the verified sending domain, so neither may be
+// allowed to decide how alert mail is sent.
+// ---------------------------------------------------------------------------
+function freshProvider(env){
+  for (const k of ['ALERT_RESEND_API_KEY','RESEND_API_KEY','ALERT_FROM_ADDRESS',
+                   'RESEND_EMAIL_DOMAIN','ALERT_EMAIL_PROVIDER','ALERT_REPLY_TO']) delete process.env[k];
+  Object.assign(process.env, env);
+  return load('lib/alertProvider.ts',{'server-only':{}});
+}
+const throws = fn => { try { fn(); return null; } catch (e) { return e.message; } };
+const GOOD_FROM = 'Project Neptune <updates@alerts.projectneptune.co>';
+
+{
+  const m = freshProvider({ALERT_RESEND_API_KEY:'re_alert',RESEND_API_KEY:'re_marketplace',ALERT_FROM_ADDRESS:GOOD_FROM});
+  check('ALERT_RESEND_API_KEY is preferred over the Marketplace key',()=>
+    assert.equal(m.resendApiKey(),'re_alert'));
+}
+{
+  const m = freshProvider({RESEND_API_KEY:'re_marketplace',ALERT_FROM_ADDRESS:GOOD_FROM});
+  check('falls back to RESEND_API_KEY when the alert key is absent',()=>
+    assert.equal(m.resendApiKey(),'re_marketplace'));
+}
+{
+  const m = freshProvider({ALERT_RESEND_API_KEY:'',RESEND_API_KEY:'re_marketplace',ALERT_FROM_ADDRESS:GOOD_FROM});
+  check('an empty alert key does not shadow the fallback',()=>
+    assert.equal(m.resendApiKey(),'re_marketplace'));
+}
+{
+  const m = freshProvider({ALERT_FROM_ADDRESS:GOOD_FROM});
+  check('no key at all is reported, not silently used',()=>{
+    assert.equal(m.resendApiKey(),undefined);
+    const e = throws(()=>m.createResendSender());
+    assert.match(e,/ALERT_RESEND_API_KEY/);
+  });
+}
+{
+  const m = freshProvider({ALERT_RESEND_API_KEY:'re_alert',RESEND_EMAIL_DOMAIN:'projectneptune.co'});
+  check('NO silent fallback to the unverified Marketplace domain',()=>{
+    const e = throws(()=>m.resendFrom());
+    assert.match(e,/ALERT_FROM_ADDRESS must be set/);
+    assert.match(e,/not used as a fallback/i);
+  });
+  check('a sender cannot be built without ALERT_FROM_ADDRESS',()=>
+    assert.match(throws(()=>m.createResendSender()),/ALERT_FROM_ADDRESS/));
+}
+{
+  const m = freshProvider({ALERT_RESEND_API_KEY:'re_alert',ALERT_FROM_ADDRESS:'   '});
+  check('a blank ALERT_FROM_ADDRESS is rejected',()=>
+    assert.match(throws(()=>m.resendFrom()),/ALERT_FROM_ADDRESS/));
+}
+{
+  const m = freshProvider({ALERT_RESEND_API_KEY:'re_alert',ALERT_FROM_ADDRESS:'not-an-email'});
+  check('a malformed ALERT_FROM_ADDRESS is rejected',()=>
+    assert.match(throws(()=>m.resendFrom()),/ALERT_FROM_ADDRESS/));
+}
+{
+  const m = freshProvider({ALERT_RESEND_API_KEY:'re_alert',ALERT_FROM_ADDRESS:GOOD_FROM});
+  check('a display-name sender is passed through unchanged',()=>
+    assert.equal(m.resendFrom(),GOOD_FROM));
+}
+{
+  const m = freshProvider({ALERT_RESEND_API_KEY:'re_alert',ALERT_FROM_ADDRESS:'updates@alerts.projectneptune.co'});
+  check('a bare address gains the display name',()=>
+    assert.equal(m.resendFrom(),'Project Neptune <updates@alerts.projectneptune.co>'));
+}
+{
+  const m = freshProvider({});
+  check('fromAddressEmail extracts and validates',()=>{
+    assert.equal(m.fromAddressEmail(GOOD_FROM),'updates@alerts.projectneptune.co');
+    assert.equal(m.fromAddressEmail('a@b.co'),'a@b.co');
+    assert.equal(m.fromAddressEmail(undefined),null);
+    assert.equal(m.fromAddressEmail('nope'),null);
+    assert.equal(m.fromAddressEmail('a@b'),null);
+  });
+}
+{
+  check('provider selection is explicit, defaulting to gmail',()=>{
+    assert.equal(freshProvider({ALERT_EMAIL_PROVIDER:'resend'}).configuredProvider(),'resend');
+    assert.equal(freshProvider({ALERT_EMAIL_PROVIDER:'gmail'}).configuredProvider(),'gmail');
+    assert.equal(freshProvider({}).configuredProvider(),'gmail');
+    assert.equal(freshProvider({ALERT_EMAIL_PROVIDER:'RESEND'}).configuredProvider(),'gmail');
+  });
+}
+{
+  const m = freshProvider({ALERT_RESEND_API_KEY:'re_alert',ALERT_FROM_ADDRESS:GOOD_FROM,ALERT_REPLY_TO:'ethan@projectneptune.co'});
+  let captured=null;
+  const s = m.createResendSender(async(url,init)=>{captured={url,init};return makeRes(200,{id:'x'});});
+  await s.send(MSG,'k');
+  const body = JSON.parse(captured.init.body);
+  check('the configured sender and reply-to reach Resend',()=>{
+    assert.equal(body.from,GOOD_FROM);
+    assert.equal(body.reply_to,'ethan@projectneptune.co');
+    assert.equal(captured.init.headers.Authorization,'Bearer re_alert');
+  });
+}
+for (const k of ['ALERT_RESEND_API_KEY','ALERT_FROM_ADDRESS','RESEND_EMAIL_DOMAIN','ALERT_EMAIL_PROVIDER','ALERT_REPLY_TO']) delete process.env[k];
+process.env.RESEND_API_KEY='re_test';
 
 // ---------------------------------------------------------------------------
 // Delivery run: eligibility, durability, duplicates.
