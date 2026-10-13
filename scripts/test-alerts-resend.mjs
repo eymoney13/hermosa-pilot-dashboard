@@ -25,7 +25,7 @@ const load = (file,mocks={}) => {
   const js=ts.transpileModule(readFileSync(file,'utf8'),
     {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   vm.runInNewContext(`(function(require,module,exports,process,console,fetch){${js}\n})`,
-    {Date,URL,Response,JSON,Math,Array,Object,Number,String,Boolean,Promise,Error,Set,Map,isNaN})
+    {Date,URL,Response,JSON,Math,Array,Object,Number,String,Boolean,Promise,Error,Set,Map,isNaN,setTimeout,clearTimeout})
     (name=>{if(name in mocks)return mocks[name];throw Error(`unmocked import: ${name}`);},
      m,m.exports,process,{log(){},error(){}},globalThis.fetch);
   return m.exports;
@@ -263,6 +263,78 @@ async function seed(emails, stations){
 
 const OK = {ok:true,id:'email_x',deduplicated:false};
 const FAIL = {ok:false,code:'rate_limit_exceeded',retryable:true};
+// A rejection no retry can fix, for asserting a genuine partial failure now
+// that retryable errors are waited out inside the run.
+const PERM = {ok:false,code:'validation_error',retryable:false};
+
+// ---------------------------------------------------------------------------
+// Send pacing. This is the test that would have caught 2026-10-13: the pool
+// bounded concurrency but not RATE, so 203 sends went out at roughly 40/s
+// against Resend's documented 10/s and 157 came back rate_limit_exceeded.
+// ---------------------------------------------------------------------------
+await reset(); await seed(Array.from({length:60},(_,i)=>`r${i}@example.com`),['A']);
+{
+  const m = loadSend([BEACH('A')],'2026-10-12');
+  const stamps=[];
+  const paced = {name:'resend', async send(){ stamps.push(Date.now()); return OK; }};
+  const t0=Date.now();
+  const r = await m.sendAlertsForLocation(CONFIG,'2026-10-12',false,paced);
+  const elapsed=Date.now()-t0;
+
+  check('all 60 are sent',()=>{assert.equal(r.sent,60);assert.equal(stamps.length,60);});
+
+  // Worst 1-second window anywhere in the run, not the average -- the average
+  // was always fine and is exactly what hid the bug.
+  let worst=0;
+  for (const t of stamps) worst=Math.max(worst, stamps.filter(u=>u>=t&&u<t+1000).length);
+  check(`never exceeds the provider limit (worst 1s window = ${worst})`,()=>assert.ok(worst<=10,
+    `${worst} sends in one second, limit is 10`));
+  check('pacing actually takes time rather than bursting',()=>assert.ok(elapsed>=6000,
+    `60 sends finished in ${elapsed}ms; at 8/s it cannot be under ~7s`));
+}
+
+// a retryable rejection is waited out IN the run, not abandoned
+await reset(); await seed(['retry-in-run@example.com'],['A']);
+{
+  const m = loadSend([BEACH('A')],'2026-10-12');
+  let n=0;
+  const flaky = {name:'resend', async send(){ n++; return n===1
+    ? {ok:false,code:'rate_limit_exceeded',retryable:true,retryAfterMs:50} : OK; }};
+  const r = await m.sendAlertsForLocation(CONFIG,'2026-10-12',false,flaky);
+  check('a 429 is retried within the same run and succeeds',()=>{
+    assert.equal(n,2); assert.equal(r.sent,1); assert.equal(r.failed,0);
+  });
+  const [d]=await sql`SELECT status FROM alert_deliveries`;
+  check('the row settles as sent, not failed',()=>assert.equal(d.status,'sent'));
+}
+
+// a permanent rejection must NOT burn retries
+await reset(); await seed(['permanent@example.com'],['A']);
+{
+  const m = loadSend([BEACH('A')],'2026-10-12');
+  let n=0;
+  const bad = {name:'resend', async send(){ n++; return {ok:false,code:'validation_error',retryable:false}; }};
+  const r = await m.sendAlertsForLocation(CONFIG,'2026-10-12',false,bad);
+  check('a permanent error is attempted once, not three times',()=>{
+    assert.equal(n,1); assert.equal(r.failed,1);
+  });
+}
+
+// retries give up rather than looping forever
+await reset(); await seed(['always429@example.com'],['A']);
+{
+  const m = loadSend([BEACH('A')],'2026-10-12');
+  let n=0;
+  const hard = {name:'resend', async send(){ n++; return {ok:false,code:'rate_limit_exceeded',retryable:true,retryAfterMs:10}; }};
+  const r = await m.sendAlertsForLocation(CONFIG,'2026-10-12',false,hard);
+  check('a persistently rate-limited send stops after the attempt cap',()=>{
+    assert.equal(n,3); assert.equal(r.failed,1);
+  });
+  const [d]=await sql`SELECT status,last_error FROM alert_deliveries`;
+  check('and is left retryable for the next run',()=>{
+    assert.equal(d.status,'failed'); assert.equal(d.last_error,'rate_limit_exceeded');
+  });
+}
 
 // 1. one eligible subscriber
 await reset(); await seed(['one@example.com'],['A']);
@@ -404,7 +476,7 @@ await reset(); await seed(['retry@example.com'],['A']);
 await reset(); await seed(['p1@example.com','p2@example.com','p3@example.com'],['A']);
 {
   const m = loadSend([BEACH('A')],'2026-10-12');
-  const s = sender(i => i===2 ? FAIL : OK);
+  const s = sender(i => i===2 ? PERM : OK);
   const r = await m.sendAlertsForLocation(CONFIG,'2026-10-12',false,s.sender);
   check('partial failure reports both halves accurately',()=>{
     assert.equal(r.sent,2); assert.equal(r.failed,1);

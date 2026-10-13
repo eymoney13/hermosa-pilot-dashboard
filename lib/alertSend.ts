@@ -13,6 +13,7 @@ import {
   resendApiKey,
   type AlertSender,
   type OutboundAlert,
+  type SendOutcome,
 } from "./alertProvider";
 
 // The daily alert run: find the beaches that came back elevated, work out who
@@ -242,11 +243,14 @@ export async function sendAlertsForLocation(
     // Keeps its own lease/state machine in sandbox_alert_delivery, which
     // already prevents duplicates, so only the transport changes here. The key
     // identifies the person without carrying their address.
+    const sandboxSlot = rateLimiter(SEND_INTERVAL_MS);
     const send = async (
       to: string, subject: string, html: string, text: string, oneClickUrl: string
     ): Promise<boolean> => {
       const key = `alert:${config.slug}:${recipientTag(to)}:${predictionDate}`;
-      const outcome = await sender.send({ to, subject, html, text, oneClickUrl }, key);
+      // Same team quota as the South Bay pass, so it is paced and retried the
+      // same way even though the volume here is small.
+      const outcome = await sendPaced(sender, { to, subject, html, text, oneClickUrl }, key, sandboxSlot);
       return outcome.ok;
     };
     return sendSandboxAlerts(beaches, predictionDate, dryRun, send);
@@ -364,6 +368,7 @@ export async function sendAlertsForLocation(
   // its own duration: 69 of them is where it fell over, and thousands could
   // never finish inside maxDuration at all. Resend's documented limit is 10
   // requests/second per team, so the pool stays under that rather than at it.
+  const slot = rateLimiter(SEND_INTERVAL_MS);
   const results = await pool(work, SEND_CONCURRENCY, async (job) => {
     const key = `alert:${config.slug}:${job.subscriberId}:${predictionDate}`;
 
@@ -372,9 +377,11 @@ export async function sendAlertsForLocation(
     const claimed = await claimDelivery(sql, job.subscriberId, predictionDate, job.stations, key);
     if (!claimed) return "skipped" as const;
 
-    const outcome = await sender.send(
+    const outcome = await sendPaced(
+      sender,
       { to: job.email, subject: job.subject, html: job.html, text: job.text, oneClickUrl: job.oneClickUrl },
-      key
+      key,
+      slot
     );
 
     if (outcome.ok) {
@@ -412,6 +419,63 @@ export async function sendAlertsForLocation(
 
 const SEND_CONCURRENCY = 4;
 const LEASE_MINUTES = 5;
+
+// Resend allows 10 requests/second per TEAM. 8 leaves headroom, and the team
+// is shared with the sandbox pass and anything else sending under this key.
+//
+// This exists because SEND_CONCURRENCY alone does not bound a rate, which is
+// the mistake that cost 157 of 203 alerts on 2026-10-13: four workers against
+// ~100ms responses is roughly 40 requests/second, four times the limit. The
+// whole roster went out in about five seconds, so the per-minute average
+// looked harmless while the instantaneous rate never came close to legal.
+const SEND_RATE_PER_SECOND = 8;
+const SEND_INTERVAL_MS = Math.ceil(1000 / SEND_RATE_PER_SECOND);
+
+// A retryable rejection is worth waiting out IN THE RUN. Previously a 429 was
+// recorded as failed and abandoned on the first attempt, so the one error that
+// most deserved a two-second pause was the one that got none.
+const SEND_ATTEMPTS = 3;
+const MAX_BACKOFF_MS = 3000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Hands out send slots no faster than `intervalMs` apart, across every worker
+ * in the pool. Slots are reserved synchronously before any await, so two
+ * workers cannot be granted the same instant.
+ */
+export function rateLimiter(intervalMs: number): () => Promise<void> {
+  let next = 0;
+  return async () => {
+    const now = Date.now();
+    const at = Math.max(now, next);
+    next = at + intervalMs;
+    if (at > now) await sleep(at - now);
+  };
+}
+
+/**
+ * One send, paced and retried. Honours the provider's own `retry-after` when
+ * it supplies one, and gives up immediately on a permanent rejection so a bad
+ * address never burns three slots.
+ */
+async function sendPaced(
+  sender: AlertSender,
+  msg: OutboundAlert,
+  key: string,
+  slot: () => Promise<void>
+): Promise<SendOutcome> {
+  let last: SendOutcome = { ok: false, code: "not_attempted", retryable: true };
+  for (let attempt = 1; attempt <= SEND_ATTEMPTS; attempt++) {
+    await slot();
+    last = await sender.send(msg, key);
+    if (last.ok || !last.retryable) return last;
+    if (attempt === SEND_ATTEMPTS) break;
+    const backoff = Math.min(last.retryAfterMs ?? 500 * attempt, MAX_BACKOFF_MS);
+    if (backoff > 0) await sleep(backoff);
+  }
+  return last;
+}
 
 interface SendJob {
   subscriberId: number;
