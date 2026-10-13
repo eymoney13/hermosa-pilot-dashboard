@@ -48,18 +48,33 @@ let n=0,bad=0;
 const check=(label,fn)=>{ try{fn();console.log(`ok ${++n} - ${label}`);}catch(e){bad++;console.log(`not ok ${++n} - ${label}\n  ${e.message}`);} };
 
 // ---- the regression that protects the 198 --------------------------------
+// The board link's UTM query is the one intended difference from main, so it is
+// stripped before comparing; every other byte must still match. A no-op once
+// main itself carries the UTMs.
+const UTM_QS='?utm_source=email&utm_medium=alert&utm_campaign=beach_alert';
+const noUtm=(s)=>s.split(UTM_QS).join('').split(UTM_QS.replaceAll('&','&amp;')).join('');
 for (const [label,beaches] of [['one beach',one],['several beaches',many]]) {
   const a = prev.composeAlertEmail(beaches,DATE,'california',UNSUB);
   const b = next.composeAlertEmail(beaches,DATE,'california',UNSUB);
   check(`grandfathered ${label}: subject unchanged`,()=>assert.equal(b.subject,a.subject));
-  check(`grandfathered ${label}: HTML byte-identical`,()=>assert.equal(b.html,a.html));
-  check(`grandfathered ${label}: text byte-identical`,()=>assert.equal(b.text,a.text));
+  check(`grandfathered ${label}: HTML byte-identical`,()=>assert.equal(noUtm(b.html),noUtm(a.html)));
+  check(`grandfathered ${label}: text byte-identical`,()=>assert.equal(noUtm(b.text),noUtm(a.text)));
 }
 check('an explicitly empty cleared list is also unchanged',()=>{
   const a = prev.composeAlertEmail(one,DATE,'california',UNSUB);
   const b = next.composeAlertEmail(one,DATE,'california',UNSUB,{cleared:[]});
-  assert.equal(b.html,a.html); assert.equal(b.text,a.text);
+  assert.equal(noUtm(b.html),noUtm(a.html)); assert.equal(noUtm(b.text),noUtm(a.text));
 });
+
+// ---- the board link is tagged for PostHog --------------------------------
+{
+  const m = next.composeAlertEmail(one,DATE,'california',UNSUB);
+  const board='https://dashboard.projectneptune.co/california'+UTM_QS;
+  check('board link carries the email UTMs (HTML)',()=>
+    assert.ok(m.html.includes(`href="${board.replaceAll('&','&amp;')}"`)));
+  check('board link carries the email UTMs (text)',()=>
+    assert.ok(m.text.includes(`See the full forecast: ${board}`)));
+}
 
 // ---- the new free subscriber: same format, no cleared section ------------
 {

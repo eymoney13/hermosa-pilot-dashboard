@@ -103,7 +103,9 @@ export function composeAlertEmail(
 ): ComposedEmail {
   const cleared = options.cleared ?? [];
   const when = formatMonthDayYear(predictionDate);
-  const boardUrl = `${SITE_ORIGIN}/${locationPath}`;
+  // UTMs so PostHog can count visits that came from an alert email: mail
+  // clients rarely send a referrer, so without them a click looks direct.
+  const boardUrl = `${SITE_ORIGIN}/${locationPath}?utm_source=email&utm_medium=alert&utm_campaign=beach_alert`;
   const masthead = options.pro
     ? "NEPTUNE PRO"
     : "PROJECT NEPTUNE (The Neptune Index)";
