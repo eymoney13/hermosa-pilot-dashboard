@@ -14,11 +14,13 @@ const sql = async (parts,...values) => (await pg.query(parts.reduce((s,p,i)=>s+(
 const load = (file,mocks={}) => {
  const m={exports:{}};
  const js=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
- vm.runInNewContext(`(function(require,module,exports,process){${js}\n})`,{Date,console})(name=>{if(name in mocks)return mocks[name];throw Error(name);},m,m.exports,process);
+ vm.runInNewContext(`(function(require,module,exports,process){${js}\n})`,{Date,console,Math,JSON,Object,Array,String,Number,Boolean,RegExp,Intl})(name=>{if(name in mocks)return mocks[name];throw Error(name);},m,m.exports,process);
  return m.exports;
 };
+const formatMonthDayYear=(iso)=>{const [y,m,d]=iso.split('-').map(Number);if(!y||!m||!d)return iso;return new Date(Date.UTC(y,m-1,d)).toLocaleDateString('en-US',{timeZone:'UTC',month:'long',day:'numeric',year:'numeric'});};
 const policy=load('lib/sandboxAlertPolicy.ts');
-const sender=load('lib/sandboxAlertSend.ts',{'server-only':{},'@neondatabase/serverless':{neon:()=>sql},'./sandboxAlertPolicy':policy});
+const alertMail=load('lib/alertMail.ts',{'./data':{formatMonthDayYear}});
+const sender=load('lib/sandboxAlertSend.ts',{'./alertMail':alertMail,'server-only':{},'@neondatabase/serverless':{neon:()=>sql},'./sandboxAlertPolicy':policy});
 await pg.exec(`INSERT INTO alert_subscribers(email,location) VALUES ('paid@example.com','sandbox'),('expired@example.com','sandbox'),('free@example.com','southbay'),('unlinked@example.com','sandbox');
 INSERT INTO alert_subscriptions(subscriber_id,station_code) SELECT id,'A' FROM alert_subscribers;
 INSERT INTO sandbox_alert_delivery(subscriber_id,clerk_user_id) VALUES (1,'paid'),(2,'expired');
@@ -34,7 +36,7 @@ await run('Not recommended','2026-09-21');check('only linked current Pro member 
 await run('Not recommended','2026-09-21');check('repeat forecast does not duplicate mail',()=>assert.equal(mails.length,1));
 await run('Slightly elevated','2026-09-22');check('moderate forecast does not claim cleared',()=>assert.equal(mails.length,1));
 fail=true;await run('Normal','2026-09-23');check('SMTP failure retains previous high state',()=>assert.equal(mails.length,1));
-fail=false;await run('Normal','2026-09-23');check('recovery retries then sends clear-up',()=>{assert.equal(mails.length,2);assert.match(mails[1][1],/back to low/);assert.match(mails[1][3],/not lab results/);});
+fail=false;await run('Normal','2026-09-23');check('recovery retries then sends clear-up',()=>{assert.equal(mails.length,2);assert.match(mails[1][1],/back to low/);assert.match(mails[1][3],/not an actual test result/);});
 await run('Normal','2026-09-24');check('continued low forecast is quiet',()=>assert.equal(mails.length,2));
 await run('Not recommended','2026-09-20');check('older forecast cannot overwrite newer delivery state',()=>assert.equal(mails.length,2));
 await pg.exec("UPDATE sandbox_alert_delivery SET lease_until=now()+interval '10 minutes' WHERE subscriber_id=1");
@@ -43,7 +45,7 @@ await pg.exec('UPDATE sandbox_alert_delivery SET lease_until=NULL');
 await run('Not recommended','2026-09-25');check('new elevated episode sends again',()=>assert.equal(mails.length,3));
 await pg.exec("UPDATE pro_subscriptions SET status='canceled' WHERE clerk_user_id='paid'");
 await run('Normal','2026-09-26');check('canceled members receive no more Pro alerts',()=>assert.equal(mails.length,3));
-check('HTML escapes beach names',()=>assert.match(policy.sandboxAlertEmail([{code:'A',name:'<script>',status:'Not recommended'}],[],'2026-09-28','https://example.com').html,/&lt;script&gt;/));
+check('HTML escapes beach names',()=>assert.match(alertMail.composeAlertEmail([{code:'A',name:'<script>',probability:0.8,status:'Not recommended'}],'2026-09-28','california','https://example.com').html,/&lt;script&gt;/));
 check('existing South Bay subscriptions unchanged',()=>{});
 assert.equal((await pg.query("SELECT count(*)::int AS n FROM alert_subscribers WHERE location='southbay'")).rows[0].n,1);
 await pg.close();console.log(`${n} sandbox alert checks passed.`);

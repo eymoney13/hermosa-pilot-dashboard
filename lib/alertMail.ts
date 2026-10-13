@@ -60,7 +60,18 @@ function esc(value: string): string {
 // "may have", not "has". These are model output, not a lab result, and the
 // subject line is the part most people read without opening anything - it is
 // the one place the hedge has to be carried explicitly.
-export function subjectFor(beaches: AlertedBeach[]): string {
+export function subjectFor(
+  beaches: AlertedBeach[],
+  cleared: AlertedBeach[] = []
+): string {
+  // Both at once gets its own line rather than leading with one and burying
+  // the other.
+  if (beaches.length && cleared.length) return "Your Neptune beach update";
+  if (!beaches.length && cleared.length) {
+    return cleared.length === 1
+      ? `${cleared[0].name} is back to low bacteria levels`
+      : `${cleared.length} of your beaches are back to low bacteria levels`;
+  }
   if (beaches.length === 1) {
     return `${beaches[0].name} may have elevated bacteria levels`;
   }
@@ -73,38 +84,68 @@ export function subjectFor(beaches: AlertedBeach[]): string {
  * `locationPath` is the dashboard slug the beaches belong to, so the link lands
  * on the board the reader signed up from rather than a generic home page.
  */
+export interface ComposeOptions {
+  /**
+   * Beaches that have come back down. Pro only -- sendSandboxAlerts passes an
+   * empty array for free subscribers, so they never learn a beach cleared.
+   */
+  cleared?: AlertedBeach[];
+  /** Swap the masthead for paid subscribers. Layout is identical either way. */
+  pro?: boolean;
+}
+
 export function composeAlertEmail(
   beaches: AlertedBeach[],
   predictionDate: string,
   locationPath: string,
-  unsubscribeUrl: string
+  unsubscribeUrl: string,
+  options: ComposeOptions = {}
 ): ComposedEmail {
+  const cleared = options.cleared ?? [];
   const when = formatMonthDayYear(predictionDate);
   const boardUrl = `${SITE_ORIGIN}/${locationPath}`;
-  const lead =
+  const masthead = options.pro
+    ? "NEPTUNE PRO"
+    : "PROJECT NEPTUNE (The Neptune Index)";
+
+  // With no cleared beaches this is word-for-word what it has always been, so
+  // the 198 grandfathered subscribers see no change at all.
+  const highLead =
     beaches.length === 1
       ? `Our forecast for ${when} predicts one of the beaches you follow may have high levels of bacteria.`
       : `Our forecast for ${when} predicts ${beaches.length} of the beaches you follow may have high levels of bacteria.`;
+  const clearedLead =
+    cleared.length === 1
+      ? `Our forecast for ${when} has one of the beaches you follow back at low levels of bacteria.`
+      : `Our forecast for ${when} has ${cleared.length} of the beaches you follow back at low levels of bacteria.`;
+  const lead = beaches.length
+    ? (cleared.length ? `${highLead} ${clearedLead}` : highLead)
+    : clearedLead;
 
-  const rows = beaches
-    .map(
-      (b) => `      <tr>
+  const row = (b: AlertedBeach, label: string, colour: string) => `      <tr>
         <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:15px;color:#0f172a;">${esc(b.name)}</td>
-        <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:15px;color:#7A1F1F;font-weight:600;text-align:right;white-space:nowrap;">High ${pct(b.probability)}%</td>
-      </tr>`
-    )
-    .join("\n");
+        <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:15px;color:${colour};font-weight:600;text-align:right;white-space:nowrap;">${label} ${pct(b.probability)}%</td>
+      </tr>`;
+
+  const rows = beaches.map((b) => row(b, "High", "#7A1F1F")).join("\n");
+  // Appended only when there is something to append, so the high-only email is
+  // byte-for-byte unchanged.
+  const clearedRows = cleared.length
+    ? `\n    <table style="width:100%;border-collapse:collapse;margin:0 0 20px;">\n` +
+      cleared.map((b) => row(b, "Low", "#15607A")).join("\n") +
+      `\n    </table>`
+    : "";
 
   const html = `<!doctype html>
 <html>
 <body style="margin:0;padding:24px;background:#f6f7f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;padding:28px;">
-    <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#2C8487;letter-spacing:.02em;">PROJECT NEPTUNE (The Neptune Index)</p>
+    <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#2C8487;letter-spacing:.02em;">${masthead}</p>
     <h1 style="margin:0 0 14px;font-size:20px;line-height:1.3;color:#0f172a;">Beach Water Quality</h1>
     <p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:#475569;">${esc(lead)}</p>
     <table style="width:100%;border-collapse:collapse;margin:0 0 20px;">
 ${rows}
-    </table>
+    </table>${clearedRows}
     <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#475569;">
       The percentage is our estimated chance that bacteria exceed the EPA safe-swimming limit. It is a forecast, not an actual test result.
     </p>
@@ -121,12 +162,13 @@ ${rows}
 </html>`;
 
   const text = [
-    "PROJECT NEPTUNE (The Neptune Index)",
+    masthead,
     "Beach Water Quality",
     "",
     lead,
     "",
     ...beaches.map((b) => `  ${b.name}: High ${pct(b.probability)}%`),
+    ...cleared.map((b) => `  ${b.name}: Low ${pct(b.probability)}%`),
     "",
     "The percentage is our estimated chance that bacteria exceed the EPA",
     "safe-swimming limit. It is a forecast, not an actual test result.",
@@ -141,5 +183,5 @@ ${rows}
     `Unsubscribe: ${unsubscribeUrl}`,
   ].join("\n");
 
-  return { subject: subjectFor(beaches), html, text };
+  return { subject: subjectFor(beaches, cleared), html, text };
 }
