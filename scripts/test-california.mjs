@@ -16,9 +16,11 @@ const grants=(await pg.query('SELECT count(*)::int AS n FROM legacy_alert_grants
 check('grandfather snapshot does not expand on rerun',()=>assert.equal(grants,2));
 assert.deepEqual((await pg.query('SELECT * FROM alert_subscribers WHERE id=1')).rows,before);
 const sql=async(parts,...values)=>(await pg.query(parts.reduce((s,p,i)=>s+(i?`$${i}`:'')+p,''),values)).rows;
-const load=(file,mocks={})=>{const m={exports:{}};const js=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;vm.runInNewContext(`(function(require,module,exports,process){${js}\n})`,{Date,console})(name=>{if(name in mocks)return mocks[name];throw Error(name);},m,m.exports,process);return m.exports;};
+const load=(file,mocks={})=>{const m={exports:{}};const js=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;vm.runInNewContext(`(function(require,module,exports,process){${js}\n})`,{Date,console,Math,JSON,Object,Array,String,Number,Boolean,RegExp,Intl})(name=>{if(name in mocks)return mocks[name];throw Error(name);},m,m.exports,process);return m.exports;};
+const formatMonthDayYear=(iso)=>{const [y,m,d]=iso.split('-').map(Number);if(!y||!m||!d)return iso;return new Date(Date.UTC(y,m-1,d)).toLocaleDateString('en-US',{timeZone:'UTC',month:'long',day:'numeric',year:'numeric'});};
 const policy=load('lib/sandboxAlertPolicy.ts');
-const pro=load('lib/sandboxAlertSend.ts',{'server-only':{},'@neondatabase/serverless':{neon:()=>sql},'./sandboxAlertPolicy':policy});
+const alertMail=load('lib/alertMail.ts',{'./data':{formatMonthDayYear}});
+const pro=load('lib/sandboxAlertSend.ts',{'./alertMail':alertMail,'server-only':{},'@neondatabase/serverless':{neon:()=>sql},'./sandboxAlertPolicy':policy});
 let date='2026-09-20',mails=[];
 let beaches=[{code:'A',name:'A',status:'Not recommended',probability:60},{code:'B',name:'B',status:'Normal',probability:10}];
 const sender=load('lib/alertSend.ts',{'server-only':{},'./sandboxAlertSend':pro,nodemailer:{createTransport:()=>({sendMail:async mail=>mails.push(mail)})},'@neondatabase/serverless':{neon:()=>sql},'./data':{LOCATIONS:{southbay:{slug:'southbay'},sandbox:{slug:'sandbox'},california:{slug:'california'}}},'./features':{featuresFor:()=>({beachAlerts:true})},'./loadData':{loadDashboardData:async()=>({beaches,predictionDate:date})},'./alertMail':{composeAlertEmail:()=>({subject:'legacy',html:'legacy',text:'legacy'})},'./alertProvider':{configuredProvider:()=>'gmail',createResendSender:()=>{throw Error('resend not used by this test');}}});

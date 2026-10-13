@@ -10,7 +10,8 @@
     "test:payments": "node scripts/test-payment-first.mjs",
     "test:alerts": "node scripts/test-sandbox-alerts.mjs",
     "test:california": "node scripts/test-california.mjs",
-    "test:alerts-resend": "node scripts/test-alerts-resend.mjs"
+    "test:alerts-resend": "node scripts/test-alerts-resend.mjs",
+    "test:alert-email": "node scripts/test-alert-email.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.7",

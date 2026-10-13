@@ -2,7 +2,8 @@ import "server-only";
 import { neon } from "@neondatabase/serverless";
 import type { BeachData } from "./data";
 import type { SendSummary } from "./alertSend";
-import { selectSandboxAlerts, sandboxAlertEmail, type AlertState } from "./sandboxAlertPolicy";
+import { selectSandboxAlerts, type AlertState } from "./sandboxAlertPolicy";
+import { composeAlertEmail, type AlertedBeach } from "./alertMail";
 
 type Send = (to: string, subject: string, html: string, text: string, unsubscribe: string) => Promise<boolean>;
 // Caller has already validated forecast freshness. Verified free followers and explicitly linked paid
@@ -51,7 +52,16 @@ export async function sendSandboxAlerts(beaches: BeachData[], date: string, dryR
       summary.recipients++;
       if (dryRun) { summary.wouldNotify!.push({email:row.email,stations:[...high,...cleared].map(b => b.code)}); continue; }
       const base = "https://dashboard.projectneptune.co";
-      const mail = sandboxAlertEmail(high, cleared, date, `${base}/unsubscribe/${row.unsubscribe_token}`, Boolean(row.clerk_user_id));
+      // Same template the grandfathered subscribers get. `high` and `cleared`
+      // are BeachData at runtime, so they already carry the probability the
+      // table prints -- only the AlertBeach type narrowed it away.
+      const mail = composeAlertEmail(
+        high as AlertedBeach[],
+        date,
+        "california",
+        `${base}/unsubscribe/${row.unsubscribe_token}`,
+        { cleared: cleared as AlertedBeach[], pro: Boolean(row.clerk_user_id) }
+      );
       if (!(await send(row.email, mail.subject, mail.html, mail.text, `${base}/api/alerts/unsubscribe/${row.unsubscribe_token}`))) {summary.failed++;continue;}
       const next = {...state};
       for (const b of high) next[b.code] = {kind:"high",date};
