@@ -120,6 +120,7 @@ export default function TeamPage() {
           <p className={s.role}>Scientific advisor</p>
         </div>
       </div>
+      <p className={s.advisorBio}>Ryan Searcy, PhD, is an environmental engineer whose research at Stanford University focused on developing machine learning models to predict harmful bacteria levels at beaches. His work advanced coastal water quality forecasting by using environmental data to improve prediction accuracy and scalability.</p>
     </section>
 
     <section className={s.closing}>
