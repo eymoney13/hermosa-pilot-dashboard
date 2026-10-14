@@ -9,33 +9,7 @@ import s from "@/components/sandbox/SandboxEditorial.module.css";
 
 export const metadata: Metadata = { title: "Meet the Team · Neptune" };
 
-// FIRST DRAFT.
-//
-// Names, the "PhD" on Ryan, and both founder bios came from the owner. Nothing
-// here is inferred: no job title beyond Co-founder and Scientific advisor, no
-// degrees beyond the one supplied, no quotes, and no bio for Ryan, because
-// none was given and inventing one for a named scientist would be worse than
-// leaving the space quiet.
-//
-// The scaffold's "Founder story" section is gone. It did not vanish: Max's
-// illness is told properly on /sandbox/stories, and a second, shorter telling
-// here would compete with it. The closing links there instead.
-//
-// AN ADVISOR ROW WAS HERE and was pulled at the owner's request pending the
-// advisor's own sign-off. Restoring it needs three things back: this JSX
-//
-//   <section className={s.advisorRow}>
-//     <p className={s.eyebrow}>Advisor</p>
-//     <div>
-//       <Avatar src={portrait("<slug>")} initial="<X>" name="<Name>" size={64} />
-//       <div><NameRow name="<Name>" /><p className={s.role}>Scientific advisor</p></div>
-//     </div>
-//   </section>
-//
-// the .advisorRow rules in SandboxEditorial.module.css, which are still there,
-// and a portrait in public/team. The portrait was deleted too: leaving it
-// under public/ would have kept it fetchable by URL after the section came
-// off the page.
+// Ryan’s name, degree, and advisor role were supplied by the owner.
 
 /**
  * Whether a portrait has been dropped into public/team yet.
@@ -136,6 +110,17 @@ export default function TeamPage() {
         </article>
       ))}
     </div>
+
+    <section className={s.advisorRow}>
+      <p className={s.eyebrow}>Advisor</p>
+      <div>
+        <Avatar src={portrait("ryan-searcy")} initial="R" name="Ryan Searcy" size={64} />
+        <div>
+          <NameRow name="Ryan Searcy, PhD" linkedin="https://www.linkedin.com/in/ryan-searcy/" />
+          <p className={s.role}>Scientific advisor</p>
+        </div>
+      </div>
+    </section>
 
     <section className={s.closing}>
       <h2>Starting local. Vision set on global.</h2>
