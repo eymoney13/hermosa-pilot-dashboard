@@ -34,10 +34,16 @@ export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogI
   if (previous[0]?.checkout_session_id) {
     const receipt = await syncPurchase(previous[0].checkout_session_id);
     if (receipt?.active) return `${siteUrl()}/pro/recover`;
-    if (previous[0].plan !== plan) {
+    // A completed checkout for an ended subscription is history, not an
+    // unfinished purchase. Retire it so a returning customer can subscribe again.
+    const oldSession = await stripe().checkout.sessions.retrieve(previous[0].checkout_session_id);
+    if (oldSession.status === "complete" && receipt && !receipt.active) {
+      await db()`UPDATE pro_checkout_attempts SET expires_at = now() - interval '1 second'
+        WHERE email = ${email} AND attempt_id = ${previous[0].attempt_id}
+          AND checkout_session_id = ${previous[0].checkout_session_id}`;
+    } else if (previous[0].plan !== plan) {
       // Close the old payment page before offering a different interval. If
       // payment wins this race, Stripe rejects expiration and we fail closed.
-      const oldSession = await stripe().checkout.sessions.retrieve(previous[0].checkout_session_id);
       if (oldSession.status === "complete") return `${siteUrl()}/pro/recover`;
       if (oldSession.status === "open") await stripe().checkout.sessions.expire(oldSession.id);
       await db()`UPDATE pro_checkout_attempts SET expires_at = now() - interval '1 second'

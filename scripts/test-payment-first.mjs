@@ -200,6 +200,27 @@ await purchase.sendRecovery('unknown@example.com');
 check('unpaid and unknown email requests produce no invitation or mail',()=>{
  assert.equal(invitations.length,beforeCanceled);assert.equal(mails.length,emailsBeforeCanceled);
 });
+user = null;
+for (const nextPlan of ['monthly', 'yearly']) {
+ const email = `returning-${nextPlan}@example.com`;
+ const oldUrl = await purchase.startPurchase('monthly', email);
+ const oldId = oldUrl.split('/').at(-1);
+ const subId = `sub_returning_${nextPlan}`;
+ paid(oldId, email, subId);
+ await purchase.syncPurchase(oldId);
+ subscriptions.get(subId).status = 'canceled';
+ await purchase.refreshPurchaseSubscription(subId);
+ const nextUrl = await purchase.startPurchase(nextPlan, email);
+ const newSession = sessions.get(nextUrl.split('/').at(-1));
+ check(`ended subscription can re-subscribe on ${nextPlan} without recovering the old purchase`, () => {
+  assert.notEqual(nextUrl, oldUrl);
+  assert.equal(newSession.status, 'open');
+  assert.equal(newSession.metadata.plan, nextPlan);
+ });
+ const beforeRetry = creations;
+ assert.equal(await purchase.startPurchase(nextPlan, email), nextUrl);
+ assert.equal(creations, beforeRetry);
+}
 process.env.STRIPE_SECRET_KEY='sk_live_fake';
 await assert.rejects(purchase.startPurchase('monthly','new@example.com'));
 check('checkout creation itself enforces live kill switch',()=>{});
