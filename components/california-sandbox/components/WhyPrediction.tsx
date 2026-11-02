@@ -1,0 +1,365 @@
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
+import { ArrowDown, ArrowUp, ChevronDown, Lock } from "lucide-react";
+import {
+  subtractDays,
+  type Accuracy,
+  type Conditions,
+  type Driver,
+  type FactorDirection,
+} from "@/components/california-sandbox/lib/data";
+import {
+  DIRECTION_STYLE,
+  directionsByFactor,
+  factorEffect,
+} from "@/components/california-sandbox/lib/factorEffects";
+import { labSampleResult } from "@/components/california-sandbox/lib/insight";
+import ForecastAccuracy from "./ForecastAccuracy";
+
+// What fills the panel on a locked beach.
+//
+// A SKELETON, not this beach's explanation blurred over. lib/paywall.ts strips
+// the drivers, the conditions, the lab sample and the accuracy record on the
+// server, so none of it is in the page to cover up — blurring in CSS would hide
+// nothing from anyone who opens devtools, which is the whole reason the
+// withholding happens upstream. These are grey bars shaped like the real
+// sections so the panel keeps its proportions, and nothing is invented: no
+// numbers, no factor names, no readings.
+//
+// Two blocks, not three: the forecast-confidence card renders for real below
+// this, unblurred, because its headline percentage is free. A third grey block
+// shaped like it would read as a second, locked copy of the panel underneath.
+function LockedBody() {
+  return (
+    <div className="relative">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none select-none space-y-5 blur-[3px]"
+      >
+        <div className="space-y-2">
+          <div className="h-2.5 w-24 rounded bg-gray-200" />
+          <div className="h-8 w-full rounded bg-gray-100" />
+        </div>
+        <div className="space-y-2.5">
+          <div className="h-2.5 w-40 rounded bg-gray-200" />
+          {["w-5/6", "w-3/4", "w-4/5", "w-2/3"].map((w) => (
+            <div key={w} className="flex gap-3">
+              <div className="h-3 w-3 shrink-0 rounded bg-gray-200" />
+              <div className={`h-3 rounded bg-gray-200 ${w}`} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Small and centred, not a panel of its own. Without something saying
+          so, a blurred block reads as a page that failed to load rather than
+          one with more behind it. */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm ring-1 ring-gray-200">
+          <Lock className="h-3.5 w-3.5 text-[#2563EB]" aria-hidden="true" />
+          Available with Neptune Pro
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// "May 7, 2026" style. lib/data's formatLongDate includes the weekday;
+// here we want a more compact form for the inline metadata line.
+function formatSampleDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
+    timeZone: "UTC",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+// The day the sample was taken, relative to the day being viewed.
+// predictionDate is the selected day's date, so a past day shows the sample
+// that was latest as of that date, not a future one.
+function sampleDateFor(
+  daysSinceSample: number | null,
+  predictionDate: string,
+): string | null {
+  if (daysSinceSample == null) return null;
+  return formatSampleDate(subtractDays(predictionDate, daysSinceSample));
+}
+
+// How long ago that was, on its own so it can carry its own weight on screen.
+// A date alone does not tell a reader whether this reading still describes the
+// water: these beaches are sampled about weekly, so the difference between two
+// days old and three weeks old is the difference between a current measurement
+// and a historical one, and it was previously the faintest text in the section.
+function sampleAgeFor(daysSinceSample: number | null): string | null {
+  if (daysSinceSample == null) return null;
+  if (daysSinceSample === 0) return "Taken today";
+  if (daysSinceSample === 1) return "Taken 1 day ago";
+  return `Taken ${daysSinceSample} days ago`;
+}
+
+// The arrow beside a factor, pointing the way that factor is taking water
+// quality: red up for worse, green down for cleaner. Nothing renders for a
+// factor whose direction the backend did not publish, since the same factor
+// reads both ways on different days and a guessed arrow would be a coin flip
+// drawn as a fact.
+function DirectionArrow({
+  direction,
+}: {
+  direction: FactorDirection | undefined;
+}) {
+  if (!direction) return null;
+  const { arrow, color, label } = DIRECTION_STYLE[direction];
+  const Icon = arrow === "up" ? ArrowUp : ArrowDown;
+  return (
+    <span className="inline-flex items-center">
+      <Icon
+        className="h-3.5 w-3.5 shrink-0"
+        style={{ color }}
+        strokeWidth={2.5}
+        aria-hidden="true"
+      />
+      {/* Colour and arrow direction are the whole of the visual signal, which
+          leaves out screen-reader users and anyone who cannot tell the red from
+          the green. The words carry the same meaning for them. */}
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
+// Matches the duration-[250ms] on the panel below. Tailwind needs that as a
+// literal class, so the two cannot share one constant; keep them in step.
+const PANEL_TRANSITION_MS = 250;
+
+export default function WhyPrediction({
+  figures,
+  factors,
+  drivers,
+  conditions,
+  lastResult,
+  daysSinceSample,
+  predictionDate,
+  accuracy,
+  hidePercent,
+  hideContributingFactors = false,
+  showAccuracyPercent = false,
+  locked = false,
+  prominentToggle = false,
+  title,
+  showAccuracy = true,
+}: {
+  // Everything that sits above the contributing factors in this panel: the
+  // probability readout, the risk key, and the week by the numbers. Passed as a
+  // node rather than rebuilt here, because the tier palette, the band copy, the
+  // percentage formatting and the day strip all live in BeachCard, and
+  // splitting them across two files to move a block down the page would have
+  // been the expensive way to do it.
+  figures?: ReactNode;
+  prominentToggle?: boolean;
+  title?: string;
+  showAccuracy?: boolean;
+  factors: string[];
+  // The same ranking as `factors`, carrying the direction the model gave each
+  // one. Supplies the "how" under each listed factor.
+  drivers: Driver[];
+  // The day's measured conditions. Only the rain figures are read, by the rain
+  // factors, which state a depth rather than a direction. Optional because a
+  // board whose backend publishes no conditions still renders this list, just
+  // with the direction-only wording.
+  conditions?: Conditions;
+  lastResult: number | string | null;
+  daysSinceSample: number | null;
+  predictionDate: string;
+  accuracy: Accuracy;
+  hidePercent: boolean;
+  // Passed straight through: whether the accuracy panel leads with this site's
+  // whole-record percentage (see FeatureFlags.siteAccuracyPercent).
+  showAccuracyPercent?: boolean;
+  /**
+   * This beach's explanation was withheld from the payload for an unentitled
+   * reader (see lib/paywall.ts). The panel still opens — a disclosure that
+   * refuses to open tells the reader nothing about why — but what is inside is
+   * a blurred skeleton. Nothing real is being covered up: there is no drivers
+   * list, no conditions and no accuracy record in the page to cover.
+   */
+  locked?: boolean;
+  // Boards whose written summary already explains the drivers in prose, where a
+  // ranked list of the same feature names underneath adds nothing.
+  hideContributingFactors?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  // True only once the expand animation has finished. The panel has to clip
+  // while it is collapsed and while it is moving, or the content spills out of
+  // a row that is still shorter than it is. But clipping a panel that has
+  // finished opening also clips anything trying to escape it, and the
+  // probability readout's tooltip opens upward from the very first row: on
+  // desktop it is absolutely positioned, so it was drawn straight into the
+  // clipped region and never appeared. Mobile pins the same tooltip with
+  // position:fixed, which ignores clipping ancestors, which is why it worked
+  // there and only there.
+  const [expanded, setExpanded] = useState(false);
+
+  // Driven by a timer rather than by transitionend, which only fires if the
+  // transition actually runs. It does not in a backgrounded tab, and not at all
+  // in a browser that cannot interpolate grid-template-rows, and either case
+  // would leave the panel clipped for good and the tooltip invisible with no
+  // way back. A timer always fires, and being early or late by a frame costs
+  // nothing: the worst case is that the clip lifts slightly before the row has
+  // finished growing.
+  // Only ever schedules the unclip. Re-clipping happens in the toggle below,
+  // where it is an event and not a cascading render.
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => setExpanded(true), PANEL_TRANSITION_MS);
+    return () => clearTimeout(t);
+  }, [open]);
+  const sampleDate = sampleDateFor(daysSinceSample, predictionDate);
+  const sampleAge = sampleAgeFor(daysSinceSample);
+  const labResult = labSampleResult(lastResult);
+  const directions = directionsByFactor(drivers);
+
+  // With the factors hidden and no lab sample to report, the disclosure would
+  // be a toggle guarding a single card, under a heading describing content that
+  // is no longer there. So the accuracy panel stands on its own.
+  //
+  // Note this deliberately does NOT fall through to the early return below.
+  // That return exists for days with nothing to show, and reaching it here would
+  // take the accuracy panel out with the factors, the opposite of the intent.
+  if (showAccuracy && hideContributingFactors && !labResult && !figures) {
+    return (
+      <div className="border-t border-gray-100 pt-6">
+        <ForecastAccuracy
+          accuracy={accuracy}
+          hidePercent={hidePercent}
+          showOverallPercent={showAccuracyPercent}
+          locked={locked}
+        />
+      </div>
+    );
+  }
+
+  // Forecast/future days have no saved factors or lab sample. The figures still
+  // have something to say about them, though, so it alone keeps the panel alive:
+  // returning null here would take the probability and the key off a forecast
+  // day entirely, which is not a move of the block but a loss of it.
+  if (!locked && factors.length === 0 && !labResult && !figures) return null;
+
+  return (
+    <div className="border-t border-gray-100">
+      <button
+        type="button"
+        onClick={() => {
+          // Clip again the moment a collapse starts, not when it ends.
+          setExpanded(false);
+          setOpen((o) => !o);
+        }}
+        aria-expanded={open}
+        aria-controls="why-prediction-panel"
+        className={prominentToggle ? "w-full min-h-16 py-4 flex justify-between items-center gap-4 text-left text-base font-semibold text-gray-900 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-700 transition-colors cursor-pointer" : "w-full py-3 flex justify-between items-center text-xs uppercase tracking-wider text-gray-500 hover:text-gray-700 transition-colors"}
+      >
+        {/* Capitalised in CSS, not typed in capitals: a screen reader gets
+            the sentence as written rather than spelling out an acronym, and
+            the source stays readable. tracking-wider because caps set at
+            normal spacing close up — the same pairing the section labels
+            inside this panel already use. */}
+        <span>{title ?? "What’s affecting the water quality?"}{prominentToggle && !title && <span className="mt-1 block text-xs font-normal normal-case tracking-normal text-gray-500">{open ? "Hide details" : "Explore the factors behind this reading"}</span>}</span>
+        <ChevronDown
+          className={`h-4 w-4 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      <div
+        id="why-prediction-panel"
+        className="grid transition-[grid-template-rows] duration-[250ms] ease-out"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+        aria-hidden={!open}
+      >
+        {/* grid-rows 0fr/1fr collapse: animates cleanly regardless of content
+            height, so the nested Forecast-accuracy card can expand without
+            being clipped (a fixed max-height could not accommodate it). */}
+        <div className={expanded ? "overflow-visible" : "overflow-hidden"}>
+          <div className="pb-5 space-y-6">
+            {locked && <LockedBody />}
+            {!locked && figures}
+
+            {!hideContributingFactors && factors.length > 0 && (
+              <div>
+                <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
+                  Top contributing factors
+                </p>
+                <p className="text-xs text-gray-500 mb-3">
+                  These factors influence the model’s prediction, pushing risk up or down.
+                </p>
+                <ol className="space-y-3 text-sm text-gray-700">
+                  {factors.map((factor, i) => {
+                    // Explanation sits under its own factor rather than in one
+                    // list further down, so a reader never has to count rows to
+                    // work out which line belongs to which name.
+                    const direction = directions.get(factor);
+                    const effect = factorEffect(factor, direction, conditions);
+                    return (
+                      <li key={`${factor}-${i}`} className="flex gap-3">
+                        <span className="text-gray-400 tabular-nums">
+                          {i + 1}.
+                        </span>
+                        <span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span>{factor}</span>
+                            <DirectionArrow direction={direction} />
+                          </span>
+                          {effect && (
+                            <span className="mt-1 flex gap-2 text-gray-500">
+                              <span aria-hidden="true">&bull;</span>
+                              <span>{effect}</span>
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            )}
+
+            {labResult && (
+              <div>
+                <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
+                  Latest Lab Sample Result
+                </p>
+                {/* Date first, reading it as "on this day, the water measured
+                    this" rather than as a number whose date is a footnote. The
+                    two wrap together on a narrow card instead of the date
+                    stranding itself on a line of its own. */}
+                <p className="text-sm leading-relaxed text-gray-700">
+                  {sampleDate && (
+                    <span className="font-medium text-gray-900">
+                      {sampleDate}
+                      {" · "}
+                    </span>
+                  )}
+                  {labResult}
+                </p>
+                {sampleAge && (
+                  <p className="mt-2 text-sm font-semibold text-gray-900">
+                    {sampleAge}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {showAccuracy && <ForecastAccuracy
+              accuracy={accuracy}
+              hidePercent={hidePercent}
+              showOverallPercent={showAccuracyPercent}
+              locked={locked}
+            />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

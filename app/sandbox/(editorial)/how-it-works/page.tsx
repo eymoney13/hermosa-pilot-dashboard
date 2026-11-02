@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { EditorialSection, PageHero } from "@/components/sandbox/SandboxEditorial";
-import { EPA_MPN_THRESHOLD, RISK_TIERS } from "@/lib/data";
-import s from "@/components/sandbox/SandboxEditorial.module.css";
+import LocalPageEditor from "@/components/local-editor/LocalPageEditor";
+import { readHowItWorksDraft } from "@/lib/local-editor/howItWorksDraft";
+import { EditorialSection, PageHero } from "@/components/california-sandbox/components/sandbox/SandboxEditorial";
+import { EPA_MPN_THRESHOLD, RISK_TIERS } from "@/components/california-sandbox/lib/data";
+import s from "@/components/california-sandbox/components/sandbox/SandboxEditorial.module.css";
 
 export const metadata: Metadata = { title: "How Neptune Works · Neptune" };
 
@@ -75,8 +77,8 @@ const FAQ = [
   },
 ];
 
-export default function HowItWorksPage() {
-  return <>
+export default async function HowItWorksPage() {
+  const page = <>
     <PageHero
       title="How Neptune Works"
       section="About Neptune / 01"
@@ -183,4 +185,6 @@ export default function HowItWorksPage() {
       </div>
     </EditorialSection>
   </>;
+  if (process.env.NODE_ENV !== "development") return page;
+  return <LocalPageEditor initialDraft={await readHowItWorksDraft()}>{page}</LocalPageEditor>;
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { EditorialShell } from "@/components/sandbox/SandboxEditorial";
+import { EditorialShell } from "@/components/california-sandbox/components/sandbox/SandboxEditorial";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },

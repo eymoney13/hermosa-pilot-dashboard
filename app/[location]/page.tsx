@@ -32,7 +32,7 @@ const DEFAULT_ADVISORY = {
 };
 
 export function generateStaticParams() {
-  return Object.keys(LOCATIONS).map((location) => ({ location }));
+  return Object.keys(LOCATIONS).filter(location => location !== "sandbox").map((location) => ({ location }));
 }
 
 export async function generateMetadata({
@@ -102,9 +102,8 @@ export default async function LocationPage({
     publicTodayInsights: location === "sandbox" || location === "california",
   });
 
-  // Presentation only. The live boards retain the original render path below;
-  // sandbox receives exactly the same server-redacted data as before.
-  if (location === "sandbox" || location === "california") {
+  // The experiment has its own route in app/sandbox/page.tsx.
+  if (location === "california") {
     const { isPaymentFirstEnabled } = await import("@/lib/purchase");
     const openForecast = entitled && (await searchParams).pro === "activated";
     return (
