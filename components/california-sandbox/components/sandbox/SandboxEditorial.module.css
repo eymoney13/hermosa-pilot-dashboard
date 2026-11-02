@@ -1,0 +1,225 @@
+/* All selectors are local to sandbox editorial pages and their menu. */
+.root { --ink: #203d40; --muted: #697773; --line: #dce3dc; --teal: #2c7778; min-height: 100vh; color: var(--ink); background: #fcfcf8; }
+.root :is(a,button,summary):focus-visible, .menuButton:focus-visible, .drawer :is(a,button):focus-visible { outline: 3px solid #368a8c; outline-offset: 5px; }
+.draftBar { padding: 9px 24px; text-align: center; background: #f0f0e6; color: #666e60; font-size: 10px; letter-spacing: .12em; }
+.draftBar span { margin-left: 12px; letter-spacing: .02em; }
+.header { max-width: 1120px; padding: 22px 28px; margin: auto; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.header > a { min-width: 0; }
+.header > a svg { max-width: 100%; height: auto; }
+.main { max-width: 1040px; margin: auto; padding: 0 28px 80px; }
+.hero { padding: 66px 0 54px; max-width: 850px; }
+.eyebrow { color: var(--teal); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+.hero h1 { font-size: clamp(40px,6vw,72px); line-height: 1.06; letter-spacing: -.055em; font-weight: 550; margin: 22px 0 30px; }
+.heroHeadline { font-family: Georgia, serif; font-size: clamp(25px,3vw,36px); line-height: 1.3; color: #546963; }
+.intro { margin-top: 18px; max-width: 620px; font-size: 17px; color: var(--muted); line-height: 1.8; }
+.section { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 48px; border-top: 1px solid var(--line); padding: 38px 0 58px; }
+.sectionLabel > span { font-size: 11px; color: var(--teal); letter-spacing: .08em; }
+.sectionLabel h2 { font-size: 18px; font-weight: 550; line-height: 1.4; margin-top: 10px; }
+.sectionBody { min-width: 0; }
+.sectionBody h3 { font-size: 21px; font-weight: 500; letter-spacing: -.025em; }
+.sectionBody p, .note p { font-size: 15px; color: var(--muted); line-height: 1.8; margin-top: 10px; }
+.steps { display: grid; gap: 0; }
+.steps li { display: flex; gap: 24px; padding: 25px 0; border-bottom: 1px solid var(--line); }
+.steps li:first-child { padding-top: 0; }
+.stepNumber { color: #8ca49b; font-size: 32px; font-family: Georgia, serif; line-height: 1; }
+.note { border-left: 2px solid #8ba79e; padding: 8px 0 8px 24px; }
+.note h2, .disclaimer h2 { font-size: 19px; font-weight: 550; }
+.annotation { font-size: 12px !important; color: #727c72; line-height: 1.6; margin-top: 12px; }
+.disclaimer { padding: 26px 30px; background: #eef2eb; margin: 0 0 48px; }
+.disclaimer p { font-size: 15px; line-height: 1.8; margin-top: 12px; color: #596d65; }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { cursor: pointer; padding: 20px 0; font-size: 16px; }
+.faq details p { padding: 0 0 22px; }
+.featuredStory { border-block: 1px solid var(--line); padding: 35px 8% 42px; margin: 0 0 52px; }
+.quoteMark { display: block; font-family: Georgia,serif; color: #719b91; font-size: 60px; line-height: 1; }
+.featuredStory blockquote { font-family: Georgia,serif; font-size: clamp(28px,4vw,44px); line-height: 1.35; }
+.featuredStory figcaption, .story figcaption { margin-top: 22px; font-size: 13px; color: var(--teal); }
+.featuredStory > p { color: var(--muted); margin-top: 12px; font-size: 14px; }
+.stories { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; }
+.story { border-bottom: 1px solid var(--line); padding-bottom: 28px; }
+.story blockquote { font-size: 23px; font-family: Georgia,serif; line-height: 1.5; }
+.story .quoteMark { font-size: 40px; }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+.metrics .metric { font-family: Georgia,serif; font-size: 34px; color: #315b55; }
+.request { display: flex; align-items: center; justify-content: space-between; gap: 35px; padding: 34px; background: #eef2eb; }
+.request h2 { font-size: 30px; letter-spacing: -.04em; margin: 10px 0; }
+.request p { color: var(--muted); font-size: 14px; }
+.request button { min-height: 48px; padding: 12px 22px; background: #d9e3d9; color: #5b6d60; border-radius: 3px; font-size: 14px; cursor: not-allowed; }
+.teamGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; margin-bottom: 65px; }
+.photo { aspect-ratio: 4/5; background: #eef0e9; border: 1px solid #dce3d8; color: #778b80; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; font-size: 12px; text-align: center; padding: 18px; }
+.landscape { aspect-ratio: 4/3; }
+.teamMember h2 { font-size: 29px; font-weight: 500; margin-top: 22px; letter-spacing: -.03em; }
+.role { font-size: 12px !important; text-transform: uppercase; letter-spacing: .08em; color: var(--teal) !important; margin: 9px 0; }
+.teamMember > p:last-child { margin-top: 15px; color: var(--muted); font-size: 15px; line-height: 1.8; }
+.founderStory { display: grid; gap: 28px; }
+.advisor { display: grid; grid-template-columns: 180px 1fr; align-items: center; gap: 30px; }
+.footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; max-width: 1040px; margin: auto; padding: 30px 28px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.footer a { display: inline-flex; gap: 10px; align-items: center; min-height: 44px; color: var(--teal); }
+.skipLink { position: fixed; top: 10px; left: 10px; z-index: 100; transform: translateY(-200%); background: white; padding: 12px; }
+.skipLink:focus { transform: translateY(0); }
+.menuButton { width: 44px; height: 44px; flex-shrink: 0; border: 1px solid #dce3dc; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; color: #28595a; background: transparent; cursor: pointer; }
+.menuButton:hover { background: #edf2eb; }
+.drawer { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(440px,100vw); height: 100dvh; max-height: 100dvh; max-width: 100vw; padding: 28px 32px; border: 0; background: #fcfcf8; color: #203d40; box-shadow: -15px 0 60px #173a3c18; }
+.drawer[open] { display: flex; flex-direction: column; }
+.drawer::backdrop { background: #142f354f; }
+.drawerTop { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.drawerTop > p { font-size: 15px; font-weight: 600; }
+.drawerNav { margin-top: 42px; flex: 1; overflow-y: auto; padding: 0 5px 20px; }
+.navLabel { font-size: 10px; text-transform: uppercase; letter-spacing: .13em; color: #6b7c70; margin: 20px 0 14px; }
+.navLabel:not(:first-child) { margin-top: 40px; }
+.drawerNav a { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 21px; letter-spacing: -.025em; min-height: 62px; border-bottom: 1px solid #dce3dc; }
+.drawerNav a[aria-current] { color: #2c7778; font-weight: 600; }
+.drawerBack { display: flex; align-items: center; gap: 10px; min-height: 55px; margin-top: 20px; border-top: 1px solid #dce3dc; padding-top: 14px; font-size: 13px; color: #2c7778; }
+
+/* ---- How Neptune Works ------------------------------------------------- */
+
+/* The testing gap, drawn. Two tracks share one timeline so the sparse
+   sampling dots and the continuous forecast bar are directly comparable;
+   describing the gap in prose alone never lands as well as seeing it. */
+.gapDiagram { margin-top: 30px; display: grid; gap: 22px; padding: 24px; background: #f3f5ee; border: 1px solid var(--line); border-radius: 4px; }
+.gapTrack { display: grid; gap: 9px; }
+.gapTrackName { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--teal); font-weight: 600; }
+.gapLine { position: relative; height: 10px; border-radius: 999px; background: #e0e5da; }
+/* Percentage lefts with a -50% shift, so a dot sits ON its point rather than
+   starting there, and the last one does not hang off the end. */
+.gapSample { position: absolute; top: 50%; width: 14px; height: 14px; margin-left: -7px; transform: translateY(-50%); border-radius: 50%; background: #fcfcf8; border: 3px solid var(--teal); }
+.gapFill { position: absolute; inset: 0; border-radius: 999px; background: linear-gradient(to right, #8fb9a8, #2c7778); }
+.gapNote { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+/* The four bands, straight off RISK_TIERS. Grid rather than flex so the range
+   column self-aligns and the names start on one edge. */
+.tierKey { margin-top: 24px; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.tierKey li { display: grid; grid-template-columns: 18px 72px minmax(0,1fr); align-items: center; gap: 14px; padding: 13px 16px; background: #fcfcf8; }
+.tierSwatch { width: 18px; height: 18px; border-radius: 4px; }
+.tierRange { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tierName { font-size: 14.5px; color: var(--ink); }
+
+/* Two columns that become two stacked cards on a phone. */
+.compare { margin-top: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.compareCol { padding: 22px; border: 1px solid var(--line); border-radius: 4px; background: #fcfcf8; }
+.compareCol h3 { font-size: 18px; }
+.compareSub { font-size: 11px !important; text-transform: uppercase; letter-spacing: .09em; color: var(--teal) !important; margin-top: 6px !important; }
+.compareCol ul { margin-top: 16px; display: grid; gap: 11px; }
+.compareCol li { position: relative; padding-left: 20px; font-size: 14.5px; color: var(--muted); line-height: 1.65; }
+.compareCol li::before { content: ""; position: absolute; left: 0; top: 8px; width: 7px; height: 7px; border-radius: 50%; background: #9bb5aa; }
+
+/* Numbered by CSS counter rather than the <ol> marker, so the digit can take
+   the serif treatment the step list elsewhere on the page uses. */
+.useSteps { margin-top: 22px; counter-reset: usestep; display: grid; gap: 2px; }
+.useSteps li { counter-increment: usestep; display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.useSteps li::before { content: counter(usestep); font-family: Georgia, serif; font-size: 26px; line-height: 1; color: #8ca49b; }
+.useSteps h3 { font-size: 17px; font-weight: 550; }
+.useSteps p { margin-top: 5px !important; }
+
+
+/* ---- Why It Matters ---------------------------------------------------- */
+
+/* The origin story. A warm ground and a wider measure than a body paragraph,
+   so it reads as the page's centre of gravity without needing a photograph
+   the project does not have. */
+.origin { background: #f2f5ec; border: 1px solid #e2e8dc; border-radius: 4px; padding: 40px 44px; margin-bottom: 14px; }
+.origin .eyebrow { margin-bottom: 20px; }
+.originLede { font-family: Georgia, serif; font-size: clamp(22px,2.6vw,29px); line-height: 1.45; color: #23474a; letter-spacing: -.015em; }
+.origin p + p { margin-top: 15px; font-size: 15.5px; color: #55675f; line-height: 1.85; }
+
+/* Teal text link with an icon, matching the dashboard's .inlineLink, which
+   lives in the other stylesheet and cannot be reached from here. */
+.inlineTeal { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; font-size: 13.5px; font-weight: 600; color: var(--teal); min-height: 44px; }
+.inlineTeal:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* An honest empty state. Dashed rather than solid, because the border should
+   read as a space waiting to be filled and not as a finished card. */
+.invite { border: 1px dashed #c6d2c4; border-radius: 4px; padding: 34px 38px; margin: 40px 0 0; text-align: center; }
+.invite h2 { font-size: 21px; font-weight: 550; letter-spacing: -.02em; }
+.invite p { max-width: 48ch; margin: 12px auto 0; font-size: 15px; color: var(--muted); line-height: 1.8; }
+.invite .inlineTeal { margin-top: 10px; }
+
+/* The closing. No panel: after the invitation's dashed box another bordered
+   block would read as a third card in a row. Type carries it instead. */
+.closing { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 44px; }
+.closing h2 { font-family: Georgia, serif; font-size: clamp(27px,3.4vw,40px); line-height: 1.28; letter-spacing: -.02em; color: #23474a; max-width: 17ch; }
+.closing > p { margin-top: 20px; max-width: 60ch; font-size: 15.5px; color: var(--muted); line-height: 1.85; }
+.ctaRow { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+/* 48px minimum on both, so neither is a small target on a phone. */
+.ctaPrimary, .ctaSecondary { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 12px 24px; border-radius: 3px; font-size: 14.5px; font-weight: 600; }
+.ctaPrimary { background: #235e60; color: #f6faf4; }
+.ctaPrimary:hover { background: #1b4c4e; }
+.ctaSecondary { border: 1px solid #c3d1c6; color: #2c6062; }
+.ctaSecondary:hover { background: #eef2eb; }
+
+
+/* ---- Meet the Team ----------------------------------------------------- */
+
+.founderGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 52px; margin-bottom: 8px; }
+.founder h2 { font-size: 27px; font-weight: 500; letter-spacing: -.03em; }
+/* Name and social icon on one line. */
+.nameRow { display: flex; align-items: center; gap: 6px; }
+.founder .nameRow { margin-top: 20px; }
+/* 44px touch target, pulled back in with negative margins so a finger-sized
+   hit area does not push the name away from the portrait above it. */
+.social { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: -12px -12px -12px -4px; border-radius: 6px; color: #7c8d84; flex-shrink: 0; }
+.social:hover { color: #0a66c2; background: #eef2eb; }
+.founder > p:last-child { margin-top: 14px; color: var(--muted); font-size: 15px; line-height: 1.85; }
+
+/* The fallback when a portrait is missing from public/team. Size comes from
+   the call site (92px for a founder, 64px for the advisor) because the two
+   differ; everything that does not vary lives here. Circular, so a real
+   portrait drops into the same footprint without the layout shifting. */
+.monogram { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; background: linear-gradient(145deg, #e8efe4, #d6e3dc); border: 1px solid #cfdcd2; color: #2c6062; font-family: Georgia, serif; line-height: 1; }
+/* Real portraits share the circle so swapping one in never moves the layout. */
+.portrait { flex-shrink: 0; border-radius: 50%; object-fit: cover; border: 1px solid #cfdcd2; }
+
+/* Underlined inline link for running prose, where the icon-and-caps treatment
+   of .inlineTeal would break the sentence. */
+.textLink { color: var(--teal); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* The advisor: a row, not a third founder card. */
+.advisorRow { border-top: 1px solid var(--line); margin-top: 46px; padding-top: 30px; }
+.advisorRow > div { display: flex; align-items: center; gap: 20px; margin-top: 16px; }
+.advisorRow h2 { font-size: 21px; font-weight: 500; letter-spacing: -.025em; }
+.advisorRow .role { margin: 6px 0 0; }
+.advisorBio { margin-top: 18px; color: var(--muted); font-size: 15px; line-height: 1.85; }
+
+@media (max-width: 640px) {
+  .founderGrid { grid-template-columns: 1fr; gap: 36px; }
+  .advisorRow { margin-top: 34px; padding-top: 24px; }
+
+  .origin { padding: 26px 22px; }
+  .invite { padding: 26px 20px; }
+  .closing { margin-top: 40px; padding-top: 32px; }
+  .closing h2 { max-width: none; }
+  /* Full-width stacked buttons: side by side they each fall under 160px on a
+     narrow phone and the labels wrap mid-word. */
+  .ctaRow { flex-direction: column; align-items: stretch; gap: 10px; }
+
+  .gapDiagram { padding: 18px; gap: 18px; }
+  .compare { grid-template-columns: 1fr; gap: 14px; }
+  .compareCol { padding: 18px; }
+  .tierKey li { grid-template-columns: 16px 68px minmax(0,1fr); gap: 10px; padding: 12px 13px; }
+  .tierSwatch { width: 16px; height: 16px; }
+  .tierName { font-size: 14px; }
+  .useSteps li { grid-template-columns: 30px minmax(0,1fr); gap: 12px; }
+
+  .header { padding: 18px; }
+  .main { padding: 0 22px 48px; }
+  .hero { padding: 42px 0; }
+  .hero h1 { margin: 18px 0 25px; }
+  .intro { font-size: 15px; }
+  .section { grid-template-columns: 1fr; gap: 28px; padding: 28px 0 42px; }
+  .sectionLabel { display: flex; gap: 14px; align-items: baseline; }
+  .sectionLabel h2 { margin-top: 0; }
+  .stories { grid-template-columns: 1fr; gap: 25px; }
+  .featuredStory { padding: 30px 16px; }
+  .teamGrid { gap: 30px; grid-template-columns: 1fr; margin-bottom: 44px; }
+  .teamMember .photo { aspect-ratio: 5/4; }
+  .advisor { grid-template-columns: 1fr; gap: 24px; }
+  .advisor .photo { max-width: 240px; width: 100%; }
+  .request { flex-direction: column; align-items: stretch; padding: 26px; }
+  .request button { width: 100%; }
+  .metrics { gap: 18px; }
+  .metrics .metric { font-size: 26px; }
+  .drawer { width: 100vw; padding: 20px 24px max(20px,env(safe-area-inset-bottom)); }
+  .drawerNav { margin-top: 26px; }
+}
+
+.drawerNav .menuAccount a { font-family: inherit; font-size: 21px; font-weight: inherit; color: inherit; text-decoration: none; }

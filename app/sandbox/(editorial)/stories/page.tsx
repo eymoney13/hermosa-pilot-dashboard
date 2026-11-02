@@ -1,8 +1,10 @@
+import LocalPageEditor from "@/components/local-editor/LocalPageEditor";
+import { readPageDraft } from "@/lib/local-editor/howItWorksDraft";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
-import { EditorialSection, PageHero } from "@/components/sandbox/SandboxEditorial";
-import s from "@/components/sandbox/SandboxEditorial.module.css";
+import { EditorialSection, PageHero } from "@/components/california-sandbox/components/sandbox/SandboxEditorial";
+import s from "@/components/california-sandbox/components/sandbox/SandboxEditorial.module.css";
 
 export const metadata: Metadata = { title: "Why It Matters · Neptune" };
 
@@ -32,8 +34,8 @@ const SHARE_BODY = encodeURIComponent(
   "Which beach do you use, and what would you want Neptune to tell you before you get in?\n\n"
 );
 
-export default function StoriesPage() {
-  return <>
+export default async function StoriesPage() {
+  const page = <>
     <PageHero
       title="Why It Matters"
       section="Why we built Neptune"
@@ -63,8 +65,8 @@ export default function StoriesPage() {
       <h3>A forecast for the water</h3>
       <p>Neptune uses years of official bacteria test results and current environmental conditions to estimate the chance of elevated bacteria at each beach. We turn that forecast into a simple Neptune Index so people can make a more informed choice.</p>
       <p>It complements official advisories and closures. It does not replace them.</p>
-      <Link className={s.inlineTeal} href="/california/how-it-works">
-        See how the forecast is built
+      <Link className={s.inlineTeal} href="/sandbox/how-it-works">
+        <span data-local-copy>See how the forecast is built</span>
         <ArrowRight size={15} aria-hidden="true" />
       </Link>
     </EditorialSection>
@@ -76,7 +78,7 @@ export default function StoriesPage() {
       <h2>Share your story</h2>
       <p>If the water has changed a plan of yours, got you sick, or cost you a day, we would like to hear about it.</p>
       <a className={s.inlineTeal} href={`mailto:${CONTACT}?subject=${SHARE_SUBJECT}&body=${SHARE_BODY}`}>
-        Share your story
+        <span data-local-copy>Share your story</span>
         <ArrowUpRight size={15} aria-hidden="true" />
       </a>
     </section>
@@ -85,14 +87,16 @@ export default function StoriesPage() {
       <h2>Built for the people who love the water.</h2>
       <p>Swimmers, parents, surfers, and anyone who gets in the water deserve information they can understand and use. We’re starting in the Los Angeles region and building Neptune with feedback from the communities who use these beaches.</p>
       <div className={s.ctaRow}>
-        <Link className={s.ctaPrimary} href="/california">
-          Check your beach
+        <Link className={s.ctaPrimary} href="/sandbox">
+          <span data-local-copy>Check your beach</span>
           <ArrowRight size={16} aria-hidden="true" />
         </Link>
         <a className={s.ctaSecondary} href={`mailto:${CONTACT}?subject=${SHARE_SUBJECT}&body=${SHARE_BODY}`}>
-          Share your story
+          <span data-local-copy>Share your story</span>
         </a>
       </div>
     </section>
   </>;
+  if (process.env.NODE_ENV !== "development") return page;
+  return <LocalPageEditor key="stories" pageId="stories" initialDraft={await readPageDraft("stories")}>{page}</LocalPageEditor>;
 }
