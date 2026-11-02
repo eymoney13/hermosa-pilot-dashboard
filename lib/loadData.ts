@@ -3,6 +3,7 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import Papa from "papaparse";
+import { loadPredictionArchive } from "./predictionArchive";
 import {
   computeAccuracy,
   dataSlugFor,
@@ -412,6 +413,10 @@ export async function loadDashboardData(
     loadThresholds(data),
   ]);
 
+  const archivedPredictions = config.slug === "california"
+    ? await loadPredictionArchive(String(nowcastRows[0]?.prediction_date ?? ""), data)
+    : new Map<string, Map<string, number>>();
+
   // Group the lab samples by station, chronological (oldest → newest), so each
   // beach scores its own forecast-vs-lab accuracy from its own history.
   const accuracyByCode = new Map<string, RawAccuracySample[]>();
@@ -573,7 +578,21 @@ export async function loadDashboardData(
       nSamples: entry.nSamples ?? null,
       pastDays,
       forecast,
-      accuracy: computeAccuracy(accuracyByCode.get(code) ?? [], threshold),
+      accuracy: (() => {
+        const rawSamples = accuracyByCode.get(code) ?? [];
+        const accuracy = computeAccuracy(rawSamples, threshold);
+        if (config.slug !== "california") return accuracy;
+        const allSamples = computeAccuracy(rawSamples, threshold, rawSamples.length).samples;
+        const dailyHistory = Array.from({ length: 10 }, (_, index) => {
+          const date = new Date(`${String(now.prediction_date)}T12:00:00Z`);
+          date.setUTCDate(date.getUTCDate() - index - 1);
+          const iso = date.toISOString().slice(0, 10);
+          const saved = pastDays.find((day) => day.date === iso);
+          const samples = allSamples.filter((sample) => sample.date === iso);
+          return { date: iso, probability: saved?.probability ?? archivedPredictions.get(iso)?.get(code) ?? (samples[0] ? samples[0].predictedExceedance / 100 : null), samples };
+        });
+        return { ...accuracy, dailyHistory };
+      })(),
     });
   }
 
@@ -590,10 +609,11 @@ export async function loadDashboardData(
   const generatedAtRaw = nowcastRows
     .map((r) => r.generated_at)
     .find((v) => v != null && v !== "");
+  const publishedToday = await readJsonOptional<{ generated_at?: string; today?: { date?: string } }>(data, "today.json");
   const generatedAt =
     generatedAtRaw instanceof Date
       ? generatedAtRaw.toISOString()
-      : String(generatedAtRaw ?? "").trim() || null;
+      : String(generatedAtRaw ?? "").trim() || (publishedToday?.today?.date === predictionDate ? publishedToday.generated_at ?? null : null);
 
   return { beaches: beaches.filter(beach => isCoveredStation(config.slug, beach.code)), predictionDate, generatedAt };
 }

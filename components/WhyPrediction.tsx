@@ -150,6 +150,7 @@ export default function WhyPrediction({
   prominentToggle = false,
   title,
   showAccuracy = true,
+  showLabSample = true,
 }: {
   // Everything that sits above the contributing factors in this panel: the
   // probability readout, the risk key, and the week by the numbers. Passed as a
@@ -161,6 +162,7 @@ export default function WhyPrediction({
   prominentToggle?: boolean;
   title?: string;
   showAccuracy?: boolean;
+  showLabSample?: boolean;
   factors: string[];
   // The same ranking as `factors`, carrying the direction the model gave each
   // one. Supplies the "how" under each listed factor.
@@ -325,7 +327,7 @@ export default function WhyPrediction({
               </div>
             )}
 
-            {labResult && (
+            {showLabSample && labResult && (
               <div>
                 <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
                   Latest Lab Sample Result

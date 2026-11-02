@@ -24,9 +24,10 @@ import s from "./SandboxDashboard.module.css";
 const ORANGE_COUNTY_STATIONS = ["OSB04", "0", "BNB05", "DSB4Z"];
 const ORANGE_COUNTY_ADVISORY = { label: "OC Beach Info", href: "https://ocbeachinfo.com/" };
 
-export default function SandboxDashboard({ beaches, predictionDate, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, openForecast = false, account, faq, news, newsEnabled, advisory }: {
+export default function SandboxDashboard({ beaches, predictionDate, generatedAt, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, openForecast = false, account, faq, news, newsEnabled, advisory }: {
   beaches: BeachData[];
   predictionDate: string | null;
+  generatedAt?: string | null;
   fallbackCenter: [number, number];
   listTopStations?: string[];
   entitled: boolean;
@@ -39,6 +40,9 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   newsEnabled: boolean;
   advisory: { label: string; href: string };
 }) {
+  const updateTime = generatedAt && Number.isFinite(Date.parse(generatedAt))
+    ? new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles", timeZoneName: "short" }).format(new Date(generatedAt))
+    : null;
   const [alertsRevision, setAlertsRevision] = useState(0);
   const [view, setView] = useState<"list" | "map" | "news">("map");
   const [selected, setSelected] = useState<string | null>(() => openForecast && entitled ? orderForList(beaches, listTopStations)[0]?.code ?? null : null);
@@ -99,7 +103,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             <div className={s.mapHeadingRow}>
               <div>
                 <h2 ref={heading} tabIndex={-1}>Today’s water quality at your beach</h2>
-                {predictionDate && <time className={s.mapPredictionDate} dateTime={predictionDate}>{formatMonthDayYear(predictionDate)}</time>}
+                {predictionDate && <span className={s.mapPredictionDate}>{formatMonthDayYear(predictionDate)}{updateTime && <> · Updated <time dateTime={generatedAt!}>{updateTime}</time></>}</span>}
               </div>
               <nav className={s.mapViewToggle} aria-label="Dashboard views">
                 <button aria-current={view === "map" ? "page" : undefined} onClick={() => switchView("map")}><Map size={14} /> Map</button>

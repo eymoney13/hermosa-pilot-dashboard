@@ -75,7 +75,7 @@ export default async function LocationPage({
     config.slug,
     config.newsFilterTerms
   );
-  const [{ beaches: allBeaches, predictionDate }, news, entitled] = await Promise.all([
+  const [{ beaches: allBeaches, predictionDate, generatedAt }, news, entitled] = await Promise.all([
     loadDashboardData(config),
     newsEnabled
       ? fetchNewsAlerts(getNewsFeedUrls(), newsFilterTerms)
@@ -110,6 +110,7 @@ export default async function LocationPage({
       <SandboxDashboard
         beaches={beaches}
         predictionDate={predictionDate}
+        generatedAt={generatedAt}
         fallbackCenter={config.mapFallbackCenter}
         listTopStations={config.listTopStations}
         entitled={entitled}

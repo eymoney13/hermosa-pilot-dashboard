@@ -582,6 +582,7 @@ export interface AccuracySample {
 }
 
 export interface Accuracy {
+  dailyHistory?: { date: string; probability: number | null; samples: AccuracySample[] }[];
   windowSize: number; // number of samples scored (= samples.length)
   matches: number; // how many of them matched
   samples: AccuracySample[]; // chronological, oldest → newest

@@ -110,6 +110,7 @@ function redactBeach(beach: BeachData, features: FeatureFlags, publicTodayInsigh
     accuracy: {
       ...beach.accuracy,
       samples: [],
+      dailyHistory: [],
       windowSize: 0,
       matches: 0,
     },

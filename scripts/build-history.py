@@ -123,7 +123,7 @@ def search_dirs() -> list[Path]:
     return dirs
 
 
-def find_recent_dates() -> list[tuple[str, Path | None]]:
+def find_recent_dates(days: int = TARGET_DAYS) -> list[tuple[str, Path | None]]:
     """The TARGET_DAYS days before today, newest first, each paired with its
     snapshot — or None where no archive has one.
 
@@ -136,7 +136,7 @@ def find_recent_dates() -> list[tuple[str, Path | None]]:
     """
     today = date.today()
     resolved: list[tuple[str, Path | None]] = []
-    for offset in range(1, TARGET_DAYS + 1):
+    for offset in range(1, days + 1):
         iso = (today - timedelta(days=offset)).isoformat()
         match = None
         for directory in search_dirs():
@@ -316,6 +316,25 @@ def main() -> int:
         writer = csv.DictWriter(f, fieldnames=header)
         writer.writeheader()
         writer.writerows(out_rows)
+
+    # The same daily job also publishes the ten completed days for confidence.
+    # Reuse archive priority and exact-date matching from the three-day replay.
+    with OUTPUT_FILE.with_name("history_10day.csv").open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["StationCode", "date", "exc_probability"])
+        writer.writeheader()
+        for iso, snapshot in find_recent_dates(10):
+            if snapshot is None:
+                continue
+            for code, row in load_station_rows(snapshot).items():
+                if code not in WANTED_STATIONS or row.get("prediction_date", "")[:10] != iso:
+                    continue
+                raw = row.get("exc_probability", "")
+                try:
+                    probability = float(raw)
+                except (ValueError, TypeError):
+                    continue
+                if 0 <= probability <= 1:
+                    writer.writerow({"StationCode": code, "date": iso, "exc_probability": raw})
 
     try:
         out_display = OUTPUT_FILE.relative_to(PROJECT_ROOT)

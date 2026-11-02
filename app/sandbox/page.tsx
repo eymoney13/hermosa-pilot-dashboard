@@ -14,14 +14,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Local copy of the current California dashboard (October 30, 2026).
-// Presentation, dependencies, roster, readings, and public news are copied.
+// Sandbox mirrors the deployed California dashboard, with published November 2 data.
 // This experiment never consults account/billing services or writes alert preferences.
 export default async function SandboxPage({ searchParams }: {
   searchParams: Promise<{ pro?: string }>;
 }) {
   const config = { ...LOCATIONS.california, dataSlug: "california-sandbox" };
-  const { beaches: allBeaches, predictionDate } = await loadDashboardData(config);
+  const { beaches: allBeaches, predictionDate, generatedAt } = await loadDashboardData(config);
   const entitled = false;
   const redacted = redactForEntitlement(allBeaches, {
     entitled,
@@ -36,6 +35,7 @@ export default async function SandboxPage({ searchParams }: {
   return <SandboxDashboard
     beaches={beaches}
     predictionDate={predictionDate}
+    generatedAt={generatedAt}
     fallbackCenter={config.mapFallbackCenter}
     listTopStations={config.listTopStations}
     entitled={entitled}

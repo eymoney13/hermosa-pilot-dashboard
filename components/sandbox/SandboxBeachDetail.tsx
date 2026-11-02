@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import posthog from "posthog-js";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Lock } from "lucide-react";
-import { formatMonthDayYear, RISK_TIERS, riskTier, STATUS_BAND, type BeachData, type Status } from "@/lib/data";
+import { EPA_MPN_THRESHOLD, subtractDays, formatMonthDayYear, RISK_TIERS, riskTier, STATUS_BAND, type BeachData, type Status } from "@/lib/data";
 import { buildWindowCells } from "@/lib/window";
 import { beachProperties, type LockedFeature } from "@/lib/analytics";
 import WhyPrediction from "../WhyPrediction";
@@ -34,6 +34,24 @@ function Figures({ probability }: { probability: number }) {
         <dt>{tier.range}%</dt><dd>Likely {tier.label.toLowerCase()}</dd>
       </div>)}
     </dl>
+  </section>;
+}
+
+function LatestLabSample({ beach }: { beach: BeachData }) {
+  const raw = beach.lastResult;
+  const value = raw == null || String(raw).trim() === "" ? NaN : Number(String(raw).replace(/^[<>≤≥]\s*/, ""));
+  const hasResult = Number.isFinite(value) && value >= 0;
+  const sampleDate = beach.daysSinceSample != null && Number.isFinite(beach.daysSinceSample) && beach.daysSinceSample >= 0
+    ? subtractDays(beach.predictionDate, beach.daysSinceSample) : null;
+  const label = value > EPA_MPN_THRESHOLD ? "High bacteria" : value > 35 ? "Moderate bacteria" : "Low bacteria";
+  const color = value > EPA_MPN_THRESHOLD ? "#b42318" : value > 35 ? "#6B5F0E" : "#2d8a4e";
+  return <section className="rounded-lg border border-gray-100 px-3 py-3" aria-label="Latest lab sample result">
+    <h3 className="text-sm font-medium text-gray-800">Latest Lab Sample Result</h3>
+    {hasResult ? <>
+      {sampleDate && <p className="mt-2 text-xs text-gray-500">Taken {beach.daysSinceSample} {beach.daysSinceSample === 1 ? "day" : "days"} ago</p>}
+      <p className="mt-2 text-sm text-gray-600">{sampleDate ? formatMonthDayYear(sampleDate) : "Date unavailable"} · {raw} MPN/100mL</p>
+      <p className="mt-1 text-sm font-medium" style={{ color }}>{label}</p>
+    </> : <p className="mt-2 text-sm text-gray-500">No lab sample available.</p>}
   </section>;
 }
 
@@ -110,6 +128,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
       accuracy={beach.accuracy}
       hidePercent={false}
       showAccuracy={false}
+      showLabSample={false}
     />
 
     <section className={s.futureSection} aria-label="Next three days">
@@ -133,6 +152,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
       </> : <p className={s.supporting}>The next three days’ forecasts are not available yet.</p>}
     </section>
     <ForecastAccuracy accuracy={beach.accuracy} hidePercent={false} showOverallPercent />
+    <LatestLabSample beach={beach} />
     {alertSignup}
     {nearby.length > 0 && <section className={s.nearbySection}><h3>Nearby beaches</h3><ul className={s.beaches}>{nearby.map((neighbor) => <li key={neighbor.code}><button onClick={() => onSelect(neighbor.code)}><span className={s.beachName}>{neighbor.name}</span><span className={`${s.band} ${s.listReading} ${bandClass(neighbor.status)}`}><span>{STATUS_BAND[neighbor.status].short} risk</span></span><ArrowRight size={16} aria-hidden="true" /></button></li>)}</ul></section>}
   </div>;
