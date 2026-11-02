@@ -1,0 +1,40 @@
+.comparison { margin: 38px 0 28px; padding-bottom: 26px; border-bottom: 1px solid #dce5e2; }
+.eyebrow { color: #2c8487; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.comparison > h2 { margin: 12px 0 20px; color: #203f40; font-size: clamp(25px, 3.5vw, 34px); font-weight: 600; line-height: 1.25; letter-spacing: -.035em; }
+.card { padding: 28px; border: 1px solid transparent; border-radius: 8px; }
+.card + .card { margin-top: 14px; }
+.forecast { background: #214b47; color: #f5f8ed; }
+.traditional { background: #f4f5ef; border-color: #dde4d8; color: #203f40; }
+.label { display: flex; align-items: center; gap: 9px; font-size: 9px; font-weight: 650; letter-spacing: .11em; text-transform: uppercase; }
+.forecast .label { color: #d6e4bf; }
+.traditional .label { color: #73836c; }
+.card h3 { margin-top: 24px; font-size: clamp(24px, 3vw, 30px); line-height: 1.18; letter-spacing: -.03em; font-weight: 600; }
+.forecast h3 > span { color: #deeca5; }
+.traditional h3 > span { color: #8c9a87; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 30px 0 24px; list-style: none; padding: 0; }
+.steps li { position: relative; padding-top: 20px; }
+.steps li::before { content: ""; position: absolute; top: 3px; left: 0; width: 6px; height: 6px; border-radius: 50%; background: #dceaab; }
+.traditional .steps li::before { background: #afbea4; }
+.steps strong { display: block; font-size: 11px; font-weight: 650; line-height: 1.4; }
+.steps span { display: block; margin-top: 5px; font-size: 9px; line-height: 1.5; }
+.forecast .steps span { color: #d2dfcd; }
+.traditional .steps span, .traditional .description { color: #71806b; }
+.description { font-size: 14px; line-height: 1.65; }
+.forecast .description { color: #e2ebca; }
+.tagline { margin-top: 22px; padding-top: 16px; border-top: 1px solid #ffffff18; color: #e3efb3; font-size: 11px; font-weight: 650; }
+.footnote { margin-top: 14px; color: #80907e; font-size: 10px; line-height: 1.65; }
+.footnote a { text-decoration: underline; text-underline-offset: 2px; }
+@media (max-width: 600px) {
+  .comparison { margin-top: 32px; }
+  .card { padding: 22px; }
+  .label { font-size: 8px; letter-spacing: .09em; }
+  .card h3 { font-size: 24px; }
+  .steps { gap: 15px; }
+  .steps strong { font-size: 10px; }
+  .steps span { font-size: 8px; }
+  .description { font-size: 12px; }
+  .tagline { font-size: 10px; }
+  .footnote { font-size: 9px; }
+}
+.steps li:nth-child(2)::before { content: "→"; top: -5px; width: auto; height: auto; border-radius: 0; background: transparent; color: #dceaab; font-size: 16px; line-height: 1; }
+.traditional .steps li:nth-child(2)::before { background: transparent; color: #afbea4; }

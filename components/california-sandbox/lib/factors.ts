@@ -1,0 +1,244 @@
+// Maps contributing-factor values to a small set of clean display buckets.
+//
+// Input can be either a human label from project-neptune's factor_labels.py
+// (e.g. "Water temperature (3 days ago)") or — for older archived nowcast
+// snapshots that predate a label — a raw feature name (e.g. "tide_range",
+// "wtemp3"). Both are normalized here so the card never shows three
+// near-identical entries or a raw snake_case name. This is the single source of
+// truth for what a factor is *called on the dashboard*.
+
+// Raw lag-feature prefixes (e.g. "wtemp3", "rad1", "lograin5") → bucket.
+const RAW_LAG_BUCKET: Record<string, string> = {
+  wtemp: "Water temperature",
+  temp: "Air temperature",
+  rad: "Solar radiation",
+  WVHT: "Wave height",
+  DPD: "Wave period",
+  APD: "Wave period",
+  owave: "Onshore wave energy",
+  awave: "Alongshore wave energy",
+  owind: "Onshore wind",
+  awind: "Alongshore wind",
+  windspeed: "Wind speed",
+  logflow: "River discharge",
+  lograin: "Recent rainfall",
+};
+
+// Remove a trailing temporal qualifier from a human label: " today",
+// " yesterday", " N days ago", with or without surrounding parentheses.
+function stripLag(label: string): string {
+  return label
+    .replace(/\s*\(?\s*(?:\d+\s+days?\s+ago|yesterday)\s*\)?$/i, "")
+    .replace(/\s+today$/i, "")
+    .trim();
+}
+
+// Both raw feature names and human (lag-stripped) labels → display bucket.
+const CANONICAL: Record<string, string> = {
+  // Rainfall — one bucket
+  precip: "Recent rainfall",
+  wet: "Recent rainfall",
+  rain_tide: "Recent rainfall",
+  lograin1: "Recent rainfall",
+  Rainfall: "Recent rainfall",
+  "Rainfall today": "Recent rainfall",
+  "Yesterday rainfall": "Recent rainfall",
+  "Rain and high tide combination": "Recent rainfall",
+  "Recent wet weather": "Recent rainfall",
+
+  // Tides
+  tide_range: "Tidal range",
+  tide_range1: "Tidal range",
+  "Tidal range": "Tidal range",
+  tide_max: "High tide level",
+  tide_max1: "High tide level",
+  "High tide level": "High tide level",
+  tide_min: "Low tide level",
+  tide_min1: "Low tide level",
+  "Low tide level": "Low tide level",
+  tide_sample: "Tide level at sample time",
+  "Tide level at sample time": "Tide level at sample time",
+  // Renamed for readers. "Hours since high tide" reads as a live countdown, but
+  // the feature is fixed: hours from the day's high tide to 10:00 local, the
+  // hour the lab samples are drawn (SAMPLE_HOUR in process_tide_data.py). A
+  // reader checking the board at 3pm was being shown a number anchored to 10am
+  // under a name that implied it was still ticking. 10:00 is a stand-in for the
+  // county's sampling hour, not a prediction time. The old spellings stay as
+  // keys so archived snapshots, which history_3day.csv replays, still resolve.
+  hours_since_high: "High tide timing",
+  "Hours since high tide": "High tide timing",
+  "High tide timing": "High tide timing",
+  tide_spring: "Spring tide conditions",
+  "Spring tide conditions": "Spring tide conditions",
+
+  // Waves
+  WVHT_mean: "Wave height",
+  WVHT_q75: "Wave height",
+  "Wave height": "Wave height",
+  "Higher waves": "Wave height",
+  DPD_mean: "Wave period",
+  DPD_q75: "Wave period",
+  APD_mean: "Wave period",
+  "Wave period": "Wave period",
+  "Average wave period": "Wave period",
+  "Longer wave periods": "Wave period",
+  MWD_mean: "Mean wave direction",
+  "Mean wave direction": "Mean wave direction",
+  owave: "Onshore wave energy",
+  "Onshore wave energy": "Onshore wave energy",
+  awave: "Alongshore wave energy",
+  "Alongshore wave energy": "Alongshore wave energy",
+
+  // Wind
+  windspeed_max: "Wind speed",
+  windgust_max: "Wind speed",
+  "Wind speed": "Wind speed",
+  "Wind gusts": "Wind speed",
+  winddir: "Wind direction",
+  "Wind direction": "Wind direction",
+  owind: "Onshore wind",
+  owind_bin: "Onshore wind",
+  "Onshore wind": "Onshore wind",
+  awind: "Alongshore wind",
+  "Alongshore wind": "Alongshore wind",
+
+  // Sun & temperature
+  solar_rad: "Solar radiation",
+  "Solar radiation": "Solar radiation",
+  temp_mean: "Air temperature",
+  temp_max: "Air temperature",
+  temp_min: "Air temperature",
+  "Air temperature": "Air temperature",
+  "Daytime high temperature": "Air temperature",
+  "Overnight low temperature": "Air temperature",
+  wtemp_mean: "Water temperature",
+  "Water temperature": "Water temperature",
+
+  // River flow
+  logflow: "River discharge",
+  discharge: "River discharge",
+  "River discharge": "River discharge",
+  flow1_q75: "High river flow",
+  flow1_q90: "High river flow",
+  "High river flow": "High river flow",
+  "Very high river flow": "High river flow",
+  flow1_q50: "Moderate river flow",
+  "Moderate river flow": "Moderate river flow",
+
+  // Combined sewer overflows (Massachusetts) — Boston Harbor's analogue of the
+  // CA boards' storm-drain runoff. The rain interaction is a real day-to-day
+  // driver; the proximity/count features are fixed properties of the site and
+  // are filtered out below alongside the bacteria-history ones.
+  cso_rain: "Rain near sewer outfalls",
+  "Rain near combined sewer outfalls": "Rain near sewer outfalls",
+  "Rain near sewer outfalls": "Rain near sewer outfalls",
+  cso_dist_km: "Beach location",
+  cso_n2: "Beach location",
+  cso_n5: "Beach location",
+  cso_prox: "Beach location",
+  beach_lat: "Beach location",
+  beach_lon: "Beach location",
+  "Distance to nearest sewer outfall": "Beach location",
+  "Sewer outfalls within 2 km": "Beach location",
+  "Sewer outfalls within 5 km": "Beach location",
+  "Sewer outfall proximity": "Beach location",
+  "Beach location": "Beach location",
+
+  // Calendar / location
+  doy_sin: "Seasonal pattern",
+  doy_cos: "Seasonal pattern",
+  month: "Seasonal pattern",
+  "Seasonal pattern": "Seasonal pattern",
+  "Time of year": "Seasonal pattern",
+  days_since_full_moon: "Lunar cycle",
+  "Lunar cycle": "Lunar cycle",
+  beach_angle: "Beach orientation",
+  "Beach orientation": "Beach orientation",
+  weekend: "Weekend",
+  Weekend: "Weekend",
+
+  // Bacteria / sampling — collapsed (excluded from display, see below)
+  logFIB1: "Prior bacteria level",
+  logFIB2: "Prior bacteria level",
+  exc_rolling3: "Prior bacteria level",
+  "Recent bacteria level": "Prior bacteria level",
+  "Prior bacteria level": "Prior bacteria level",
+  "Recent exceedance history": "Prior bacteria level",
+  exc_last: "Last sample was unsafe",
+  "Last sample was unsafe": "Last sample was unsafe",
+  days_since_last: "Days since last sample",
+  "Days since last sample": "Days since last sample",
+};
+
+export function factorLabel(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const trimmed = String(raw).trim();
+  if (!trimmed) return null;
+
+  // Raw lag feature name with no underscore (wtemp3, rad1, lograin30T, DPD2).
+  const lag = trimmed.match(/^([A-Za-z]+?)\d+T?$/);
+  if (lag && RAW_LAG_BUCKET[lag[1]]) return RAW_LAG_BUCKET[lag[1]];
+
+  // Direct hit on a raw name or human label (before stripping).
+  if (CANONICAL[trimmed]) return CANONICAL[trimmed];
+
+  // Human label with a temporal suffix, or a cumulative-rainfall variant.
+  const base = stripLag(trimmed);
+  if (/cumulative rainfall/i.test(base)) return "Recent rainfall";
+  return CANONICAL[base] ?? base;
+}
+
+// Bacteria-history and sampling factors — these are NOT environmental drivers.
+// The most recent lab result is surfaced separately on the card, so contributing
+// factors should reflect only the environmental conditions driving the
+// exceedance probability. The upstream model already excludes these before
+// ranking; this is a defensive net for stale/cached CSVs. Values here are the
+// canonical (post-factorLabel) forms.
+const NON_ENVIRONMENTAL_FACTORS = new Set<string>([
+  "Prior bacteria level",
+  "Last sample was unsafe",
+  "Days since last sample",
+  // Site descriptors, not conditions: constant for a beach, so they describe
+  // where it is rather than what is happening there today. Naming one as a
+  // "contributing factor" tells a reader nothing they can act on.
+  "Beach location",
+  "Beach orientation",
+  "Weekend",
+]);
+
+export function isEnvironmentalFactor(label: string | null | undefined): boolean {
+  if (label == null) return false;
+  return !NON_ENVIRONMENTAL_FACTORS.has(String(label).trim());
+}
+
+// Real conditions the model uses, but not reasons worth giving a reader.
+//
+// Unlike NON_ENVIRONMENTAL_FACTORS above, these ARE things happening at the
+// beach. They are withheld because the ranking overstates what they do, not
+// because they are metadata — so they stay in the model, and stay in `drivers`
+// for the written summary's topic selection. Only the ranked list a reader is
+// told are "top contributing factors" drops them.
+//
+// Air temperature: it ranks high on dry summer days, almost always as
+// "decreasing risk", which reads as "the heat is cleaning the water". It is
+// not. Across 11,738 South Bay samples (2004–2026) the raw effect is enormous
+// — 0.06x the odds of exceedance per +10°C, adjusted for month and station —
+// but that is the rain confound: cold days here are storm days, and storm
+// runoff is the real driver. Hold rain constant (none that day, none in the
+// prior three) and it vanishes: 0.85x per +10°C, 95% CI 0.48–1.39, an interval
+// straddling 1. The label also collapses temp_max/temp_min/temp_mean and their
+// lags (see CANONICAL above), so it cannot even be tied to a reading a reader
+// could check. On 2026-10-03, during a heat wave, it was ranked the #2 or #3
+// reason the South Bay water was clean; the factor beneath it was "Rainfall
+// today", which is the honest answer.
+const UNLISTED_FACTORS = new Set<string>(["Air temperature"]);
+
+/**
+ * Whether a factor belongs in the reader-facing "Top contributing factors"
+ * list. Applied on top of isEnvironmentalFactor, which answers a different
+ * question (is this a condition at all).
+ */
+export function isListedFactor(label: string | null | undefined): boolean {
+  if (label == null) return false;
+  return !UNLISTED_FACTORS.has(String(label).trim());
+}

@@ -1,0 +1,57 @@
+{
+  "page": "How Neptune Works",
+  "edits": {
+    "text-3": {
+      "original": "No water testing kit, no lab. Just the official sampling record, the conditions driving the ocean right now, and a model that has learned how the two fit together.",
+      "value": "No water testing kit, no lab. Just the official sampling record, the conditions driving the ocean right now, and a model that learns how the two fit together."
+    },
+    "text-6": {
+      "original": "So the number posted today describes water that was scooped up days ago. In between, it rains, tides turn, and swells arrive. That is the space a forecast fills.",
+      "value": "So the number posted today describes water that was scooped up days ago. It gives you a rearview mirror into how the water was. In between samples and results, it rains, tides turn, and swells arrive. That is the space a forecast fills, what the water should be like today, and in the future."
+    },
+    "text-9": {
+      "original": "Neptune starts with the official record: years of Enterococcus samples collected and tested by the agencies that monitor these beaches. That history is what teaches the model how a beach behaves.",
+      "value": "Neptune starts with the official record: years of enterococcus samples collected and tested by the agencies that monitor these beaches. "
+    },
+    "text-13": {
+      "original": "A machine-learning model weighs those conditions against what it learned and produces one number per beach: the chance that bacteria exceed the applicable safe-swimming threshold, 104 MPN/100mL for ocean water.",
+      "value": "A model weighs those conditions against what it learned and produces a prediction per beach: the chance that bacteria exceed the applicable safe-swimming threshold, 104 MPN/100mL for ocean water. >104MPN = unsafe levels of bacteria. <104MPN = safe levels of bacteria."
+    },
+    "text-14": {
+      "original": "Publish it, then check the homework",
+      "value": "Publish it, then verify"
+    },
+    "text-15": {
+      "original": "That estimate becomes the Neptune Index you see on the board. When the next official lab result arrives, Neptune compares it against what it predicted for that day, so the track record is visible rather than asserted.",
+      "value": "That estimate becomes the Neptune Index you see on the board. When the next official lab result arrives, Neptune compares it against what it predicted for that day, so the track record is visible rather than asserted. Neptune publishes a prediction everyday of the year. Tests are done roughly once a week, so we can only verify on the days there were tests done."
+    },
+    "text-17": {
+      "original": "The Neptune Index is a percentage. It is our model’s estimated probability that Enterococcus exceeds 104 MPN/100mL at that beach. A lower percentage means an exceedance is less likely. A higher percentage means it is more likely.",
+      "value": "The Neptune Index is a percentage. It is our model’s estimated probability that enterococcus exceeds 104 MPN/100mL at that beach. A lower percentage means an exceedance is less likely. A higher percentage means it is more likely."
+    },
+    "text-19": {
+      "original": "So the labels describe a likelihood, and how that likelihood has borne out. They are not measured bacteria counts, and no reading here is a measurement of the water you are standing in.",
+      "value": "So the labels describe a likelihood, and how that likelihood has borne out. They are not measured bacteria counts, is it the probability of unsafe levels of bacteria for that day. "
+    },
+    "text-20": {
+      "original": "A Low reading means conditions look unfavorable for high bacteria, not that the water has been tested and cleared. A High reading is a reason for caution, not a closure. Official advisories and closures take precedence over anything on this page.",
+      "value": "A low reading means conditions look unfavorable for high bacteria, not that the water has been tested and cleared. A high reading is a reason for caution, not a closure. Official advisories and closures take precedence over anything on this page."
+    },
+    "text-26": {
+      "original": "Tells you about one spot, at the moment it was collected",
+      "value": "Result is the amount of bacteria in that sample"
+    },
+    "text-34": {
+      "original": "Never touches the water",
+      "value": "Is a probability of unsafe bacteria levels that day"
+    },
+    "text-35": {
+      "original": "One measures the past precisely. The other estimates now and next. You want both.",
+      "value": "One measures the past precisely. The other estimates now and next. We complement each other."
+    },
+    "text-46": {
+      "original": "What is Enterococcus?",
+      "value": "What is enterococcus?"
+    }
+  }
+}

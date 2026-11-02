@@ -1,0 +1,33 @@
+{
+  "page": "Why It Matters",
+  "edits": {
+    "text-2": {
+      "original": "The ocean is part of our lives. Knowing when to go in should be easier.",
+      "value": "The ocean is mostly a mystery. But answering \"will it get me sick?\" shouldn't be."
+    },
+    "text-3": {
+      "original": "We check the weather before heading out. We check the waves, too. But when it comes to the water itself, the information we need can be hard to find or already out of date.",
+      "value": "We check the weather before heading out. The air quality is shown too. But when it comes to the water itself, the information we need can be hard to find or already out of date. This leads to over 7 million Americans getting sick each year from the ocean."
+    },
+    "text-5": {
+      "original": "Project Neptune began after co-founder Max became seriously ill with a staph infection following a surf trip in Mexico.",
+      "value": "Project Neptune began after co-founder Max became seriously ill with a staph infection following a surf trip in Mexico.\n"
+    },
+    "text-17": {
+      "original": "This page is still being written",
+      "value": "Share your story"
+    },
+    "text-18": {
+      "original": "We would rather leave this space open than fill it with words nobody said. If the water has changed a plan of yours, or cost you a day, we would like to hear about it.",
+      "value": "If the water has changed a plan of yours, got you sick, or cost you a day, we would like to hear about it."
+    },
+    "text-21": {
+      "original": "Surfers, swimmers, parents, volleyball players, and anyone who plans their day around the beach deserve information they can understand and use. We’re starting in the South Bay and building Neptune with feedback from the communities who use these beaches.",
+      "value": "Swimmers, parents, surfers, and anyone who gets in the water deserve information they can understand and use. We’re starting in the Los Angeles region and building Neptune with feedback from the communities who use these beaches."
+    },
+    "text-9": {
+      "original": "A beach can change before the next test",
+      "value": "The water can change before the next test"
+    }
+  }
+}

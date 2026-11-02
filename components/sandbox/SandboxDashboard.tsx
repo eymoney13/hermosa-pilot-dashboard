@@ -15,6 +15,7 @@ import NewsTab from "../NewsTab";
 import BeachNeighborNav from "@/components/BeachNeighborNav";
 import SandboxBeachDetail, { bandClass } from "./SandboxBeachDetail";
 import SandboxProOffer from "./SandboxProOffer";
+import ForecastComparison from "./ForecastComparison";
 import SandboxMenu from "./SandboxMenu";
 import CaliforniaAlertSignup, { type CaliforniaAlertSignupHandle } from "@/components/CaliforniaAlertSignup";
 import SandboxYourNeptune from "./SandboxYourNeptune";
@@ -91,14 +92,30 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
         <div className={s.account}>{!entitled && <a className={s.headerPro} href="#sandbox-pro" onClick={() => setProMoment("header_get_pro")}>Get Pro</a>}{entitled && <UserButton />}<SandboxMenu account={account} /></div>
       </header>
       <div className={s.content}>
+        {(view === "map" || view === "list") ? (
+          <section className={s.mapIntroduction} aria-label="Beach water quality forecast">
+            <h1>Beach water quality.<br /><span>Predicted like the weather.</span></h1>
+            <p className={s.mapDescription}>Daily water quality predictions for your beach.</p>
+            <div className={s.mapHeadingRow}>
+              <div>
+                <h2 ref={heading} tabIndex={-1}>Today’s water quality at your beach</h2>
+                {predictionDate && <time className={s.mapPredictionDate} dateTime={predictionDate}>{formatMonthDayYear(predictionDate)}</time>}
+              </div>
+              <nav className={s.mapViewToggle} aria-label="Dashboard views">
+                <button aria-current={view === "map" ? "page" : undefined} onClick={() => switchView("map")}><Map size={14} /> Map</button>
+                <button aria-current={view === "list" ? "page" : undefined} onClick={() => switchView("list")}><List size={14} /> List</button>
+              </nav>
+            </div>
+          </section>
+        ) : <>
         <div className={s.masthead}>
           <div><p className={s.eyebrow}><Waves size={16} /> Daily water-quality</p><h1>Neptune Index</h1><p className={s.intro}>Know what you&apos;re going into.</p></div>
           <div className={s.dateline}><span>Daily forecast</span><strong>{predictionDate ? formatMonthDayYear(predictionDate) : "Awaiting readings"}</strong></div>
         </div>
         <div className={s.toolbar}>
           <nav aria-label="Dashboard views" className={s.tabs}>
-            <button aria-current={!active && view === "list" ? "page" : undefined} onClick={() => switchView("list")}><List size={17} /> Beaches</button>
-            <button aria-current={!active && view === "map" ? "page" : undefined} onClick={() => switchView("map")}><Map size={17} /> Map</button>
+            <button onClick={() => switchView("list")}><List size={17} /> Beaches</button>
+            <button onClick={() => switchView("map")}><Map size={17} /> Map</button>
             {newsEnabled && <button aria-current={!active && view === "news" ? "page" : undefined} onClick={() => switchView("news")}>News</button>}
           </nav>
           <div className={s.mobileDateline}>
@@ -106,6 +123,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             {predictionDate ? <time dateTime={predictionDate}>{new Date(`${predictionDate}T12:00:00Z`).toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric", timeZone:"UTC"})}</time> : <span>Awaiting readings</span>}
           </div>
         </div>
+        </>}
         {!entitled && !active && view === "list" && (
           <aside className={s.proBanner} aria-label="Join Neptune Pro">
             <div><strong>Checking the water should be as easy as checking the weather.</strong><p>3-day forecasts and email alerts.</p></div>
@@ -128,8 +146,10 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
           <div className={s.empty}><h2>No readings published yet.</h2><p>The daily forecast will appear here when it is available.</p></div>
         ) : view === "news" ? <NewsTab items={news} /> : (
           <section className={s.overview}>
+            {view !== "map" && <>
             <div className={s.sectionHeading}><h2 ref={heading} tabIndex={-1}>Today’s water quality</h2><span>{beaches.length} beaches</span></div>
             <p className={s.supporting}>Click a beach for more information.{alertsEnabled && <> <button type="button" className={s.emailAlertLink} onClick={() => alertSignupRef.current?.open()}>Get email alerts</button></>}</p>
+            </>}
             {view === "map" ? <div className={s.map}><OverviewMapClient locateNearby labelMinZoom={11} beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} /></div> : (
               <div className={s.countyGroups}>{countyGroups.map((group) => <section key={group.county} aria-label={group.county}><h3 className={s.countyHeading}>{group.county}<span>{group.beaches.length} {group.beaches.length === 1 ? "beach" : "beaches"}</span></h3><ul className={s.beaches}>{group.beaches.map((beach) => <li key={beach.code}><button onClick={() => openBeach(beach.code)}><span className={s.beachName}>{beach.name}</span><span className={`${s.band} ${s.listReading} ${bandClass(beach.status)}`}><span className={s.listBandLabel}><span className={s.dot} />{STATUS_BAND[beach.status].short} risk</span></span><ChevronRight size={18} aria-hidden="true" /></button></li>)}</ul></section>)}</div>
             )}
@@ -145,7 +165,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
           </section>
         )}
         {!active && view !== "map" && alertSignup}
-        {!active && view !== "news" && <h2 className={s.coverageNote}>More California beaches coming soon!</h2>}
+        {!active && (view === "map" || view === "list") && <ForecastComparison />}
         {!entitled && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} ctaLocation={proMoment ?? "california_bottom"} pageContext={active ? "beach_page" : view} beach={active} />}
         {/* List and map only. Inside a beach card the reader is looking at one
             beach, and a list of every beach they follow is a different job; on

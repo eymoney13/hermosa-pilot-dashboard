@@ -24,7 +24,7 @@ function Figures({ probability }: { probability: number }) {
   const pct = Math.round(Math.max(0, Math.min(1, probability)) * 100);
   return <section className={s.predictionFigures} aria-label="Prediction percentage and risk legend">
     <div>
-      <p className={s.eyebrow}>Neptune model estimate</p>
+      <p className={s.eyebrow}>Neptune model prediction</p>
       <p className={s.exceedance}><strong className={s.exceedancePct} style={{ color: riskTier(pct).textColor }}>{pct}%</strong></p>
       <p className={s.probabilityCaption}>chance of unsafe bacteria levels</p>
     </div>
@@ -92,7 +92,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
             <NeptuneMark className={s.scaleMarkerLogo} />
           </div>
         </div>
-        <p>Neptune model estimate. <a href={advisory.href} target="_blank" rel="noopener noreferrer" title={advisory.label}>Always follow official beach advisories. <ArrowUpRight size={16} aria-hidden="true" /></a></p>
+        <p>Neptune model prediction. <a href={advisory.href} target="_blank" rel="noopener noreferrer" title={advisory.label}>Always follow official beach advisories. <ArrowUpRight size={16} aria-hidden="true" /></a></p>
       </div>
     </section>
 

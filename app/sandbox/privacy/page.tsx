@@ -1,4 +1,4 @@
-import Page from "@/components/sandbox/SandboxPolicyPage";
+import Page from "@/components/california-sandbox/components/sandbox/SandboxPolicyPage";
 export const metadata = {title:"Neptune Privacy"};
 export default function Policy() {return <Page title="Privacy"><p>{"You can view today’s water quality without an account. For Pro, Neptune uses your checkout email, account identifier, subscription status, billing-period information, and payment-provider identifiers to provide access. Following beaches stores your email, selected beaches, and alert-delivery records."}</p>
 <p>{"When you request a beach, we store your email address and message to review the request and contact you about that beach. Submitting a request does not subscribe you to marketing emails."}</p>
