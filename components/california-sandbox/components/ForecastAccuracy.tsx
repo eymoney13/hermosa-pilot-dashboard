@@ -36,7 +36,15 @@ function SampleDetail({
   sample: AccuracySample;
   hidePercent: boolean;
 }) {
-  const actualUnsafe = sample.labMpn > EPA_MPN_THRESHOLD;
+  const belowLimitNote = !sample.predictedUnsafe && (
+    (sample.labMpn <= 35 && sample.predictedExceedance >= 30 && sample.predictedExceedance < 50)
+    || (sample.labMpn > 35 && sample.labMpn <= EPA_MPN_THRESHOLD && sample.predictedExceedance < 30)
+  );
+  const labLabel = sample.labMpn > EPA_MPN_THRESHOLD
+    ? "High bacteria"
+    : sample.labMpn > 35
+      ? "Moderate bacteria"
+      : "Low bacteria";
   return (
     <div className="mt-2 rounded-md bg-gray-50 px-3 py-2.5">
       <div className="flex items-center justify-between gap-2">
@@ -52,15 +60,14 @@ function SampleDetail({
           ) : (
             <X className="h-3.5 w-3.5" aria-hidden="true" />
           )}
-          {sample.match ? "Matched" : "Missed"}
+          {sample.match ? "Matched" : "Missed"}{belowLimitNote && "*"}
         </span>
       </div>
       <dl className="mt-2 space-y-1 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-gray-500">Lab result</dt>
           <dd className="text-right text-gray-800">
-            {sample.labMpn} MPN/100mL · {actualUnsafe ? "above" : "below"}{" "}
-            threshold
+            {sample.labMpn} MPN/100mL · {labLabel}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
@@ -72,6 +79,9 @@ function SampleDetail({
           </dd>
         </div>
       </dl>
+      {belowLimitNote && <p className="mt-2 text-xs leading-relaxed text-gray-500">
+        * The forecast predicted conditions below the safe swimming limit, and the lab result was also below that limit.
+      </p>}
     </div>
   );
 }
