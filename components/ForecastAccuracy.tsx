@@ -127,7 +127,7 @@ export default function ForecastAccuracy({
   const summaryLine = !enough
     ? "Not enough lab samples yet to report accuracy"
     : overallPct !== null
-      ? `Based on ${totalSamples.toLocaleString()} historical observations.`
+      ? `Based on ${totalSamples.toLocaleString()} lab samples.`
       : `Matched lab results in ${matches} of ${windowSize} recent samples`;
 
   // Primary signal for screen readers — never color alone.
