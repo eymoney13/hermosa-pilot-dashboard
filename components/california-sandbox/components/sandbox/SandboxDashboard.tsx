@@ -114,8 +114,8 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
         </div>
         <div className={s.toolbar}>
           <nav aria-label="Dashboard views" className={s.tabs}>
-            <button aria-current={!active && view === "list" ? "page" : undefined} onClick={() => switchView("list")}><List size={17} /> Beaches</button>
-            <button aria-current={!active && view === "map" ? "page" : undefined} onClick={() => switchView("map")}><Map size={17} /> Map</button>
+            <button onClick={() => switchView("list")}><List size={17} /> Beaches</button>
+            <button onClick={() => switchView("map")}><Map size={17} /> Map</button>
             {newsEnabled && <button aria-current={!active && view === "news" ? "page" : undefined} onClick={() => switchView("news")}>News</button>}
           </nav>
           <div className={s.mobileDateline}>
