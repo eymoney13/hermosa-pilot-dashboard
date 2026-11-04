@@ -93,6 +93,7 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocat
           <div className={s.planChoices}>
             <Link onClick={() => clicked("yearly")} prefetch={false} className={`${s.primary} ${s.annualPrimary}`} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $40/year <span>Save 33% with annual billing</span></Link>
             <Link onClick={() => clicked("monthly")} prefetch={false} className={s.annualChoice} href="/pro/start?plan=monthly&from=%2Fcalifornia">{CTA}</Link>
+            <p className={s.checkoutNote}>Renews automatically. Cancel anytime. Enter your email in Stripe, then activate your account. Already subscribed? <Link prefetch={false} href="/pro/recover">Recover your purchase</Link>.</p>
           </div>
         ) : (
           <>

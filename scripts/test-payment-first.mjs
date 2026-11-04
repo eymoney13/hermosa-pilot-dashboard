@@ -34,7 +34,7 @@ let smtpFails = false;
 const invitations = [], knownEmails = new Set();
 const stripe = {
   checkout: {sessions: {
-    retrieve: async id => { if (!sessions.has(id)) throw Error('missing'); return structuredClone(sessions.get(id)); },
+    retrieve: async id => { if (!sessions.has(id)) throw Object.assign(Error('missing'), {code:'resource_missing',param:'id'}); return structuredClone(sessions.get(id)); },
     expire: async id => { const session=sessions.get(id); if (session.status !== 'open') throw Error('not open'); session.status='expired'; return structuredClone(session); },
     create: async (params, opts) => {
       if (keys.has(opts.idempotencyKey)) return keys.get(opts.idempotencyKey);
@@ -94,6 +94,18 @@ check('switching monthly to annual expires the old checkout and bills $40/year',
   assert.equal(annual.line_items[0].price_data.unit_amount,4000);
   assert.equal(annual.line_items[0].price_data.recurring.interval,'year');
   assert.equal(annual.metadata.plan,'yearly');
+});
+check('only annual checkout offers promo codes and always collects a renewal card', () => {
+  assert.equal(annual.allow_promotion_codes, true);
+  assert.equal(sessions.get('cs_test_1').allow_promotion_codes, false);
+  assert.equal(annual.payment_method_collection, 'always');
+});
+check('free annual fulfillment rejects incomplete, unpaid, foreign, monthly or nonzero sessions', () => {
+  const free = {mode:'subscription', status:'complete', payment_status:'no_payment_required', amount_total:0, metadata:{flow:'payment_first_v1',plan:'yearly'}};
+  assert.equal(policy.paidCheckout(free), true);
+  for (const patch of [{status:'open'}, {payment_status:'unpaid'}, {mode:'payment'}, {amount_total:1}, {amount_total:null}, {amount_total:undefined}, {metadata:{flow:'payment_first_v1',plan:'monthly'}}, {metadata:{plan:'yearly'}}]) {
+    assert.equal(policy.paidCheckout({...free,...patch}), false);
+  }
 });
 const annualRetry = await purchase.startPurchase('yearly','annual-buyer@example.com');
 check('annual retries reuse the same checkout', () => assert.equal(annualRetry, annual.url));
@@ -221,6 +233,63 @@ for (const nextPlan of ['monthly', 'yearly']) {
  assert.equal(await purchase.startPurchase(nextPlan, email), nextUrl);
  assert.equal(creations, beforeRetry);
 }
+// Exercise a Stripe-confirmed free annual purchase through fulfillment and activation.
+const freeUrl = await purchase.startPurchase('yearly', 'free-year@example.com');
+const freeId = freeUrl.split('/').at(-1);
+paid(freeId, 'free-year@example.com', 'sub_free_year');
+Object.assign(sessions.get(freeId), {payment_status:'no_payment_required', amount_total:0, metadata:{flow:'payment_first_v1',plan:'yearly'}});
+subscriptions.get('sub_free_year').items.data[0].current_period_end = Math.floor(Date.now()/1000) + 365*86400;
+assert.equal((await purchase.syncPurchase(freeId)).active, true);
+await purchase.syncPurchase(freeId);
+const freeRows = (await pg.query("SELECT * FROM pro_subscriptions WHERE stripe_subscription_id = 'sub_free_year'")).rows;
+check('free annual fulfillment is replay-safe and records annual renewal price and access', () => {
+  assert.equal(freeRows.length, 1);
+  assert.equal(freeRows[0].plan, 'yearly');
+  assert.equal(freeRows[0].price_cents, 4000);
+});
+user = {id:'free_year_user', emailAddresses:[{emailAddress:'free-year@example.com',verification:{status:'verified'}}]};
+assert.equal(await purchase.activatePurchase(freeId), true);
+check('free annual purchase can activate a verified account', () => {});
+subscriptions.get('sub_free_year').status = 'canceled';
+assert.equal((await purchase.syncPurchase(freeId)).active, false);
+check('a free checkout cannot restore an ended subscription', () => {});
+const previousNodeEnv = process.env.NODE_ENV;
+process.env.NODE_ENV = 'development';
+user = null;
+await pg.query("INSERT INTO pro_checkout_attempts (email, attempt_id, plan, expires_at, checkout_session_id) VALUES ('stale-test@example.com', 'stale-attempt', 'yearly', now() + interval '1 hour', 'cs_test_missing')");
+const recoveredUrl = await purchase.startPurchase('yearly', 'stale-test@example.com');
+check('local test checkout replaces a missing Stripe session with a fresh annual checkout', () => {
+  assert.ok(recoveredUrl.startsWith('https://checkout.stripe.test/'));
+  assert.equal(sessions.get(recoveredUrl.split('/').at(-1)).metadata.plan, 'yearly');
+});
+if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+else process.env.NODE_ENV = previousNodeEnv;
+user = null;
+const browserToken = 'aabbccdd-1234-4567-89ab-aabbccddeeff';
+const directUrl = await purchase.startPurchase('yearly', '', '', browserToken);
+assert.equal(await purchase.startPurchase('yearly', '', '', browserToken), directUrl);
+const directId = directUrl.split('/').at(-1);
+check('direct annual checkout lets Stripe collect email and reuses browser attempts', () => {
+  const direct = sessions.get(directId);
+  assert.equal(direct.customer_email, undefined);
+  assert.equal(direct.allow_promotion_codes, true);
+  assert.equal(direct.line_items[0].price_data.recurring.interval, 'year');
+});
+const directMonthlyUrl = await purchase.startPurchase('monthly', '', '', browserToken);
+check('changing direct checkout plan expires the old session and selects monthly', () => {
+  assert.equal(sessions.get(directId).status, 'expired');
+  const monthly = sessions.get(directMonthlyUrl.split('/').at(-1));
+  assert.equal(monthly.allow_promotion_codes, false);
+  assert.equal(monthly.customer_email, undefined);
+  assert.equal(monthly.line_items[0].price_data.recurring.interval, 'month');
+});
+const directMonthlyId = directMonthlyUrl.split('/').at(-1);
+paid(directMonthlyId, 'stripe-collected@example.com', 'sub_direct');
+await purchase.syncPurchase(directMonthlyId);
+check('Stripe-collected email is saved in Neon subscription records', () => {});
+assert.equal((await pg.query("SELECT checkout_email FROM pro_subscriptions WHERE stripe_subscription_id = 'sub_direct'")).rows[0].checkout_email, 'stripe-collected@example.com');
+assert.equal(await purchase.startPurchase('monthly', '', '', browserToken), billing.siteUrl() + '/pro/recover');
+await assert.rejects(purchase.startPurchase('yearly', '', '', 'invalid'));
 process.env.STRIPE_SECRET_KEY='sk_live_fake';
 await assert.rejects(purchase.startPurchase('monthly','new@example.com'));
 check('checkout creation itself enforces live kill switch',()=>{});
