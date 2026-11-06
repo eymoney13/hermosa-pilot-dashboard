@@ -95,15 +95,15 @@ check('switching monthly to annual expires the old checkout and bills $40/year',
   assert.equal(annual.line_items[0].price_data.recurring.interval,'year');
   assert.equal(annual.metadata.plan,'yearly');
 });
-check('only annual checkout offers promo codes and always collects a renewal card', () => {
+check('both plans offer promo codes and always collect a renewal card', () => {
   assert.equal(annual.allow_promotion_codes, true);
-  assert.equal(sessions.get('cs_test_1').allow_promotion_codes, false);
+  assert.equal(sessions.get('cs_test_1').allow_promotion_codes, true);
   assert.equal(annual.payment_method_collection, 'always');
 });
-check('free annual fulfillment rejects incomplete, unpaid, foreign, monthly or nonzero sessions', () => {
+check('free annual fulfillment rejects incomplete, unpaid, foreign, unknown-plan or nonzero sessions', () => {
   const free = {mode:'subscription', status:'complete', payment_status:'no_payment_required', amount_total:0, metadata:{flow:'payment_first_v1',plan:'yearly'}};
   assert.equal(policy.paidCheckout(free), true);
-  for (const patch of [{status:'open'}, {payment_status:'unpaid'}, {mode:'payment'}, {amount_total:1}, {amount_total:null}, {amount_total:undefined}, {metadata:{flow:'payment_first_v1',plan:'monthly'}}, {metadata:{plan:'yearly'}}]) {
+  for (const patch of [{status:'open'}, {payment_status:'unpaid'}, {mode:'payment'}, {amount_total:1}, {amount_total:null}, {amount_total:undefined}, {metadata:{flow:'payment_first_v1',plan:'unknown'}}, {metadata:{plan:'yearly'}}]) {
     assert.equal(policy.paidCheckout({...free,...patch}), false);
   }
 });
@@ -279,7 +279,7 @@ const directMonthlyUrl = await purchase.startPurchase('monthly', '', '', browser
 check('changing direct checkout plan expires the old session and selects monthly', () => {
   assert.equal(sessions.get(directId).status, 'expired');
   const monthly = sessions.get(directMonthlyUrl.split('/').at(-1));
-  assert.equal(monthly.allow_promotion_codes, false);
+  assert.equal(monthly.allow_promotion_codes, true);
   assert.equal(monthly.customer_email, undefined);
   assert.equal(monthly.line_items[0].price_data.recurring.interval, 'month');
 });
@@ -290,6 +290,18 @@ check('Stripe-collected email is saved in Neon subscription records', () => {});
 assert.equal((await pg.query("SELECT checkout_email FROM pro_subscriptions WHERE stripe_subscription_id = 'sub_direct'")).rows[0].checkout_email, 'stripe-collected@example.com');
 assert.equal(await purchase.startPurchase('monthly', '', '', browserToken), billing.siteUrl() + '/pro/recover');
 await assert.rejects(purchase.startPurchase('yearly', '', '', 'invalid'));
+user = null;
+const monthlyFreeUrl = await purchase.startPurchase('monthly', 'elnino-buyer@example.com');
+const monthlyFreeId = monthlyFreeUrl.split('/').at(-1);
+paid(monthlyFreeId, 'elnino-buyer@example.com', 'sub_elnino_monthly');
+Object.assign(sessions.get(monthlyFreeId), {payment_status:'no_payment_required',amount_total:0});
+assert.equal((await purchase.syncPurchase(monthlyFreeId)).active, true);
+user = {id:'elnino_user',emailAddresses:[{emailAddress:'elnino-buyer@example.com',verification:{status:'verified'}}]};
+assert.equal(await purchase.activatePurchase(monthlyFreeId), true);
+check('free monthly checkout can fulfill and activate a verified account', () => {
+  assert.equal(sessions.get(monthlyFreeId).allow_promotion_codes, true);
+  assert.equal(sessions.get(monthlyFreeId).payment_method_collection, 'always');
+});
 process.env.STRIPE_SECRET_KEY='sk_live_fake';
 await assert.rejects(purchase.startPurchase('monthly','new@example.com'));
 check('checkout creation itself enforces live kill switch',()=>{});

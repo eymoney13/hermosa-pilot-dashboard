@@ -89,7 +89,7 @@ export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogI
   const { cents, interval } = PRO_PLANS[attempt.plan];
   const session = await stripe().checkout.sessions.create({
     mode: "subscription", ...(buyerEmail ? { customer_email: buyerEmail } : {}), payment_method_types: ["card"],
-    allow_promotion_codes: attempt.plan === "yearly",
+    allow_promotion_codes: true,
     // Save a card even when a coupon makes the first annual invoice free.
     payment_method_collection: "always",
     expires_at: Math.floor(new Date(attempt.expires_at).getTime() / 1000),

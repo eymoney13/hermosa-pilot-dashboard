@@ -10,8 +10,8 @@ export function paymentFirstAllowed(env: Record<string, string | undefined>): bo
 }
 export function paidCheckout(s: { mode: string | null; status: string | null; payment_status: string; metadata: Record<string, string> | null; amount_total?: number | null }): boolean {
   // Stripe reports a completed, fully discounted subscription as no_payment_required.
-  // Only annual zero-total checkouts qualify; syncPurchase also verifies the live subscription.
+  // Only known-plan zero-total checkouts qualify; syncPurchase also verifies the live subscription.
   const settled = s.payment_status === "paid" ||
-    (s.payment_status === "no_payment_required" && s.amount_total === 0 && s.metadata?.plan === "yearly");
+    (s.payment_status === "no_payment_required" && s.amount_total === 0 && (s.metadata?.plan === "yearly" || s.metadata?.plan === "monthly"));
   return s.mode === "subscription" && s.status === "complete" && settled && s.metadata?.flow === "payment_first_v1";
 }
