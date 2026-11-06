@@ -429,3 +429,43 @@
 }
 
 .mapPredictionDate { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+/* Keep the next chapter in view so the map never reads as the page ending. */
+.map > div { height: clamp(280px, 42svh, 420px); }
+.scrollInvitation { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px 24px; background: #eaf2eb; border: 1px solid #d6e3d6; border-top: 0; border-radius: 0 0 14px 14px; }
+.scrollInvitation > span:first-child { display: grid; gap: 7px; }
+.scrollInvitation small { font-size: 9px; letter-spacing: .14em; color: #417b76; font-weight: 700; }
+.scrollInvitation strong { font-size: 22px; font-weight: 600; letter-spacing: -.03em; }
+.scrollInvitation span span { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.scrollArrow { display: grid; place-items: center; width: 42px; height: 42px; flex-shrink: 0; border-radius: 50%; background: #173a3c; color: #edf4e7; font-size: 23px; }
+.scrollInvitation:hover .scrollArrow { background: #246f72; }
+@media(max-width:640px) { .map > div { height: clamp(230px, calc(100svh - 430px), 350px); } .scrollInvitation { padding: 17px; } .scrollInvitation strong { font-size: 19px; } .scrollInvitation span span { font-size: 11px; } .scrollArrow { width: 34px; height: 34px; } }
+
+/* Compact the introduction now that the numbered navigation is removed. */
+.header { padding-top: 14px; padding-bottom: 14px; }
+.content { padding-top: 0; }
+.mapIntroduction { padding-top: 0; padding-bottom: 8px; }
+.mapIntroduction h1 { margin-top: 8px; }
+.mapHeadingRow { margin-top: 18px; }
+.mapIntroduction + .overview { padding-top: 0; }
+.mapIntroduction + .overview .map { margin-top: 8px; }
+@media(max-width:640px) {
+  .header { padding-top: 6px; padding-bottom: 6px; }
+  .mapIntroduction h1 { margin-top: 4px; }
+  .mapDescription { margin-top: 8px; }
+  .mapHeadingRow { margin-top: 14px; }
+}
+
+/* Keep the beach request directly connected to the map. */
+.mapRequest { padding: 12px 0 16px; }
+.mapRequest a { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 18px; border-radius: 8px; background: #2c8487; color: #fff; font-size: 13px; font-weight: 600; }
+.mapRequest a:hover { background: #246f72; }
+.scrollInvitation { border-top: 1px solid #d6e3d6; border-radius: 14px; }
+
+/* Offer alerts after the reader has learned what the risk signals mean. */
+.guideAlert { padding: 0 0 20px; }
+.guideAlert > section { padding: 0; border: 0; }
+.guideAlert > section > button { min-height: 48px; padding: 12px 18px; font-size: 13px; box-shadow: none; }
+
+.overview:has(.guideAlert) { padding-bottom: 8px; }
+.guideAlert { padding-bottom: 8px; }
