@@ -293,15 +293,14 @@ await assert.rejects(purchase.startPurchase('yearly', '', '', 'invalid'));
 user = null;
 const monthlyFreeUrl = await purchase.startPurchase('monthly', 'elnino-buyer@example.com');
 const monthlyFreeId = monthlyFreeUrl.split('/').at(-1);
+assert.equal(sessions.get(monthlyFreeId).allow_promotion_codes, true);
+assert.equal(sessions.get(monthlyFreeId).payment_method_collection, 'always');
 paid(monthlyFreeId, 'elnino-buyer@example.com', 'sub_elnino_monthly');
 Object.assign(sessions.get(monthlyFreeId), {payment_status:'no_payment_required',amount_total:0});
 assert.equal((await purchase.syncPurchase(monthlyFreeId)).active, true);
 user = {id:'elnino_user',emailAddresses:[{emailAddress:'elnino-buyer@example.com',verification:{status:'verified'}}]};
 assert.equal(await purchase.activatePurchase(monthlyFreeId), true);
-check('free monthly checkout can fulfill and activate a verified account', () => {
-  assert.equal(sessions.get(monthlyFreeId).allow_promotion_codes, true);
-  assert.equal(sessions.get(monthlyFreeId).payment_method_collection, 'always');
-});
+check('free monthly checkout can fulfill and activate a verified account', () => {});
 process.env.STRIPE_SECRET_KEY='sk_live_fake';
 await assert.rejects(purchase.startPurchase('monthly','new@example.com'));
 check('checkout creation itself enforces live kill switch',()=>{});
