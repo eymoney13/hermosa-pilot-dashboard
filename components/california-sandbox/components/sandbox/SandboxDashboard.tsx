@@ -98,10 +98,10 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
         {(view === "map" || view === "list") ? (
           <section className={s.mapIntroduction} aria-label="Beach water quality forecast">
             <h1>Beach water quality.<br /><span>Predicted like the weather.</span></h1>
-            <p className={s.mapDescription}>Find your beach. Read the risk. Make your next ocean day a little more informed.</p>
+            <p className={s.mapDescription}>Find your beach. Read the risk. Make your next beach day more informed.</p>
             <div className={s.mapHeadingRow}>
               <div>
-                <h2 ref={heading} tabIndex={-1}>Today’s water quality at your beach</h2>
+                <h2 ref={heading} tabIndex={-1}>Today’s bacteria risk at your beach</h2>
                 {predictionDate && <time className={s.mapPredictionDate} dateTime={predictionDate}>{formatMonthDayYear(predictionDate)}</time>}
               </div>
               <nav className={s.mapViewToggle} aria-label="Dashboard views">
