@@ -1,0 +1,105 @@
+.dialog { position: fixed; inset: 0; margin: auto; width: min(840px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid #dbe5dc; border-radius: 24px; background: #fcfdf9; color: #173a3c; box-shadow: 0 32px 100px #071e2855; overflow-y: auto; }
+.dialog::backdrop { background: #0b292bc9; backdrop-filter: blur(7px); }
+.body { position: relative; padding: 36px; }
+.close { position: absolute; top: 14px; right: 14px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: #607174; }
+.close:hover { background: #eaf0e9; }
+.eyebrow { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: .13em; font-weight: 650; color: #367b76; margin-right: 20px; }
+.body h2 { font-size: clamp(34px, 5vw, 48px); line-height: 1.1; letter-spacing: -.05em; font-weight: 600; margin: 18px 0 12px; }
+.intro { font-size: 17px; line-height: 1.6; color: #607174; }
+.intro strong { font-weight: 500; color: #173a3c; }
+.comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 26px; }
+.comparison section { padding: 24px; border-radius: 14px; }
+.old { background: #fbecea; color: #9b3934; border: 1px solid #efc9c4; }
+.neptune { background: #173f40; color: #f7faee; border: 1px solid #173f40; }
+.label { display: flex; align-items: center; gap: 7px; font-size: 9px; letter-spacing: .1em; font-weight: 650; }
+.old .label { color: #9b3934; }
+.neptune .label { color: #dfeead; }
+.comparison h3 { font-size: 23px; line-height: 1.2; letter-spacing: -.035em; font-weight: 550; margin: 15px 0 22px; }
+.comparison ul { list-style: none; display: grid; gap: 20px; }
+.comparison li strong { display: block; font-size: 13px; font-weight: 600; }
+.comparison li span { display: block; font-size: 12px; line-height: 1.65; margin-top: 5px; }
+.old li span { color: #607174; }
+.neptune li span { color: #c6dad3; }
+.caption { margin-top: 24px; padding-top: 16px; border-top: 1px solid #9baea54d; font-size: 12px; font-style: italic; }
+.neptune .caption { color: #dfeead; }
+.honesty { margin: 20px 0; padding-left: 13px; border-left: 2px solid #83a899; }
+.honesty strong { font-size: 12px; font-weight: 600; }
+.honesty p { margin-top: 4px; font-size: 11px; line-height: 1.65; color: #607174; }
+.footer { display: flex; align-items: center; justify-content: flex-end; gap: 20px; padding-top: 18px; border-top: 1px solid #dce5e2; }
+.footer p { font-size: 12px; line-height: 1.5; color: #607174; }
+.footer strong { font-weight: 500; color: #173a3c; }
+.continue { display: flex; justify-content: center; align-items: center; gap: 16px; min-height: 56px; padding: 14px 24px; background: #dfeead; color: #173a3c; border: 1px solid #cbdc98; border-radius: 999px; font-size: 15px; font-weight: 650; }
+.continue:hover { background: #d2e596; }
+.dialog button:focus-visible { outline: 3px solid #388b85; outline-offset: 3px; }
+@media(max-width:600px) { .body { padding: 24px 18px 18px; } .eyebrow { font-size: 8px; letter-spacing: .08em; } .intro { font-size: 14px; } .comparison { gap: 10px; margin-top: 20px; } .comparison section { padding: 16px 12px; } .comparison h3 { font-size: 19px; margin-bottom: 18px; } .label { font-size: 8px; line-height: 1.5; align-items: flex-start; } .label svg { flex-shrink: 0; } .comparison li strong { font-size: 12px; } .comparison li span { font-size: 11px; } .caption { font-size: 11px; } .footer { flex-direction: column; align-items: stretch; gap: 12px; } .footer p { display: none; } .continue { width: 100%; } }
+@media(max-width:360px) { .comparison { grid-template-columns: 1fr; } }
+
+.body h2 { margin-top: 0; }
+.honesty { border-left: 0; padding-left: 0; }
+
+/* A sunny coastal palette keeps the introduction welcoming. */
+.dialog { background: #fffaf0; color: #163e61; border: 2px solid #fffdf7; border-radius: 30px; box-shadow: 0 28px 90px #16456340; }
+.dialog::backdrop { background: #27678270; backdrop-filter: blur(5px); }
+.body { overflow: hidden; isolation: isolate; padding-top: 44px; }
+.body::before { content: ""; position: absolute; z-index: -1; width: 160px; height: 160px; border-radius: 50%; top: -85px; right: 70px; background: #ffdc78; box-shadow: 0 0 0 16px #ffdc7825; pointer-events: none; }
+.body::after { content: ""; position: absolute; z-index: -1; width: 260px; height: 100px; border-radius: 50%; bottom: -80px; left: -50px; background: #bde7ed; box-shadow: 50px -10px 0 #d8f0ec; pointer-events: none; }
+.body h2 { font-weight: 750; color: #163e61; }
+.intro { color: #557185; }
+.close { background: #ffffffa6; color: #315a70; }
+.close:hover { background: #fff; }
+.comparison { gap: 18px; }
+.comparison section { border-radius: 22px; padding: 24px; box-shadow: 0 6px 0 #163e610a; }
+.old { background: #ffe1d7; color: #a4443a; border: 1px solid #f5beb0; }
+.old .label { color: #a4443a; }
+.neptune { background: #d7f0f5; color: #155876; border: 1px solid #a9dce6; }
+.neptune .label { color: #155876; }
+.label { align-items: center; gap: 9px; }
+.label svg { flex-shrink: 0; box-sizing: content-box; width: 20px; height: 20px; padding: 10px; border-radius: 14px; background: #fff8ed; transform: rotate(-8deg); }
+.neptune .label svg { color: #126c94; background: #fffdf2; transform: rotate(8deg); }
+.comparison h3 { font-weight: 650; }
+.comparison li { display: flex; align-items: flex-start; gap: 9px; }
+.comparison li::before { content: ""; flex-shrink: 0; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-top: 6px; opacity: .6; }
+.honesty p { color: #627b89; }
+.footer { border-color: #e7e3d7; }
+.continue { background: #ffdb70; border-color: #efc759; color: #163e61; box-shadow: 0 4px 0 #dfb850; transition: transform .15s, box-shadow .15s, background .15s; }
+.continue:hover { background: #ffe28a; transform: translateY(-2px); box-shadow: 0 6px 0 #dfb850; }
+.continue:active { transform: translateY(3px); box-shadow: 0 1px 0 #dfb850; }
+.dialog button:focus-visible { outline-color: #237fa5; }
+@media(max-width:600px) { .body { padding-top: 32px; } .comparison { gap: 10px; } .comparison section { padding: 16px 12px; border-radius: 18px; } .label { flex-direction: column; align-items: flex-start; gap: 12px; } .label svg { padding: 8px; } .body::before { right: 46px; top: -105px; } }
+@media(prefers-reduced-motion:reduce) { .continue { transition: none; } .continue:hover, .continue:active { transform: none; } }
+
+/* Neptune's orange and turquoise brand palette. */
+.dialog { background: #fff; color: #101512; border-color: #fff; box-shadow: 0 28px 90px #092d3440; }
+.dialog::backdrop { background: #123b4673; }
+.body::before { background: #ff8522; box-shadow: 0 0 0 16px #ff85221a; }
+.body::after { background: #29bfbd; box-shadow: 50px -10px 0 #bcefee; }
+.body h2 { color: #080b09; font-weight: 800; }
+.intro { color: #4d5e60; }
+.close { background: #f1f7f6; color: #172a2b; }
+.close:hover { background: #d8f5f3; }
+.old { background: #fff0e4; color: #8e352a; border-color: #ffd0ad; }
+.old .label { color: #8e352a; }
+.neptune { background: #29bfbd; color: #071b1b; border-color: #29bfbd; }
+.neptune .label { color: #071b1b; }
+.label svg { background: #fff; }
+.neptune .label svg { background: #fff; color: #087675; }
+.honesty p { color: #566768; }
+.footer { border-color: #e2ecea; }
+.continue { background: #ff8522; border-color: #f07818; color: #080b09; box-shadow: 0 4px 0 #c85b08; font-weight: 750; }
+.continue:hover { background: #ff963f; box-shadow: 0 6px 0 #c85b08; }
+.continue:active { box-shadow: 0 1px 0 #c85b08; }
+.dialog button:focus-visible { outline-color: #086e6c; }
+
+/* Compact card labels after removing their icons. */
+.comparison { margin-top: 20px; }
+.comparison section { padding: 20px; }
+.label { display: block; }
+.comparison h3 { margin-top: 12px; margin-bottom: 16px; }
+.comparison ul { gap: 14px; }
+@media(max-width:600px) { .comparison { margin-top: 16px; } .comparison section { padding: 16px 12px; } }
+
+@media(max-width:600px) {
+  .body::before { width: 90px; height: 90px; top: -65px; right: -25px; box-shadow: 0 0 0 10px #ff85221a; }
+}
+
+@media(max-width:600px) { .body::before { width: 110px; height: 110px; top: -62px; right: -16px; } }

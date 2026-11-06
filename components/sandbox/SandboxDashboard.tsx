@@ -15,6 +15,7 @@ import BeachNeighborNav from "@/components/BeachNeighborNav";
 import SandboxBeachDetail, { bandClass } from "./SandboxBeachDetail";
 import SandboxProOffer from "./SandboxProOffer";
 import ScrollOnboarding from "./ScrollOnboarding";
+import TrustWelcome from "./TrustWelcome";
 import ForecastComparison from "./ForecastComparison";
 import SandboxMenu from "./SandboxMenu";
 import SandboxYourNeptune from "./SandboxYourNeptune";
@@ -81,6 +82,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
 
   return (
     <main className={s.root}>
+      <TrustWelcome />
 
       <header className={s.header}>
         <a href="https://projectneptune.co" aria-label="Project Neptune home"><ProjectNeptuneLogo size={22} /></a>
