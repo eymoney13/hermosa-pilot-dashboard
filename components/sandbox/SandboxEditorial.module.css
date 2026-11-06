@@ -178,6 +178,7 @@
 .advisorRow > div { display: flex; align-items: center; gap: 20px; margin-top: 16px; }
 .advisorRow h2 { font-size: 21px; font-weight: 500; letter-spacing: -.025em; }
 .advisorRow .role { margin: 6px 0 0; }
+.advisorBio { margin-top: 18px; color: var(--muted); font-size: 15px; line-height: 1.85; }
 
 @media (max-width: 640px) {
   .founderGrid { grid-template-columns: 1fr; gap: 36px; }

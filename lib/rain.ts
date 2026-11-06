@@ -55,13 +55,9 @@ export function rainState(mm: number): RainState {
   return "wet";
 }
 
-/**
- * A depth a reader can hold on to: "0.7 mm", "18 mm".
- *
- * Tenths below 10 mm because that is where the distinction between nothing and
- * a trace lives and rounding 0.7 to "1 mm" would overstate it; whole
- * millimetres above, where a tenth is noise a swimmer cannot use.
- */
+/** Format source rainfall in inches, preserving small nonzero amounts. */
 export function rainDepth(mm: number): string {
-  return mm < 10 ? `${mm.toFixed(1)} mm` : `${Math.round(mm)} mm`;
+  const inches = mm / 25.4;
+  if (inches > 0 && inches < 0.01) return "<0.01 inches";
+  return `${inches.toFixed(2)} inches`;
 }

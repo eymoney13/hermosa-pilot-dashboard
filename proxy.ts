@@ -1,5 +1,5 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest, type NextFetchEvent } from "next/server";
 import { isClerkConfigured } from "@/lib/clerkConfig";
 
 // proxy.ts, not middleware.ts: Next 16 renamed the convention and deprecates
@@ -16,9 +16,14 @@ import { isClerkConfigured } from "@/lib/clerkConfig";
 //
 // Pass-through when Clerk is unconfigured, so the site is unchanged until the
 // keys exist.
-export default isClerkConfigured()
-  ? clerkMiddleware()
-  : () => NextResponse.next();
+const clerkProxy = isClerkConfigured() ? clerkMiddleware() : null;
+export default function proxy(request: NextRequest, event: NextFetchEvent) {
+  // The local account preview contains sample data and no billing actions.
+  if (process.env.NODE_ENV === "development" && request.nextUrl.pathname === "/pro/manage" && request.nextUrl.searchParams.get("preview") === "ended") {
+    return NextResponse.next();
+  }
+  return clerkProxy ? clerkProxy(request, event) : NextResponse.next();
+}
 
 export const config = {
   matcher: [

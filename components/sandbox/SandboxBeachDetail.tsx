@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import posthog from "posthog-js";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Lock } from "lucide-react";
 import { formatMonthDayYear, RISK_TIERS, riskTier, STATUS_BAND, type BeachData, type Status } from "@/lib/data";
@@ -24,7 +24,7 @@ function Figures({ probability }: { probability: number }) {
   const pct = Math.round(Math.max(0, Math.min(1, probability)) * 100);
   return <section className={s.predictionFigures} aria-label="Prediction percentage and risk legend">
     <div>
-      <p className={s.eyebrow}>Neptune model estimate</p>
+      <p className={s.eyebrow}>Neptune model prediction</p>
       <p className={s.exceedance}><strong className={s.exceedancePct} style={{ color: riskTier(pct).textColor }}>{pct}%</strong></p>
       <p className={s.probabilityCaption}>chance of unsafe bacteria levels</p>
     </div>
@@ -44,13 +44,14 @@ function distanceScore(a: BeachData, b: BeachData) {
     * Math.sin((b.longitude - a.longitude) * rad / 2) ** 2;
 }
 
-export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMoment, advisory }: {
+export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMoment, advisory, alertSignup }: {
   beach: BeachData;
   beaches: BeachData[];
   onSelect: (code: string) => void;
   // A locked forecast cell was tapped: the reader wanted tomorrow.
   onProMoment?: () => void;
   advisory: { label: string; href: string };
+  alertSignup?: ReactNode;
 }) {
   const [selectedDate, setSelectedDate] = useState(beach.predictionDate);
   const today = buildWindowCells(beach).find((cell) => cell.type === "today")!.day;
@@ -91,7 +92,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
             <NeptuneMark className={s.scaleMarkerLogo} />
           </div>
         </div>
-        <p>Neptune model estimate. <a href={advisory.href} target="_blank" rel="noopener noreferrer" title={advisory.label}>Always follow official beach advisories. <ArrowUpRight size={16} aria-hidden="true" /></a></p>
+        <p>Neptune model prediction. <a href={advisory.href} target="_blank" rel="noopener noreferrer" title={advisory.label}>Always follow official beach advisories. <ArrowUpRight size={16} aria-hidden="true" /></a></p>
       </div>
     </section>
 
@@ -132,6 +133,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
       </> : <p className={s.supporting}>The next three days’ forecasts are not available yet.</p>}
     </section>
     <ForecastAccuracy accuracy={beach.accuracy} hidePercent={false} showOverallPercent />
+    {alertSignup}
     {nearby.length > 0 && <section className={s.nearbySection}><h3>Nearby beaches</h3><ul className={s.beaches}>{nearby.map((neighbor) => <li key={neighbor.code}><button onClick={() => onSelect(neighbor.code)}><span className={s.beachName}>{neighbor.name}</span><span className={`${s.band} ${s.listReading} ${bandClass(neighbor.status)}`}><span>{STATUS_BAND[neighbor.status].short} risk</span></span><ArrowRight size={16} aria-hidden="true" /></button></li>)}</ul></section>}
   </div>;
 }

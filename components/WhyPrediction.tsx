@@ -291,6 +291,9 @@ export default function WhyPrediction({
                 <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
                   Top contributing factors
                 </p>
+                <p className="text-xs text-gray-500 mb-3">
+                  These factors influence the model’s prediction, pushing risk up or down.
+                </p>
                 <ol className="space-y-3 text-sm text-gray-700">
                   {factors.map((factor, i) => {
                     // Explanation sits under its own factor rather than in one

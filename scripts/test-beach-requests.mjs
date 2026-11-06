@@ -7,12 +7,12 @@ import { PGlite } from '@electric-sql/pglite';
 const db = new PGlite();
 await db.exec(fs.readFileSync('scripts/beach-requests-schema.sql', 'utf8'));
 function load(relative) {
- const file = path.resolve(relative), module = { exports: {} };
+ const file = path.resolve(relative), loadedModule = { exports: {} };
  const compiled = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
  const native = createRequire(file);
  const require = name => name === '@neondatabase/serverless' ? { neon: () => async (strings, ...values) => (await db.query(strings.reduce((sql,part,i)=>sql+(i ? '$'+i : '')+part,''), values)).rows } : name.startsWith('@/') ? load(name.slice(2)+'.ts') : native(name);
- new Function('require','module','exports',compiled)(require,module,module.exports);
- return module.exports;
+ new Function('require','module','exports',compiled)(require,loadedModule,loadedModule.exports);
+ return loadedModule.exports;
 }
 const old = process.env.DATABASE_URL;
 process.env.DATABASE_URL = 'test';

@@ -1,14 +1,12 @@
-import ProCheckoutAnalytics from "@/components/ProCheckoutAnalytics";
-import SandboxSupportLinks from "@/components/sandbox/SandboxSupportLinks";
+import DirectCheckout from "@/components/DirectCheckout";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { X } from "lucide-react";
 import { isClerkConfigured } from "@/lib/clerkConfig";
-import { isProPlan, isStripeConfigured, PRO_PLANS } from "@/lib/subscription";
+import { isProPlan, isStripeConfigured } from "@/lib/subscription";
 import { isPaymentFirstEnabled, startPurchase } from "@/lib/purchase";
 import { paywalledReturnPath } from "@/lib/paywall";
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Join Neptune Pro", robots: { index: false, follow: false } };
+export const metadata = { title: "Opening secure checkout", robots: { index: false, follow: false } };
 export default async function Start({ searchParams }: { searchParams: Promise<{from?: string; plan?: string; error?: string}> }) {
   if (!isClerkConfigured() || !isStripeConfigured() || !isPaymentFirstEnabled()) notFound();
   const query = await searchParams;
@@ -17,28 +15,19 @@ export default async function Start({ searchParams }: { searchParams: Promise<{f
   async function checkout(form: FormData) {
     "use server";
     let url: string;
-    try { url = await startPurchase(plan, String(form.get("email") ?? ""), String(form.get("ph_id") ?? "")); }
-    catch { redirect(`/pro/start?from=/california&plan=${plan}&error=1`); }
+    try { url = await startPurchase(plan, "", String(form.get("ph_id") ?? ""), String(form.get("attempt") ?? "")); }
+    catch (error) {
+      const diagnostic = error as { code?: string; type?: string } | null;
+      console.error("[pro/start] checkout failed", JSON.stringify({code: diagnostic?.code, type: diagnostic?.type}));
+      redirect(`/pro/start?from=/california&plan=${plan}&error=1`);
+    }
     redirect(url);
   }
-  return <main className="relative mx-auto max-w-lg px-6 py-20">
-    <Link href="/california" aria-label="Close checkout and return to water quality" className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"><X size={22} aria-hidden="true" /></Link>
-    <p className="text-sm text-teal-700">Neptune Pro</p><h1 className="mt-3 text-3xl font-semibold">More insight before you get in.</h1>
-    <p className="mt-5">3-day forecasts and alerts</p>
-    <nav aria-label="Billing interval" className="mt-6 grid grid-cols-2 gap-3">
-      {(["monthly", "yearly"] as const).map(option => <Link key={option} prefetch={false} aria-current={plan === option ? "page" : undefined} href={`/pro/start?from=/california&plan=${option}`} className={`rounded-lg border p-4 ${plan === option ? "border-teal-800 bg-teal-50 ring-1 ring-teal-800" : "border-gray-300"}`}>
-        <span className="block font-semibold">{option === "monthly" ? "Monthly" : "Annual"}</span><span className="block mt-1">{PRO_PLANS[option].label}</span>{option === "yearly" && <span className="block mt-1 text-xs text-teal-800">Save $20 per year</span>}
-      </Link>)}
-    </nav>
-    <p className="mt-5">{PRO_PLANS[plan].label}. Renews automatically. Cancel anytime.</p>
-    <p className="mt-3 text-sm text-gray-600">Pay securely, then create your Pro account using the same email.</p>
-    <ProCheckoutAnalytics plan={plan} /><form id="pro-checkout-form" action={checkout} className="mt-6"><input type="hidden" name="ph_id" defaultValue="" /><label htmlFor="email">Your checkout email</label>
-      <input id="email" name="email" type="email" required maxLength={254} autoComplete="email" className="mt-2 w-full rounded border p-3"/>
-      <button className="mt-6 rounded bg-teal-800 px-5 py-3 text-white">Continue to secure checkout</button>
-      {query.error && <p role="alert" className="mt-4">Checkout is temporarily unavailable. Check your email entry and try again later. If you already paid, recover your purchase below.</p>}
-    </form>
-    <p className="mt-4 text-sm text-gray-600">Full refund within 7 days of your first purchase. For refunds or support, email <a className="underline" href="mailto:ethan@projectneptune.co">ethan@projectneptune.co</a>.</p>
-    <p className="mt-6"><Link href="/pro/recover" className="underline">Already paid? Activate your purchase</Link></p>
-    <SandboxSupportLinks />
+  return <main className="mx-auto max-w-lg px-6 py-20">
+    <h1 className="text-2xl font-semibold">{query.error ? "Checkout is temporarily unavailable" : "Opening secure checkout…"}</h1>
+    <p className="mt-4">Enter your email and payment details securely with Stripe, then activate your Pro account.</p>
+    <DirectCheckout action={checkout} plan={plan} autoStart={!query.error} />
+    <p className="mt-6"><Link className="underline" href="/pro/recover">Already subscribed? Recover your purchase</Link></p>
+    <p className="mt-4"><Link className="underline" href="/california#sandbox-pro">Back to Neptune</Link></p>
   </main>;
 }

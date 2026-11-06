@@ -18,6 +18,7 @@
 .dateline { font-size: 12px; display: grid; gap: 5px; padding-bottom: 3px; text-align: right; white-space: nowrap; }
 .dateline span { color: var(--muted); }
 .dateline strong { font-weight: 500; }
+.mobileDateline { display: none; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; border-block: 1px solid var(--line); gap: 12px; }
 .tabs { display: flex; gap: 24px; }
 .tabs button { display: flex; align-items: center; gap: 8px; min-height: 58px; font-size: 14px; border-bottom: 2px solid transparent; color: var(--muted); }
@@ -28,6 +29,7 @@
 .sectionHeading h2, .sectionHeading h3, .summary h3, .lockedExplanation h3 { font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
 .sectionHeading > span { font-size: 12px; color: var(--muted); }
 .supporting { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+.emailAlertLink { font: inherit; color: inherit; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
 .beaches { margin-top: 24px; border-top: 1px solid var(--line); }
 .beaches li { border-bottom: 1px solid var(--line); }
 .beaches button { width: 100%; display: grid; grid-template-columns: minmax(0,1fr) auto 18px; align-items: center; gap: 20px; text-align: left; min-height: 77px; padding: 16px 8px; transition: background .15s; }
@@ -266,16 +268,25 @@
 @media (max-width: 640px) {
   .sandboxNote > div { padding: 7px 18px; gap: 8px; flex-wrap: wrap; }
   .sandboxNote span { font-size: 10px; }
-  .header { padding: 18px; gap: 10px; }
+  .header { padding: 10px 18px; gap: 10px; }
   .header > a { max-width: 65%; }
   .content { padding: 0 18px; }
-  .masthead { display: block; padding: 22px 0 26px; }
-  .intro { font-size: 15px; }
-  .dateline { display: flex; text-align: left; margin-top: 22px; gap: 10px; font-size: 11px; }
-  .tabs { gap: 16px; }
-  .tabs button { font-size: 13px; gap: 5px; min-height: 54px; }
+  .masthead { display: block; padding: 6px 0 14px; }
+  .masthead .eyebrow { font-size: 9px; letter-spacing: .1em; gap: 6px; }
+  .masthead h1 { font-size: 34px; margin-top: 6px; }
+  .intro { font-size: 14px; margin-top: 6px; }
+  .dateline { display: none; }
+  .mobileDateline { display: grid; gap: 2px; text-align: right; white-space: nowrap; flex-shrink: 0; }
+  .mobileDateline span { font-size: 9px; color: var(--muted); }
+  .mobileDateline time { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .toolbar { gap: 8px; }
+  .tabs { gap: 12px; }
+  .tabs button { font-size: 12px; gap: 4px; min-height: 48px; }
   .proLink { font-size: 12px; gap: 4px; }
-  .overview { padding-top: 26px; }
+  .overview { padding-top: 14px; }
+  .overview > .supporting { font-size: 12px; margin-top: 4px; }
+  .map { margin-top: 12px; border-radius: 8px; }
+  .map > div { height: clamp(260px, calc(100svh - 300px), 560px); }
   .beaches button { grid-template-columns: minmax(0,1fr) auto 12px; column-gap: 8px; padding: 17px 0; }
   .beachName { font-size: 13px; }
   .band { font-size: 10px; padding: 7px; gap: 5px; }
@@ -331,6 +342,7 @@
 
 .beachRequest { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .beachRequest p { font-size: 15px; font-weight: 500; }
+.overview > section + .beachRequest { margin-top: 0; padding-top: 12px; }
 .beachRequest a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid #2C8487; border-radius: 5px; background: #2C8487; color: #fff; font-size: 13px; font-weight: 600; }
 
 .summaryBlur { display: grid; gap: 12px; margin: 20px 0; filter: blur(4px); user-select: none; pointer-events: none; }
@@ -345,7 +357,7 @@
 .annualPrimary { flex-direction: column; gap: 3px; }
 .annualPrimary span { font-size: 12px; font-weight: 500; }
 
-.coverageNote { margin-top: -4px; font-family: inherit; font-size: clamp(26px, 4vw, 38px); line-height: 1.1; letter-spacing: -.055em; font-weight: 600; color: var(--ink); }
+.coverageNote { margin-top: 32px; font-family: inherit; font-size: clamp(26px, 4vw, 38px); line-height: 1.1; letter-spacing: -.055em; font-weight: 600; color: var(--ink); }
 
 .coverageNote + .proOffer { margin-top: 60px; }
 

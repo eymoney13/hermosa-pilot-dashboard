@@ -3,6 +3,7 @@ import SandboxSupportLinks from "@/components/sandbox/SandboxSupportLinks";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import posthog from "posthog-js";
+import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { ArrowLeft, ArrowRight, ChevronRight, List, Map, Waves } from "lucide-react";
 import { formatMonthDayYear, orderForList, STATUS_BAND, type BeachData } from "@/lib/data";
@@ -18,6 +19,7 @@ import ScrollOnboarding from "./ScrollOnboarding";
 import TrustWelcome from "./TrustWelcome";
 import ForecastComparison from "./ForecastComparison";
 import SandboxMenu from "./SandboxMenu";
+import CaliforniaAlertSignup, { type CaliforniaAlertSignupHandle } from "@/components/CaliforniaAlertSignup";
 import SandboxYourNeptune from "./SandboxYourNeptune";
 import s from "./SandboxDashboard.module.css";
 
@@ -39,6 +41,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   newsEnabled: boolean;
   advisory: { label: string; href: string };
 }) {
+  const [alertsRevision, setAlertsRevision] = useState(0);
   const [view, setView] = useState<"list" | "map" | "news">("map");
   const [selected, setSelected] = useState<string | null>(() => openForecast && entitled ? orderForList(beaches, listTopStations)[0]?.code ?? null : null);
   useEffect(() => {
@@ -79,6 +82,9 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
     focusHeading();
   };
   const switchView = (next: typeof view) => { setView(next); setSelected(null); setProMoment(null); posthog.capture("dashboard_view_selected", { board_location: "California", region: "southbay", view: next }); };
+
+  const alertSignupRef = useRef<CaliforniaAlertSignupHandle>(null);
+  const alertSignup = alertsEnabled && view !== "news" ? <CaliforniaAlertSignup ref={alertSignupRef} key={active?.code ?? view} beaches={beaches.map(b => ({code:b.code,name:b.name}))} beach={active?.code} pro={entitled} onSaved={() => setAlertsRevision(value => value + 1)} source={active ? "california_beach" : `california_${view}`} /> : null;
 
   return (
     <main className={s.root}>
@@ -137,7 +143,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
               <BeachNeighborNav beach={active} beaches={beaches} onSelect={openBeach} />
             </div>
             <h2 ref={heading} tabIndex={-1} className={s.beachHeading}>{active.name}</h2>
-            <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} onProMoment={() => setProMoment("beach_forecast_lock")} advisory={activeAdvisory} />
+            <SandboxBeachDetail key={active.code} beach={active} beaches={beaches} onSelect={openBeach} onProMoment={() => setProMoment("beach_forecast_lock")} advisory={activeAdvisory} alertSignup={alertSignup} />
           </>
         ) : beaches.length === 0 ? (
           <div className={s.empty}><h2>No readings published yet.</h2><p>The daily forecast will appear here when it is available.</p></div>
@@ -164,7 +170,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             beach, and a list of every beach they follow is a different job; on
             News it has nothing to do with what is on screen. */}
         {entitled && alertsEnabled && !active && view !== "news" && (
-          <SandboxYourNeptune location="california" beaches={beaches.map((b) => ({ code: b.code, name: b.name }))} />
+          <SandboxYourNeptune key={alertsRevision} location="california" beaches={beaches.map((b) => ({ code: b.code, name: b.name }))} />
         )}
       </div>
       <div className={s.faq}>{faq}</div>

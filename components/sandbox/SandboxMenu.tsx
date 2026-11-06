@@ -10,6 +10,7 @@ export const sandboxLinks = [
   { href: "/california/how-it-works", label: "How Neptune Works" },
   { href: "/california/stories", label: "Why It Matters" },
   { href: "/california/team", label: "Meet the Team" },
+  { href: "/california/news", label: "Water Quality News" },
 ];
 
 export default function SandboxMenu({ account }: { account?: ReactNode }) {

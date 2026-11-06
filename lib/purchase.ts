@@ -15,29 +15,53 @@ function validEmail(email: string) { return email.length <= 254 && /^[^\s@]+@[^\
 
 // POST only. The database elects a single checkout attempt for an email across
 // tabs/processes. Stripe idempotency makes retries return that same checkout.
-export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogId = ""): Promise<string> {
+export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogId = "", browserAttempt = ""): Promise<string> {
   if (!isPaymentFirstEnabled()) throw new Error("Checkout is unavailable");
   if (!process.env.PRO_ACTIVATION_EMAIL_FROM || !process.env.GMAIL_APP_PASSWORD) throw new Error("Activation email is not configured");
   siteUrl(); // Validate the return origin before creating anything at Stripe.
-  const email = normalizedEmail(rawEmail);
-  if (!validEmail(email)) throw new Error("Enter a valid checkout email");
+  const buyerEmail = normalizedEmail(rawEmail);
+  if (!buyerEmail && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(browserAttempt)) throw new Error("Invalid checkout attempt");
+  if (buyerEmail && !validEmail(buyerEmail)) throw new Error("Enter a valid checkout email");
+  // The legacy column name is email; anonymous attempts use a namespaced browser
+  // identifier here. Real buyer email is stored only from Stripe at fulfillment.
+  const email = buyerEmail || `browser:${browserAttempt}`;
   const user = await currentUser();
   if (user && await hasLiveSubscription(user.id)) return `${siteUrl()}/california`;
   const paid = await db()`SELECT checkout_session_id FROM pro_subscriptions
-    WHERE checkout_email = ${email} AND status IN ('active', 'trialing', 'past_due')
+    WHERE checkout_email = ${buyerEmail} AND status IN ('active', 'trialing', 'past_due')
     LIMIT 1`;
   // Don't expose another customer's receipt or whether the email is registered.
   if (paid.length) return `${siteUrl()}/pro/recover`;
   // Before replacing an expired attempt, reconcile a completed checkout whose
   // webhook or browser return was lost. Never charge again for that purchase.
   const previous = await db()`SELECT checkout_session_id, attempt_id, plan FROM pro_checkout_attempts WHERE email = ${email}`;
+  if (previous[0]?.checkout_session_id && process.env.NODE_ENV === "development" && process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) {
+    // Local databases can contain sessions from a different Stripe test account.
+    // Retire only a confirmed missing session, never network/authentication failures.
+    try {
+      await stripe().checkout.sessions.retrieve(previous[0].checkout_session_id);
+    } catch (error) {
+      const missing = error as { code?: string; param?: string };
+      if (missing.code !== "resource_missing" || missing.param !== "id") throw error;
+      await db()`UPDATE pro_checkout_attempts SET checkout_session_id = NULL, expires_at = now() - interval '1 second'
+        WHERE email = ${email} AND attempt_id = ${previous[0].attempt_id}
+          AND checkout_session_id = ${previous[0].checkout_session_id}`;
+      previous[0].checkout_session_id = null;
+    }
+  }
   if (previous[0]?.checkout_session_id) {
     const receipt = await syncPurchase(previous[0].checkout_session_id);
     if (receipt?.active) return `${siteUrl()}/pro/recover`;
-    if (previous[0].plan !== plan) {
+    // A completed checkout for an ended subscription is history, not an
+    // unfinished purchase. Retire it so a returning customer can subscribe again.
+    const oldSession = await stripe().checkout.sessions.retrieve(previous[0].checkout_session_id);
+    if (oldSession.status === "complete" && receipt && !receipt.active) {
+      await db()`UPDATE pro_checkout_attempts SET expires_at = now() - interval '1 second'
+        WHERE email = ${email} AND attempt_id = ${previous[0].attempt_id}
+          AND checkout_session_id = ${previous[0].checkout_session_id}`;
+    } else if (previous[0].plan !== plan) {
       // Close the old payment page before offering a different interval. If
       // payment wins this race, Stripe rejects expiration and we fail closed.
-      const oldSession = await stripe().checkout.sessions.retrieve(previous[0].checkout_session_id);
       if (oldSession.status === "complete") return `${siteUrl()}/pro/recover`;
       if (oldSession.status === "open") await stripe().checkout.sessions.expire(oldSession.id);
       await db()`UPDATE pro_checkout_attempts SET expires_at = now() - interval '1 second'
@@ -64,11 +88,15 @@ export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogI
   if (new Date(attempt.expires_at).getTime() - Date.now() < 31 * 60_000) throw new Error("Please try again after this checkout expires");
   const { cents, interval } = PRO_PLANS[attempt.plan];
   const session = await stripe().checkout.sessions.create({
-    mode: "subscription", customer_email: email, payment_method_types: ["card"],
+    mode: "subscription", ...(buyerEmail ? { customer_email: buyerEmail } : {}), payment_method_types: ["card"],
+    allow_promotion_codes: true,
+    // Save a card even when a coupon makes the first annual invoice free.
+    payment_method_collection: "always",
     expires_at: Math.floor(new Date(attempt.expires_at).getTime() / 1000),
     // Analytics join key only. Shape-checked because it arrives from the form.
     metadata: { flow: "payment_first_v1", plan: attempt.plan, attempt_id: attempt.attempt_id,
       ...(/^[\w$.:-]{1,200}$/.test(rawPosthogId) ? { posthog_distinct_id: rawPosthogId } : {}) },
+    custom_text: { submit: { message: "Renews automatically until canceled. After checkout, activate your account using the same email. Full refund within 7 days of your first purchase; contact ethan@projectneptune.co." } },
     subscription_data: { metadata: { flow: "payment_first_v1", plan: attempt.plan } },
     line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: cents,
       recurring: { interval }, product_data: { name: "Neptune Pro" } } }],

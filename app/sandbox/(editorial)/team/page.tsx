@@ -1,18 +1,15 @@
-import LocalPageEditor from "@/components/local-editor/LocalPageEditor";
-import { readPageDraft } from "@/lib/local-editor/howItWorksDraft";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { PageHero } from "@/components/california-sandbox/components/sandbox/SandboxEditorial";
-import s from "@/components/california-sandbox/components/sandbox/SandboxEditorial.module.css";
+import { PageHero } from "@/components/sandbox/SandboxEditorial";
+import s from "@/components/sandbox/SandboxEditorial.module.css";
 
 export const metadata: Metadata = { title: "Meet the Team · Neptune" };
 
-// Founder bios and Ryan’s name, degree, and advisor role were supplied by the owner.
-// Ryan uses a monogram until a portrait is added to public/team.
+// Ryan’s name, degree, and advisor role were supplied by the owner.
 
 /**
  * Whether a portrait has been dropped into public/team yet.
@@ -94,8 +91,8 @@ function Avatar({ src, initial, name, size }: { src: string | null; initial: str
   return <span className={s.monogram} style={{ width: size, height: size, fontSize: size * 0.39 }} aria-hidden="true">{initial}</span>;
 }
 
-export default async function TeamPage() {
-  const page = <>
+export default function TeamPage() {
+  return <>
     <PageHero
       title="Meet the Team"
       section="The people behind Neptune"
@@ -127,16 +124,14 @@ export default async function TeamPage() {
     </section>
 
     <section className={s.closing}>
-      <h2>We&rsquo;re starting with the beaches we know.</h2>
-      <p><span data-local-copy>We are building toward a future where anyone can check the water before they go in. If you want the longer version of why, </span><Link className={s.textLink} href="/sandbox/stories"><span data-local-copy>read the story behind Neptune</span></Link>.</p>
+      <h2>Starting local. Vision set on global.</h2>
+      <p>We are building toward a future where anyone can check the water before they go in. If you want the longer version of why, <Link className={s.textLink} href="/california/stories">read the story behind Neptune</Link>.</p>
       <div className={s.ctaRow}>
-        <Link className={s.ctaPrimary} href="/sandbox">
-          <span data-local-copy>Explore the forecast</span>
+        <Link className={s.ctaPrimary} href="/california">
+          Explore the forecast
           <ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
     </section>
   </>;
-  if (process.env.NODE_ENV !== "development") return page;
-  return <LocalPageEditor key="team" pageId="team" initialDraft={await readPageDraft("team")}>{page}</LocalPageEditor>;
 }

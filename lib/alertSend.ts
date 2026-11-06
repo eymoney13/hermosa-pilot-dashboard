@@ -6,6 +6,15 @@ import { LOCATIONS, type BeachData, type LocationConfig } from "./data";
 import { featuresFor } from "./features";
 import { loadDashboardData } from "./loadData";
 import { composeAlertEmail, type AlertedBeach } from "./alertMail";
+import {
+  configuredProvider,
+  createResendSender,
+  fromAddressEmail,
+  resendApiKey,
+  type AlertSender,
+  type OutboundAlert,
+  type SendOutcome,
+} from "./alertProvider";
 
 // The daily alert run: find the beaches that came back elevated, work out who
 // asked to hear about them, and send one email per person.
@@ -58,6 +67,9 @@ export interface SendSummary {
   sent: number;
   failed: number;
   skipped?: string; // set when the location was skipped, with the reason
+  // Claims the database refused because the row was already 'sent' or held by
+  // a concurrent run. Not a failure: it is the duplicate guard doing its job.
+  skippedDuplicates?: number;
   // Set on a rehearsal. `sent` stays 0 and wouldNotify carries who a real run
   // would have mailed, so a dry run can never be mistaken for a send.
   dryRun?: boolean;
@@ -71,7 +83,14 @@ function db() {
 }
 
 export function isAlertSendingConfigured(): boolean {
-  return Boolean(process.env.DATABASE_URL && process.env.GMAIL_APP_PASSWORD);
+  if (!process.env.DATABASE_URL) return false;
+  // Same two conditions createResendSender() enforces, so the route's
+  // readiness check and the sender can never disagree about whether a run is
+  // configured. ALERT_FROM_ADDRESS is required outright -- RESEND_EMAIL_DOMAIN
+  // is deliberately not accepted as a substitute, see resendFrom().
+  return configuredProvider() === "resend"
+    ? Boolean(resendApiKey() && fromAddressEmail(process.env.ALERT_FROM_ADDRESS))
+    : Boolean(process.env.GMAIL_APP_PASSWORD);
 }
 
 // One SMTP connection reused across a run, rather than a fresh handshake per
@@ -92,6 +111,13 @@ function mailer(): Transporter {
     },
   });
   return transport;
+}
+
+// Reuse the alert transport for accountless ownership verification.
+export async function sendAlertVerification(to: string, code: string): Promise<void> {
+  await mailer().sendMail({from: FROM, replyTo: REPLY_TO, to,
+    subject: "Your Neptune email verification code",
+    text: `Your Neptune code is ${code}. It expires in 10 minutes. Enter it on the California dashboard to manage your beach alerts. If you did not request this, ignore this email.`});
 }
 
 // Send one message. Returns true when the SMTP server accepted it.
@@ -119,9 +145,60 @@ async function sendEmail(
     });
     return true;
   } catch (err) {
-    console.error("[alerts/send] smtp rejected", err);
+    // Drop the cached transport. A dead or throttled Gmail connection used to
+    // stay cached for the life of the lambda, so the first rejection in a run
+    // turned into a rejection for every remaining recipient -- which is how
+    // 2026-10-12 produced 69 failed and 0 sent. The next send rebuilds it.
+    transport = null;
+    // err can carry the envelope, and the envelope carries the recipient.
+    console.error("[alerts/send] smtp rejected", errorCode(err));
     return false;
   }
+}
+
+/** A short, non-identifying reason string. Never an address, never a secret. */
+function errorCode(err: unknown): string {
+  if (err && typeof err === "object") {
+    const e = err as { code?: unknown; responseCode?: unknown };
+    if (typeof e.code === "string") return e.code;
+    if (typeof e.responseCode === "number") return `smtp_${e.responseCode}`;
+  }
+  return "unknown_error";
+}
+
+/** Gmail, wrapped in the provider interface so the run is transport-agnostic. */
+function gmailSender(): AlertSender {
+  return {
+    name: "gmail",
+    async send(msg: OutboundAlert): Promise<
+      { ok: true; id: string | null; deduplicated: boolean } | { ok: false; code: string; retryable: boolean }
+    > {
+      const ok = await sendEmail(msg.to, msg.subject, msg.html, msg.text, msg.oneClickUrl);
+      // SMTP gives no message id back through this path, and no way to tell a
+      // throttle from a hard bounce, so every failure is treated as retryable.
+      return ok
+        ? { ok: true, id: null, deduplicated: false }
+        : { ok: false, code: "smtp_rejected", retryable: true };
+    },
+  };
+}
+
+/** The transport this run should use. Injectable so tests never touch a network. */
+export function alertSender(): AlertSender {
+  return configuredProvider() === "resend" ? createResendSender() : gmailSender();
+}
+
+/**
+ * Stable, non-reversible id for a recipient, so an idempotency key can be
+ * per-person without carrying the person's address.
+ */
+export function recipientTag(email: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < email.length; i++) {
+    h ^= email.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(36);
 }
 
 /**
@@ -135,7 +212,9 @@ async function sendEmail(
 export async function sendAlertsForLocation(
   config: LocationConfig,
   today: string,
-  dryRun = false
+  dryRun = false,
+  // Injected by tests so no test can reach a real mail provider.
+  sender: AlertSender = alertSender()
 ): Promise<SendSummary> {
   const base: SendSummary = {
     location: config.slug,
@@ -160,7 +239,22 @@ export async function sendAlertsForLocation(
     };
   }
 
-  if (config.slug === "sandbox" || config.slug === "california") return sendSandboxAlerts(beaches, predictionDate, dryRun, sendEmail);
+  if (config.slug === "sandbox" || config.slug === "california") {
+    // Keeps its own lease/state machine in sandbox_alert_delivery, which
+    // already prevents duplicates, so only the transport changes here. The key
+    // identifies the person without carrying their address.
+    const sandboxSlot = rateLimiter(SEND_INTERVAL_MS);
+    const send = async (
+      to: string, subject: string, html: string, text: string, oneClickUrl: string
+    ): Promise<boolean> => {
+      const key = `alert:${config.slug}:${recipientTag(to)}:${predictionDate}`;
+      // Same team quota as the South Bay pass, so it is paced and retried the
+      // same way even though the volume here is small.
+      const outcome = await sendPaced(sender, { to, subject, html, text, oneClickUrl }, key, sandboxSlot);
+      return outcome.ok;
+    };
+    return sendSandboxAlerts(beaches, predictionDate, dryRun, send);
+  }
 
   const elevated = beaches.filter((b) => b.status === "Not recommended");
   base.elevated = elevated.map((b) => b.code);
@@ -189,11 +283,11 @@ export async function sendAlertsForLocation(
         SELECT 1 FROM alert_subscribers paid
         JOIN alert_subscriptions px ON px.subscriber_id = paid.id
         JOIN sandbox_alert_delivery d ON d.subscriber_id = paid.id
-        JOIN pro_subscriptions p ON p.clerk_user_id = d.clerk_user_id
+        LEFT JOIN pro_subscriptions p ON p.clerk_user_id = d.clerk_user_id
         WHERE paid.email = s.email AND paid.location = 'sandbox'
           AND px.station_code = x.station_code
-          AND p.status IN ('active','trialing','past_due')
-          AND (p.current_period_end IS NULL OR p.current_period_end > now())
+          AND ((d.free_enabled AND d.clerk_user_id IS NULL) OR (p.status IN ('active','trialing','past_due')
+          AND (p.current_period_end IS NULL OR p.current_period_end > now())))
       )
       AND NOT EXISTS (
         SELECT 1 FROM alert_subscribers other
@@ -223,6 +317,7 @@ export async function sendAlertsForLocation(
   base.recipients = bySubscriber.size;
 
   const beachByCode = new Map(elevated.map((b) => [b.code, b]));
+  const work: SendJob[] = [];
 
   for (const [subscriberId, entry] of bySubscriber) {
     const alerted: AlertedBeach[] = entry.stations
@@ -262,27 +357,220 @@ export async function sendAlertsForLocation(
       continue;
     }
 
-    const ok = await sendEmail(entry.email, subject, html, text, oneClickUrl);
-    if (!ok) {
-      base.failed += 1;
-      continue;
-    }
-    base.sent += 1;
+    work.push({ subscriberId, email: entry.email, stations: entry.stations, subject, html, text, oneClickUrl });
+  }
 
-    // Recorded only after the mail server accepts it, so a failed send is retried by the
-    // next run rather than being silently marked as delivered.
-    for (const code of entry.stations) {
-      await sql`
-        INSERT INTO alert_notifications (subscriber_id, station_code, last_notified_date)
-        VALUES (${subscriberId}, ${code}, ${predictionDate}::date)
-        ON CONFLICT (subscriber_id, station_code)
-          DO UPDATE SET last_notified_date = EXCLUDED.last_notified_date,
-                        updated_at = now()
-      `;
+  if (dryRun) return base;
+
+  // Claim -> send -> settle, a few at a time.
+  //
+  // Serial sends inside one request is what put the old run at the mercy of
+  // its own duration: 69 of them is where it fell over, and thousands could
+  // never finish inside maxDuration at all. Resend's documented limit is 10
+  // requests/second per team, so the pool stays under that rather than at it.
+  const slot = rateLimiter(SEND_INTERVAL_MS);
+  const results = await pool(work, SEND_CONCURRENCY, async (job) => {
+    const key = `alert:${config.slug}:${job.subscriberId}:${predictionDate}`;
+
+    // The database, not this code, decides whether this send may happen. A
+    // second concurrent run claims nothing and sends nothing.
+    const claimed = await claimDelivery(sql, job.subscriberId, predictionDate, job.stations, key);
+    if (!claimed) return "skipped" as const;
+
+    const outcome = await sendPaced(
+      sender,
+      { to: job.email, subject: job.subject, html: job.html, text: job.text, oneClickUrl: job.oneClickUrl },
+      key,
+      slot
+    );
+
+    if (outcome.ok) {
+      // ACCEPTED, not delivered. The provider has taken responsibility for the
+      // message; whether it reaches an inbox is only knowable from the
+      // provider's own delivery events, which this code does not see.
+      await settleSent(sql, job.subscriberId, predictionDate, sender.name, outcome.id);
+      for (const code of job.stations) {
+        await sql`
+          INSERT INTO alert_notifications (subscriber_id, station_code, last_notified_date)
+          VALUES (${job.subscriberId}, ${code}, ${predictionDate}::date)
+          ON CONFLICT (subscriber_id, station_code)
+            DO UPDATE SET last_notified_date = EXCLUDED.last_notified_date,
+                          updated_at = now()
+        `;
+      }
+      return "sent" as const;
     }
+
+    // Left as 'failed' with the lease cleared, so the next run picks it up
+    // again. A permanent rejection is recorded the same way but will simply
+    // fail again rather than being retried forever by this run.
+    await settleFailed(sql, job.subscriberId, predictionDate, sender.name, outcome.code);
+    return "failed" as const;
+  });
+
+  for (const r of results) {
+    if (r === "sent") base.sent += 1;
+    else if (r === "failed") base.failed += 1;
+    else base.skippedDuplicates = (base.skippedDuplicates ?? 0) + 1;
   }
 
   return base;
+}
+
+const SEND_CONCURRENCY = 4;
+const LEASE_MINUTES = 5;
+
+// Resend allows 10 requests/second per TEAM. 8 leaves headroom, and the team
+// is shared with the sandbox pass and anything else sending under this key.
+//
+// This exists because SEND_CONCURRENCY alone does not bound a rate, which is
+// the mistake that cost 157 of 203 alerts on 2026-10-13: four workers against
+// ~100ms responses is roughly 40 requests/second, four times the limit. The
+// whole roster went out in about five seconds, so the per-minute average
+// looked harmless while the instantaneous rate never came close to legal.
+const SEND_RATE_PER_SECOND = 8;
+const SEND_INTERVAL_MS = Math.ceil(1000 / SEND_RATE_PER_SECOND);
+
+// A retryable rejection is worth waiting out IN THE RUN. Previously a 429 was
+// recorded as failed and abandoned on the first attempt, so the one error that
+// most deserved a two-second pause was the one that got none.
+const SEND_ATTEMPTS = 3;
+const MAX_BACKOFF_MS = 3000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Hands out send slots no faster than `intervalMs` apart, across every worker
+ * in the pool. Slots are reserved synchronously before any await, so two
+ * workers cannot be granted the same instant.
+ */
+export function rateLimiter(intervalMs: number): () => Promise<void> {
+  let next = 0;
+  return async () => {
+    const now = Date.now();
+    const at = Math.max(now, next);
+    next = at + intervalMs;
+    if (at > now) await sleep(at - now);
+  };
+}
+
+/**
+ * One send, paced and retried. Honours the provider's own `retry-after` when
+ * it supplies one, and gives up immediately on a permanent rejection so a bad
+ * address never burns three slots.
+ */
+async function sendPaced(
+  sender: AlertSender,
+  msg: OutboundAlert,
+  key: string,
+  slot: () => Promise<void>
+): Promise<SendOutcome> {
+  let last: SendOutcome = { ok: false, code: "not_attempted", retryable: true };
+  for (let attempt = 1; attempt <= SEND_ATTEMPTS; attempt++) {
+    await slot();
+    last = await sender.send(msg, key);
+    if (last.ok || !last.retryable) return last;
+    if (attempt === SEND_ATTEMPTS) break;
+    const backoff = Math.min(last.retryAfterMs ?? 500 * attempt, MAX_BACKOFF_MS);
+    if (backoff > 0) await sleep(backoff);
+  }
+  return last;
+}
+
+interface SendJob {
+  subscriberId: number;
+  email: string;
+  stations: string[];
+  subject: string;
+  html: string;
+  text: string;
+  oneClickUrl: string;
+}
+
+type Sql = ReturnType<typeof db>;
+
+/**
+ * Reserve this person's email for this date, or return false because somebody
+ * else holds it or it already went.
+ *
+ * The PRIMARY KEY (subscriber_id, prediction_date) is what makes this safe:
+ * two runs racing cannot both insert, and the DO UPDATE only fires when the
+ * row is not already 'sent' and its lease has expired. A crashed run therefore
+ * costs one lease period, not the alert -- which is the difference between
+ * this and simply writing a pending row and never retrying it.
+ *
+ * The idempotency key is COALESCEd, never overwritten, so every retry of the
+ * same person/date reaches the provider under the key it used the first time.
+ */
+async function claimDelivery(
+  sql: Sql,
+  subscriberId: number,
+  predictionDate: string,
+  stations: string[],
+  key: string
+): Promise<boolean> {
+  const rows = await sql`
+    INSERT INTO alert_deliveries
+      (subscriber_id, prediction_date, status, stations, idempotency_key, attempts, lease_until)
+    VALUES
+      (${subscriberId}, ${predictionDate}::date, 'sending', ${stations}, ${key}, 1,
+       now() + (${LEASE_MINUTES} || ' minutes')::interval)
+    ON CONFLICT (subscriber_id, prediction_date) DO UPDATE
+      SET status      = 'sending',
+          attempts    = alert_deliveries.attempts + 1,
+          stations    = EXCLUDED.stations,
+          lease_until = now() + (${LEASE_MINUTES} || ' minutes')::interval,
+          updated_at  = now()
+      WHERE alert_deliveries.status <> 'sent'
+        AND (alert_deliveries.lease_until IS NULL OR alert_deliveries.lease_until < now())
+    RETURNING subscriber_id
+  `;
+  return rows.length > 0;
+}
+
+async function settleSent(
+  sql: Sql,
+  subscriberId: number,
+  predictionDate: string,
+  provider: string,
+  messageId: string | null
+): Promise<void> {
+  await sql`
+    UPDATE alert_deliveries
+       SET status = 'sent', provider = ${provider}, provider_message_id = ${messageId},
+           last_error = NULL, lease_until = NULL, updated_at = now()
+     WHERE subscriber_id = ${subscriberId} AND prediction_date = ${predictionDate}::date
+  `;
+}
+
+async function settleFailed(
+  sql: Sql,
+  subscriberId: number,
+  predictionDate: string,
+  provider: string,
+  code: string
+): Promise<void> {
+  await sql`
+    UPDATE alert_deliveries
+       SET status = 'failed', provider = ${provider}, last_error = ${code},
+           lease_until = NULL, updated_at = now()
+     WHERE subscriber_id = ${subscriberId} AND prediction_date = ${predictionDate}::date
+  `;
+}
+
+/** Run `fn` over `items`, at most `limit` in flight. Order is not preserved. */
+async function pool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = [];
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      out.push(await fn(items[i]));
+    }
+  });
+  await Promise.all(workers);
+  return out;
 }
 
 // Every location whose board offers alerts. Driven off the same feature flag
@@ -293,11 +581,12 @@ export function alertEnabledLocations(): LocationConfig[] {
 
 export async function sendAllAlerts(
   today: string,
-  dryRun = false
+  dryRun = false,
+  sender: AlertSender = alertSender()
 ): Promise<SendSummary[]> {
   const summaries: SendSummary[] = [];
   for (const config of alertEnabledLocations()) {
-    summaries.push(await sendAlertsForLocation(config, today, dryRun));
+    summaries.push(await sendAlertsForLocation(config, today, dryRun, sender));
   }
   return summaries;
 }

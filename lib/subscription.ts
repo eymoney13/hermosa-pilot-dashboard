@@ -256,6 +256,19 @@ export async function getStripeCustomerId(
   return rows[0]?.stripe_customer_id ?? null;
 }
 
+/** Most relevant subscription for the signed-in account's status page. */
+export async function getAccountSubscription(clerkUserId: string): Promise<(SubscriptionRow & { plan: string | null }) | null> {
+  const rows = await subscriptionDb()`
+    SELECT status, current_period_end, plan FROM pro_subscriptions
+    WHERE clerk_user_id = ${clerkUserId}
+    ORDER BY CASE WHEN status IN ('active', 'trialing', 'past_due')
+      AND (current_period_end IS NULL OR current_period_end >= now()) THEN 0 ELSE 1 END,
+      updated_at DESC
+    LIMIT 1
+  `;
+  return rows[0] as (SubscriptionRow & { plan: string | null }) | undefined ?? null;
+}
+
 /**
  * A Stripe-hosted session where someone can see their invoices, change their
  * card and cancel.
