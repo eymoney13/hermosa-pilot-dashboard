@@ -9,8 +9,8 @@
 .choices button { display: flex; align-items: center; justify-content: center; gap: 5px; flex: 1; min-height: 44px; padding: 6px; border: 1px solid #dce5e2; border-radius: 7px; font-size: 11px; }
 .choices button[aria-pressed=true] { border-color: currentColor; box-shadow: 0 0 0 1px currentColor; }
 .choices i { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.reading { margin-top: 16px; padding: 22px; border-radius: 12px; min-height: 244px; }
-.reading h3 { font-size: 23px; line-height: 1.2; letter-spacing: -.03em; font-weight: 600; margin: 18px 0 12px; }
+.reading { margin-top: 16px; padding: 22px; border-radius: 12px; }
+.reading h3 { font-size: 23px; line-height: 1.2; letter-spacing: -.03em; font-weight: 600; margin: 0 0 12px; }
 .reading p { font-size: 13px; line-height: 1.75; }
 .note { font-size: 10px; line-height: 1.6; color: #607174; margin-top: 12px; }
 .next { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 0; border-block: 1px solid #dce5e2; }
