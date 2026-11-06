@@ -16,6 +16,7 @@ import BeachNeighborNav from "@/components/california-sandbox/components/BeachNe
 import SandboxBeachDetail, { bandClass } from "./SandboxBeachDetail";
 import SandboxProOffer from "./SandboxProOffer";
 import ForecastComparison from "./ForecastComparison";
+import ScrollOnboarding from "./ScrollOnboarding";
 import SandboxMenu from "./SandboxMenu";
 import CaliforniaAlertSignup, { type CaliforniaAlertSignupHandle } from "@/components/california-sandbox/components/CaliforniaAlertSignup";
 import SandboxYourNeptune from "./SandboxYourNeptune";
@@ -95,7 +96,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
         {(view === "map" || view === "list") ? (
           <section className={s.mapIntroduction} aria-label="Beach water quality forecast">
             <h1>Beach water quality.<br /><span>Predicted like the weather.</span></h1>
-            <p className={s.mapDescription}>Daily water quality predictions for your beach.</p>
+            <p className={s.mapDescription}>Find your beach. Read the risk. Make your next ocean day a little more informed.</p>
             <div className={s.mapHeadingRow}>
               <div>
                 <h2 ref={heading} tabIndex={-1}>Today’s water quality at your beach</h2>
@@ -150,22 +151,18 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             <div className={s.sectionHeading}><h2 ref={heading} tabIndex={-1}>Today’s water quality</h2><span>{beaches.length} beaches</span></div>
             <p className={s.supporting}>Click a beach for more information.{alertsEnabled && <> <button type="button" className={s.emailAlertLink} onClick={() => alertSignupRef.current?.open()}>Get email alerts</button></>}</p>
             </>}
-            {view === "map" ? <div className={s.map}><OverviewMapClient locateNearby labelMinZoom={11} beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} /></div> : (
+            {view === "map" ? <div id="beach-map" className={s.map}><OverviewMapClient locateNearby labelMinZoom={11} beaches={beaches} fallbackCenter={fallbackCenter} binaryVerdict={false} onSelect={openBeach} /></div> : (
               <div className={s.countyGroups}>{countyGroups.map((group) => <section key={group.county} aria-label={group.county}><h3 className={s.countyHeading}>{group.county}<span>{group.beaches.length} {group.beaches.length === 1 ? "beach" : "beaches"}</span></h3><ul className={s.beaches}>{group.beaches.map((beach) => <li key={beach.code}><button onClick={() => openBeach(beach.code)}><span className={s.beachName}>{beach.name}</span><span className={`${s.band} ${s.listReading} ${bandClass(beach.status)}`}><span className={s.listBandLabel}><span className={s.dot} />{STATUS_BAND[beach.status].short} risk</span></span><ChevronRight size={18} aria-hidden="true" /></button></li>)}</ul></section>)}</div>
             )}
-            {view === "map" && alertSignup}
-            {view === "map" && (
-              <div className={s.beachRequest}>
-                <p>Don’t see your beach?</p>
-                <Link href="/sandbox/request-beach">Request your beach <ArrowRight size={16} aria-hidden="true" /></Link>
-              </div>
-            )}
-            <div className={s.legend} aria-label="Neptune Index categories">{(["Normal", "Slightly elevated", "Not recommended"] as const).map((status) => <span key={status} className={bandClass(status)}><i className={s.dot} />{STATUS_BAND[status].short} risk</span>)}</div>
-            <p className={s.caveat}>Forecasts are estimates, not current lab results. Always follow official beach advisories.</p>
+            {view === "map" && <div className={s.mapRequest}><Link href="/sandbox/request-beach">Request your beach <ArrowRight size={16} aria-hidden="true" /></Link></div>}
+            {view === "map" && <a className={s.scrollInvitation} href="#read-the-water"><span><small>THE MAP IS JUST THE START</small><strong>What is the water telling you?</strong><span>A quick guide to the colors, the forecast, and your next beach day.</span></span><span className={s.scrollArrow} aria-hidden="true">↓</span></a>}
+            {view === "map" && <ScrollOnboarding />}
+            {view === "map" && alertSignup && <div className={s.guideAlert}>{alertSignup}</div>}
+
           </section>
         )}
         {!active && view !== "map" && alertSignup}
-        {!active && (view === "map" || view === "list") && <ForecastComparison />}
+        {!active && (view === "map" || view === "list") && <div id="behind-the-forecast"><ForecastComparison /></div>}
         {!entitled && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} ctaLocation={proMoment ?? "california_bottom"} pageContext={active ? "beach_page" : view} beach={active} />}
         {/* List and map only. Inside a beach card the reader is looking at one
             beach, and a list of every beach they follow is a different job; on
