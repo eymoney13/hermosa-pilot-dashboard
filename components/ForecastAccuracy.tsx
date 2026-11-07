@@ -117,12 +117,12 @@ export default function ForecastAccuracy({
   const misses = windowSize - matches;
 
   // On boards carrying the whole-record figure the title states it inline
-  // ("Forecast confidence: 86%") and the line beneath gives the size of the
+  // ("Past prediction accuracy: 86%") and the line beneath gives the size of the
   // record behind it. Elsewhere the title is the bare label it has always been.
   const title =
     overallPct !== null
-      ? `Forecast confidence: ${overallPct}%`
-      : "Forecast confidence";
+      ? `Past prediction accuracy: ${overallPct}%`
+      : "Past prediction accuracy";
 
   const summaryLine = !enough
     ? "Not enough lab samples yet to report accuracy"
