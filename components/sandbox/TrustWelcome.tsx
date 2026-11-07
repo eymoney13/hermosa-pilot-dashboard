@@ -26,12 +26,12 @@ export default function TrustWelcome() {
         <section className={s.old} aria-labelledby="old-system-title">
           <p className={s.label}>OTHER WATER QUALITY SITES</p>
           <h3 id="old-system-title">Old Sample Results.</h3>
-          <ul><li><strong>Sparse samples</strong></li><li><strong>Results posted days later</strong></li></ul>
+          <ul><li><strong>Sparse samples</strong></li><li><strong>Results posted days later</strong></li><li><strong>Hard to find</strong></li></ul>
         </section>
         <section className={s.neptune} aria-labelledby="neptune-system-title">
           <p className={s.label}>NEPTUNE</p>
           <h3 id="neptune-system-title">Daily Bacteria Risk Predictions.</h3>
-          <ul><li><strong>AI + real-time ocean + weather data</strong></li><li><strong>Know the current bacteria risk</strong></li></ul>
+          <ul><li><strong>Learning model + oceanic and atmospheric conditions</strong></li><li><strong>Know today&apos;s bacteria risk</strong></li></ul>
         </section>
       </div>
       <div className={s.honesty}><p>Predictions complement lab testing. Always follow official beach advisories.</p></div>
