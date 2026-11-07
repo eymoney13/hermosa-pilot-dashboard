@@ -112,7 +112,7 @@ function DirectionArrow({
   direction: FactorDirection | undefined;
 }) {
   if (!direction) return null;
-  const { arrow, color, label } = DIRECTION_STYLE[direction];
+  const { arrow, color } = DIRECTION_STYLE[direction];
   const Icon = arrow === "up" ? ArrowUp : ArrowDown;
   return (
     <span className="inline-flex items-center">
@@ -125,7 +125,7 @@ function DirectionArrow({
       {/* Colour and arrow direction are the whole of the visual signal, which
           leaves out screen-reader users and anyone who cannot tell the red from
           the green. The words carry the same meaning for them. */}
-      <span className="sr-only">{label}</span>
+      <span className="ml-1 text-[11px] font-medium" style={{ color }}>{direction === "increasing risk" ? "Raises risk" : "Lowers risk"}</span>
     </span>
   );
 }
@@ -148,6 +148,7 @@ export default function WhyPrediction({
   showAccuracyPercent = false,
   locked = false,
   prominentToggle = false,
+  alwaysExpanded = false,
   title,
   showAccuracy = true,
 }: {
@@ -159,6 +160,7 @@ export default function WhyPrediction({
   // been the expensive way to do it.
   figures?: ReactNode;
   prominentToggle?: boolean;
+  alwaysExpanded?: boolean;
   title?: string;
   showAccuracy?: boolean;
   factors: string[];
@@ -249,7 +251,7 @@ export default function WhyPrediction({
 
   return (
     <div className="border-t border-gray-100">
-      <button
+      {!alwaysExpanded && <button
         type="button"
         onClick={() => {
           // Clip again the moment a collapse starts, not when it ends.
@@ -271,18 +273,18 @@ export default function WhyPrediction({
             open ? "rotate-180" : ""
           }`}
         />
-      </button>
+      </button>}
       <div
         id="why-prediction-panel"
         className="grid transition-[grid-template-rows] duration-[250ms] ease-out"
-        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
-        aria-hidden={!open}
+        style={{ gridTemplateRows: alwaysExpanded || open ? "1fr" : "0fr" }}
+        aria-hidden={!alwaysExpanded && !open}
       >
         {/* grid-rows 0fr/1fr collapse: animates cleanly regardless of content
             height, so the nested Forecast-accuracy card can expand without
             being clipped (a fixed max-height could not accommodate it). */}
-        <div className={expanded ? "overflow-visible" : "overflow-hidden"}>
-          <div className="pb-5 space-y-6">
+        <div className={alwaysExpanded || expanded ? "overflow-visible" : "overflow-hidden"}>
+          <div className={`${alwaysExpanded ? "pt-5 " : ""}pb-5 space-y-6`}>
             {locked && <LockedBody />}
             {!locked && figures}
 
@@ -312,8 +314,7 @@ export default function WhyPrediction({
                             <DirectionArrow direction={direction} />
                           </span>
                           {effect && (
-                            <span className="mt-1 flex gap-2 text-gray-500">
-                              <span aria-hidden="true">&bull;</span>
+                            <span className="mt-1 flex gap-2 text-gray-600">
                               <span>{effect}</span>
                             </span>
                           )}
