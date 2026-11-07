@@ -384,8 +384,8 @@
 .predictionFigures .exceedance { margin: 10px 0 6px; }
 .predictionFigures .exceedancePct { font-size: 36px; }
 .probabilityCaption { color: var(--muted); font-size: 13px; line-height: 1.5; }
-.futureSection { padding: 24px 0 28px; }
-.futureDays { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+.futureSection { padding: 16px 0 0; }
+.futureDays { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 0; }
 .futureDay { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 10px; text-align: left; background: var(--tone-bg, #f4f7f5); color: var(--tone, var(--ink)); }
 .futureDay[aria-pressed=true] { outline: 2px solid var(--teal); outline-offset: 2px; }
 .futureDayName { font-size: 14px; font-weight: 500; }
@@ -469,3 +469,20 @@
 
 .overview:has(.guideAlert) { padding-bottom: 8px; }
 .guideAlert { padding-bottom: 8px; }
+
+/* Beach detail preview */
+.heroReading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 22px 0 14px; }
+.heroReading h3 { margin: 0; }
+.heroProbability { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+.heroProbability strong { font-size: 28px; line-height: 1.1; letter-spacing: -.03em; }
+.heroProbability span { font-size: 11px; line-height: 1.4; }
+.predictionNote { gap: 10px; margin-top: 22px; }
+.scaleLabels { display: flex; justify-content: space-between; font-size: 11px; }
+.riskDetails summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.riskDetails .riskKey { margin: 12px 0; }
+.futureSection { padding-bottom: 24px; }
+.forecastUnlock { font-size: 12px; color: var(--muted); margin-top: 12px; line-height: 1.6; }
+.forecastUnlock a { display: inline-flex; align-items: center; gap: 3px; color: var(--teal); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.neighborInfo { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+.neighborMeta { font-size: 11px; color: var(--muted); font-weight: 400; line-height: 1.5; }
+@media (max-width: 600px) { .heroReading h3 { font-size: 29px; } .heroProbability strong { font-size: 25px; } }

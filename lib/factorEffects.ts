@@ -87,7 +87,7 @@ const EFFECTS: Record<string, Effect> = {
   // 19.8% across that span (corr -0.43 within 0-12h).
   "High tide timing": {
     raising:
-      "High tide came only a short time before mid-morning, so the water had just washed over the dirtiest sand.",
+      "High tide shortly before mid-morning can wash bacteria from sand into the water.",
     lowering:
       "High tide came hours before mid-morning, leaving time for the water to clear.",
   },
