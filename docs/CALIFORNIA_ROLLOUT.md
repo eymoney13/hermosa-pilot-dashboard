@@ -1,6 +1,6 @@
 # California rollout
 
-`/california` is the canonical freemium dashboard. It initially covers the existing eight South Bay beaches; this release does not claim statewide data coverage or add model stations. Today is public; forecasts, history, insights, and new alert follows require existing server-side Pro entitlement. Prices remain $5/month and $40/year.
+`/california` is the canonical freemium dashboard. It initially covers the existing eight South Bay beaches; this release does not claim statewide data coverage or add model stations. Today is public; forecasts, history, insights, and new alert follows require existing server-side Pro entitlement. Prices remain $2/month and $20/year.
 
 ## Storage and compatibility
 

@@ -10,7 +10,7 @@ import s from "./SandboxDashboard.module.css";
 //
 // checkoutReady comes from the sandbox-only payment-first gate. Test checkout
 // requires test keys; live checkout still requires the live-billing switch.
-const CTA = "Join Neptune Pro for $5/month";
+const CTA = "Join Neptune Pro for $2/month";
 
 export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocation, pageContext, beach }: {
   checkoutReady: boolean;
@@ -91,13 +91,13 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocat
 
         {checkoutReady ? (
           <div className={s.planChoices}>
-            <Link onClick={() => clicked("yearly")} prefetch={false} className={`${s.primary} ${s.annualPrimary}`} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $40/year <span>Save 33% with annual billing</span></Link>
+            <Link onClick={() => clicked("yearly")} prefetch={false} className={`${s.primary} ${s.annualPrimary}`} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $20/year <span>Save $4 with annual billing</span></Link>
             <Link onClick={() => clicked("monthly")} prefetch={false} className={s.annualChoice} href="/pro/start?plan=monthly&from=%2Fcalifornia">{CTA}</Link>
             <p className={s.checkoutNote}>Renews automatically. Cancel anytime. Enter your email in Stripe, then activate your account. Already subscribed? <Link prefetch={false} href="/pro/recover">Recover your purchase</Link>.</p>
           </div>
         ) : (
           <>
-            <button className={`${s.primary} ${s.annualPrimary}`} disabled>Join for $40/year <span>Save 33% with annual billing</span></button>
+            <button className={`${s.primary} ${s.annualPrimary}`} disabled>Join for $20/year <span>Save $4 with annual billing</span></button>
             <button className={s.annualChoice} disabled>{CTA}</button>
             <p className={s.checkoutNote}>Checkout is currently unavailable in this preview.</p>
           </>
