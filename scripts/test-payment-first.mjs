@@ -89,9 +89,9 @@ await purchase.startPurchase('monthly','annual-buyer@example.com');
 const oldMonthly = sessions.get('cs_test_2');
 await purchase.startPurchase('yearly','annual-buyer@example.com');
 const annual = sessions.get('cs_test_3');
-check('switching monthly to annual expires the old checkout and bills $40/year', () => {
+check('switching monthly to annual expires the old checkout and bills $20/year', () => {
   assert.equal(oldMonthly.status,'expired');
-  assert.equal(annual.line_items[0].price_data.unit_amount,4000);
+  assert.equal(annual.line_items[0].price_data.unit_amount,2000);
   assert.equal(annual.line_items[0].price_data.recurring.interval,'year');
   assert.equal(annual.metadata.plan,'yearly');
 });
@@ -111,7 +111,7 @@ const annualRetry = await purchase.startPurchase('yearly','annual-buyer@example.
 check('annual retries reuse the same checkout', () => assert.equal(annualRetry, annual.url));
 const session = sessions.get('cs_test_1');
 check('checkout is anonymous, fixed price, and returns to activation', () => {
-  assert.equal(session.client_reference_id,undefined); assert.equal(session.line_items[0].price_data.unit_amount,500);
+  assert.equal(session.client_reference_id,undefined); assert.equal(session.line_items[0].price_data.unit_amount,200);
   assert.ok(session.success_url.includes('/pro/activate?session_id={CHECKOUT_SESSION_ID}'));
 });
 assert.equal(await purchase.syncPurchase('cs_test_1'),null);
@@ -245,7 +245,7 @@ const freeRows = (await pg.query("SELECT * FROM pro_subscriptions WHERE stripe_s
 check('free annual fulfillment is replay-safe and records annual renewal price and access', () => {
   assert.equal(freeRows.length, 1);
   assert.equal(freeRows[0].plan, 'yearly');
-  assert.equal(freeRows[0].price_cents, 4000);
+  assert.equal(freeRows[0].price_cents, 2000);
 });
 user = {id:'free_year_user', emailAddresses:[{emailAddress:'free-year@example.com',verification:{status:'verified'}}]};
 assert.equal(await purchase.activatePurchase(freeId), true);

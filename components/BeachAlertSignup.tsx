@@ -220,11 +220,11 @@ export default function BeachAlertSignup({
                 <div className="mt-1 grid w-full max-w-xs grid-cols-2 gap-2">
                   {(
                     [
-                      { plan: "monthly", label: "$5", sub: "per month" },
+                      { plan: "monthly", label: "$2", sub: "per month" },
                       {
                         plan: "yearly",
-                        label: "$40",
-                        sub: "per year · save $20",
+                        label: "$20",
+                        sub: "per year · save $4",
                       },
                     ] as const
                   ).map((option) => (

@@ -20,7 +20,7 @@ const mocks = {
   entitlementFrom: row => !!row && ['active', 'trialing', 'past_due'].includes(row.status) && (!row.current_period_end || new Date(row.current_period_end) >= new Date()),
   getAccountSubscription: async () => subscription, getStripeCustomerId: async () => customer,
   createBillingPortalSession: async (id, returnTo) => { assert.equal(id, 'customer'); assert.ok(returnTo.startsWith('/pro/manage?')); portalCalls++; return 'https://billing.stripe.test/session'; },
-  PRO_PLANS: { monthly: {label:'$5/month'}, yearly: {label:'$40/year'} },
+  PRO_PLANS: { monthly: {label:'$2/month'}, yearly: {label:'$20/year'} },
  },
 };
 const code = ts.transpileModule(readFileSync('app/pro/manage/page.tsx', 'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS, jsx:ts.JsxEmit.ReactJSX, esModuleInterop:true}}).outputText;
@@ -46,7 +46,7 @@ await assert.rejects(portalAction(), /redirect:https:\/\/billing.stripe.test/);
 assert.equal(portalCalls, 1);
 subscription = {status:'active', plan:'yearly', current_period_end:'2030-01-01T00:00:00Z'};
 html = renderToStaticMarkup(await page());
-assert.match(html, /Pro access is active/); assert.match(html, /\$40\/year/);
+assert.match(html, /Pro access is active/); assert.match(html, /\$20\/year/);
 assert.match(html, /Manage billing in Stripe/); assert.doesNotMatch(html, /plan=monthly/);
 subscription.status = 'past_due';
 html = renderToStaticMarkup(await page());

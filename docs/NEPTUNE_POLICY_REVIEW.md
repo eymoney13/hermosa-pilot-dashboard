@@ -1,7 +1,7 @@
 # Neptune customer policy — approved by owner September 28, 2026
 
 ## Subscription terms
-Today’s water-quality dashboard is free without an account. Neptune Pro costs $5/month or $40/year, depending on the plan selected at checkout, and renews automatically until canceled. Cancel renewal through billing settings; access continues through the paid period. Canceling renewal does not itself request a refund.
+Today’s water-quality dashboard is free without an account. Neptune Pro costs $2/month or $20/year, depending on the plan selected at checkout, and renews automatically until canceled. Cancel renewal through billing settings; access continues through the paid period. Canceling renewal does not itself request a refund.
 
 Full refund within 7 days of the first Neptune Pro purchase. Request it from your checkout email at ethan@projectneptune.co. This first-purchase guarantee does not apply to renewals.
 

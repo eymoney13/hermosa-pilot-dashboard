@@ -18,7 +18,7 @@ export function isProPlan(value: string | undefined): value is ProPlan {
 }
 
 /** What the board says Pro costs when it has room for only one figure. */
-export const PRO_PRICE_LABEL = "$5/month, or $40/year";
+export const PRO_PRICE_LABEL = "$2/month, or $20/year";
 
 // Pinned rather than left to the SDK default, so upgrading `stripe` cannot
 // quietly change the shape of what we send or get back.
