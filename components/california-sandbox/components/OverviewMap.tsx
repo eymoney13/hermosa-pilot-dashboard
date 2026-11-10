@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
+import posthog from "posthog-js";
+import { trackMapInteractions } from "@/lib/mapInteractionTracking";
 import { LocateFixed, LoaderCircle } from "lucide-react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { STATUS_BAND, VERDICT_AS_STATUS, type BeachData } from "@/components/california-sandbox/lib/data";
@@ -491,6 +493,14 @@ function FitAll({ beaches }: { beaches: BeachData[] }) {
   return null;
 }
 
+function MapInteractionAnalytics() {
+  const map = useMap();
+  useEffect(() => trackMapInteractions(map, (interaction) => {
+    posthog.capture("map_interacted", { interaction_type: interaction });
+  }), [map]);
+  return null;
+}
+
 function NearbyLocation({ beaches }: { beaches: BeachData[] }) {
   const map = useMap();
   const interacted = useRef(false);
@@ -526,6 +536,7 @@ function NearbyLocation({ beaches }: { beaches: BeachData[] }) {
   }, [map, focus]);
   const locate = () => {
     interacted.current = true;
+    posthog.capture("map_interacted", { interaction_type: "locate" });
     if (!navigator.geolocation) { setMessage("Location is unavailable. You can browse the map manually."); return; }
     setBusy(true);
     navigator.geolocation.getCurrentPosition(position => {
@@ -575,6 +586,7 @@ export default function OverviewMap({
         maxZoom={BASEMAP_MAX_ZOOM}
       />
       <FitAll beaches={beaches} />
+      <MapInteractionAnalytics />
       {locateNearby && <NearbyLocation beaches={beaches} />}
       {beaches.map((b) => (
         <Marker
