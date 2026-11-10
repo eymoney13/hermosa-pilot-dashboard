@@ -12,6 +12,7 @@ export default function DirectCheckout({ action, plan, autoStart }: {
 }) {
   const form = useRef<HTMLFormElement>(null);
   const started = useRef(false);
+  const viewed = useRef(false);
   const attempt = useRef("");
   function prepare() {
     // Reuse one opaque identifier across retries and plan changes. No email is
@@ -29,10 +30,14 @@ export default function DirectCheckout({ action, plan, autoStart }: {
     if (analytics instanceof HTMLInputElement) analytics.value = posthog.get_distinct_id() ?? "";
   }
   useEffect(() => {
+    if (!viewed.current) {
+      viewed.current = true;
+      posthog.capture("pro_checkout_page_viewed", { ...planProperties(plan), board_location: "California" });
+    }
     if (!autoStart || started.current) return;
     started.current = true;
     form.current?.requestSubmit();
-  }, [autoStart]);
+  }, [autoStart, plan]);
   return <form ref={form} action={action} onSubmit={() => {
     prepare();
     posthog.capture("checkout_started", { ...planProperties(plan), board_location: "California" });

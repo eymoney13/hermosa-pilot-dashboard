@@ -26,13 +26,14 @@ export function trackMapInteractions(map: MapSurface, capture: (type: "pan" | "z
     if (["+", "-", "="].includes(event.key)) record("zoom");
   };
   map.on("dragend", pan);
-  container.addEventListener("click", click);
+  // Leaflet stops zoom-button clicks before they bubble to the map.
+  container.addEventListener("click", click, true);
   container.addEventListener("dblclick", doubleClick);
   container.addEventListener("touchstart", touch, { passive: true });
   container.addEventListener("keydown", key);
   return () => {
     map.off("dragend", pan);
-    container.removeEventListener("click", click);
+    container.removeEventListener("click", click, true);
     container.removeEventListener("dblclick", doubleClick);
     container.removeEventListener("touchstart", touch);
     container.removeEventListener("keydown", key);
