@@ -87,7 +87,9 @@ export async function deliverRevenue(limit = 25) {
       await sql`UPDATE stripe_revenue_outbox SET delivered_at = now(), lease_until = NULL
         WHERE invoice_id = ${row.invoice_id}`;
       delivered++;
-    } catch {
+    } catch (error) {
+      console.error("[stripe/revenue-delivery]", row.invoice_id,
+        error instanceof Error ? error.message : "Delivery failed");
       await sql`UPDATE stripe_revenue_outbox SET lease_until = NULL,
         retry_at = now() + interval '5 minutes' WHERE invoice_id = ${row.invoice_id}`;
       failed++;

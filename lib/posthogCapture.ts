@@ -43,7 +43,7 @@ export async function sendPostHogEvent({
     });
   if (!response.ok) throw new Error(`PostHog capture returned ${response.status}`);
   const acknowledgement = await response.json();
-  if (acknowledgement.status !== 1) throw new Error("PostHog did not acknowledge capture");
+  if (acknowledgement.status !== 1 && acknowledgement.status !== "Ok") throw new Error("PostHog did not acknowledge capture");
 }
 
 // Behavioral checkout analytics stay best-effort; revenue uses the strict sender.

@@ -24,7 +24,7 @@ function load(file, mocks) {
   vm.runInNewContext(`(function(require,module,exports,process){${code}\n})`,{Date,console,Response,fetch:async(...args)=>{
     captures.push(JSON.parse(args[1].body));
     if(captureFails==='timeout') throw Error('timeout');
-    return {ok:!captureFails,status:captureFails?503:200,json:async()=>({status:1})};
+    return {ok:!captureFails,status:captureFails?503:200,json:async()=>({status:'Ok'})};
   },AbortSignal})(name=>{if(name in mocks)return mocks[name];throw Error(name)},module,module.exports,process);
   return module.exports;
 }
