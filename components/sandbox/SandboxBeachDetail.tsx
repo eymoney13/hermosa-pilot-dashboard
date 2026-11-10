@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import posthog from "posthog-js";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Lock } from "lucide-react";
 import { formatMonthDayYear, RISK_TIERS, STATUS_BAND, type BeachData, type Status } from "@/lib/data";
@@ -39,14 +39,43 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
   const [selectedDate, setSelectedDate] = useState(beach.predictionDate);
   const today = buildWindowCells(beach).find((cell) => cell.type === "today")!.day;
   const forecasts = beach.forecast.filter((day) => day.date > beach.predictionDate).slice(0, 3);
+  const forecastRow = useRef<HTMLDivElement>(null);
+  const lockedDates = forecasts.filter((day) => day.locked).map((day) => day.date).join(",");
+  useEffect(() => {
+    const el = forecastRow.current;
+    if (!el || !lockedDates || typeof IntersectionObserver === "undefined") return;
+    let captured = false;
+    const observer = new IntersectionObserver((entries) => {
+      if (captured || !entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 1)) return;
+      captured = true;
+      posthog.capture("locked_forecast_viewed", {
+        board_location: "California",
+        ...beachProperties(beach, "southbay"),
+        feature: "three_day_forecast",
+        locked_day_count: lockedDates.split(",").length,
+      });
+      observer.disconnect();
+    }, { threshold: 1 });
+    observer.observe(el);
+    return () => observer.disconnect();
+    // Count once per beach/forecast, not once per unrelated re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [beach.code, beach.predictionDate, lockedDates]);
   // Before onProMoment: the reader asked for this specific thing, which the
   // Pro card events alone cannot say. days_ahead 1 is "tomorrow".
-  const lockedClicked = (feature: LockedFeature, date: string) => {
+  const lockedClicked = (feature: LockedFeature, date: string, clickLocation = "forecast_day") => {
     posthog.capture("locked_feature_clicked", {
       board_location: "California",
       ...beachProperties(beach, "southbay"),
       feature,
       days_ahead: Math.round((Date.parse(date) - Date.parse(beach.predictionDate)) / 86_400_000),
+    });
+    posthog.capture("pro_interest_clicked", {
+      board_location: "California",
+      ...beachProperties(beach, "southbay"),
+      feature,
+      cta_location: clickLocation,
+      page_context: "beach_page",
     });
     onProMoment?.();
   };
@@ -89,7 +118,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
     <section className={s.futureSection} aria-label="Next three days">
       {!isToday && <button type="button" className={s.todayButton} onClick={() => setSelectedDate(today.date)}><ArrowLeft size={18} aria-hidden="true" />Back to today</button>}
       {forecasts.length > 0 ? <>
-        <div className={s.futureDays}>{forecasts.map((forecast) => forecast.locked ? (
+        <div ref={forecastRow} className={s.futureDays}>{forecasts.map((forecast) => forecast.locked ? (
           <a href="#sandbox-pro" onClick={() => lockedClicked("three_day_forecast", forecast.date)} key={forecast.date} className={`${s.futureDay} ${s.futureLocked}`} aria-label={`${formatMonthDayYear(forecast.date)}: unlock forecast with Neptune Pro`}>
             <span className={s.futureDayName}>{dateLabel(forecast.date, true)}</span>
             <span className={s.futureDate}>{dateLabel(forecast.date)}</span>
@@ -102,7 +131,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
             <strong>{STATUS_BAND[forecast.status].short} risk</strong>
           </button>
         ))}</div>
-        {forecasts.some((forecast) => forecast.locked) && <p className={s.forecastUnlock}>Plan ahead with 3-day forecasts. <a href="#sandbox-pro" onClick={() => lockedClicked("three_day_forecast", forecasts.find((forecast) => forecast.locked)!.date)}>Unlock Pro <ArrowUpRight size={14} aria-hidden="true" /></a></p>}
+        {forecasts.some((forecast) => forecast.locked) && <p className={s.forecastUnlock}>Plan ahead with 3-day forecasts. <a href="#sandbox-pro" onClick={() => lockedClicked("three_day_forecast", forecasts.find((forecast) => forecast.locked)!.date, "forecast_unlock")}>Unlock Pro <ArrowUpRight size={14} aria-hidden="true" /></a></p>}
       </> : <p className={s.supporting}>The next three days’ forecasts are not available yet.</p>}
     </section>
 

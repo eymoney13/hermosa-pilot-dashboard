@@ -92,7 +92,15 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
 
       <header className={s.header}>
         <a href="https://projectneptune.co" aria-label="Project Neptune home"><ProjectNeptuneLogo size={22} /></a>
-        <div className={s.account}>{!entitled && <a className={s.headerPro} href="#sandbox-pro" onClick={() => setProMoment("header_get_pro")}>Get Pro</a>}{entitled && <UserButton />}<SandboxMenu account={account} /></div>
+        <div className={s.account}>{!entitled && <a className={s.headerPro} href="#sandbox-pro" onClick={() => {
+          setProMoment("header_get_pro");
+          posthog.capture("pro_interest_clicked", {
+            board_location: "California",
+            cta_location: "header_get_pro",
+            page_context: active ? "beach_page" : view,
+            ...(active ? beachProperties(active, "southbay") : {}),
+          });
+        }}>Get Pro</a>}{entitled && <UserButton />}<SandboxMenu account={account} /></div>
       </header>
       <div className={s.content}>
         {(view === "map" || view === "list") ? (
