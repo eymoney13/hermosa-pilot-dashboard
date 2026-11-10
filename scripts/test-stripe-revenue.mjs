@@ -10,6 +10,7 @@ const pg = new PGlite();
 const sql = async (parts, ...values) => (await pg.query(parts.reduce((s,p,i)=>s+(i?`$${i}`:'')+p,''),values)).rows;
 const invoices = new Map();
 let captureFails = false;
+let acknowledgementStatus = 'Ok';
 const captures = [];
 const api = { invoices: {
   retrieve: async id => {if(!invoices.has(id)) throw Error('Stripe unavailable'); return invoices.get(id)},
@@ -24,7 +25,7 @@ function load(file, mocks) {
   vm.runInNewContext(`(function(require,module,exports,process){${code}\n})`,{Date,console,Response,fetch:async(...args)=>{
     captures.push(JSON.parse(args[1].body));
     if(captureFails==='timeout') throw Error('timeout');
-    return {ok:!captureFails,status:captureFails?503:200,json:async()=>({status:'Ok'})};
+    return {ok:!captureFails,status:captureFails?503:200,json:async()=>({status:acknowledgementStatus})};
   },AbortSignal})(name=>{if(name in mocks)return mocks[name];throw Error(name)},module,module.exports,process);
   return module.exports;
 }
@@ -102,3 +103,24 @@ assert.equal((await webhook.POST(request({type:'invoice.paid',data:{object:{id:'
 queueFails=true;
 assert.equal((await webhook.POST(request({type:'invoice.paid',data:{object:{id:'in_1'}}}))).status,500);
 console.log('ok - webhook asks Stripe to retry outages after granting access, handles renewal invoices and rejects unsigned requests');
+
+const input={event:'test',distinctId:null,dedupeKey:'test',timestamp:new Date()};
+acknowledgementStatus=0;
+await assert.rejects(capture.sendPostHogEvent(input));
+acknowledgementStatus=1;
+await capture.sendPostHogEvent(input);
+acknowledgementStatus='Ok';
+await capture.sendPostHogEvent(input);
+captureFails='timeout';
+await assert.rejects(capture.sendPostHogEvent(input));
+console.log('ok - numeric/string capture acknowledgements, rejected events and network timeouts');
+let syncCalls=0;
+const route=load('app/api/analytics/stripe-sync/route.ts',{'@/lib/stripeRevenueSync':{reconcileStripeRevenue:async()=>{syncCalls++;return {failed:0,pending:0}}}});
+delete process.env.CRON_SECRET;
+assert.equal((await route.GET({headers:new Headers({'authorization':'Bearer undefined'})})).status,401);
+process.env.CRON_SECRET='fake-cron-secret';
+assert.equal((await route.GET({headers:new Headers()})).status,401);
+assert.equal(syncCalls,0);
+assert.equal((await route.GET({headers:new Headers({'authorization':'Bearer fake-cron-secret'})})).status,200);
+assert.equal(syncCalls,1);
+console.log('ok - cron rejects missing/wrong authorization and only runs for an authenticated caller');
