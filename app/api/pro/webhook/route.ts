@@ -1,6 +1,7 @@
 import { syncPurchase, refreshPurchaseSubscription, sendRecovery } from "@/lib/purchase";
 import { capturePostHogEvent } from "@/lib/posthogCapture";
 import { planProperties } from "@/lib/analytics";
+import { checkoutPaymentProperties } from "@/lib/checkoutPaymentProperties";
 import {
   constructWebhookEvent,
   isProPlan,
@@ -79,7 +80,7 @@ export async function POST(request: Request): Promise<Response> {
               dedupeKey: session.id,
               timestamp: new Date(event.created * 1000),
               properties: { ...(isProPlan(session.metadata?.plan) ? planProperties(session.metadata.plan) : {}),
-                board_location: "California", amount_cents: session.amount_total ?? null,
+                board_location: "California", ...checkoutPaymentProperties(session),
                 currency: (session.currency ?? "usd").toUpperCase(), livemode: event.livemode },
             });
           }
