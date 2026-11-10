@@ -1,6 +1,7 @@
 import { syncPurchase, refreshPurchaseSubscription, sendRecovery } from "@/lib/purchase";
 import { capturePostHogEvent } from "@/lib/posthogCapture";
 import { planProperties } from "@/lib/analytics";
+import { queueRevenueInvoice, deliverRevenue } from "@/lib/stripeRevenueSync";
 import { checkoutPaymentProperties } from "@/lib/checkoutPaymentProperties";
 import {
   constructWebhookEvent,
@@ -65,11 +66,24 @@ export async function POST(request: Request): Promise<Response> {
     return new Response("Invalid signature", { status: 400 });
   }
 
+  let revenuePending = false;
   try {
     switch (event.type) {
+      case "invoice.paid": {
+        await queueRevenueInvoice(event.data.object.id);
+        revenuePending = (await deliverRevenue(5)).pending > 0;
+        break;
+      }
       case "checkout.session.async_payment_succeeded":
       case "checkout.session.completed": {
         const session = event.data.object;
+        // Checkout notifications also seed the outbox, including legacy flows.
+        // A database/Stripe failure returns 500 for Stripe to retry. A PostHog
+        // outage leaves a queued row and never prevents fulfillment below.
+        if (session.invoice) {
+          await queueRevenueInvoice(typeof session.invoice === "string" ? session.invoice : session.invoice.id);
+          revenuePending = (await deliverRevenue(5)).pending > 0;
+        }
         if (session.metadata?.flow === "payment_first_v1") {
           const purchase = await syncPurchase(session.id);
           if (purchase?.active) {
@@ -135,6 +149,10 @@ export async function POST(request: Request): Promise<Response> {
     console.error("[pro/webhook]", event.type, err);
     return new Response("Failed to record", { status: 500 });
   }
+
+  // Fulfillment above has finished before asking Stripe to retry analytics.
+  // The durable queue also gets a daily retry if webhook retries run out.
+  if (revenuePending) return new Response("Revenue delivery pending", { status: 503 });
 
   // Everything else is acknowledged and ignored — a 4xx would make Stripe
   // retry events we never asked for, forever.

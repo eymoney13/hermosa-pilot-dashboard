@@ -17,6 +17,10 @@
     {
       "path": "/api/alerts/send",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/analytics/stripe-sync",
+      "schedule": "30 14 * * *"
     }
   ]
 }
