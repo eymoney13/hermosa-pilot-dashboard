@@ -34,7 +34,11 @@ events. Keep the existing signing secret and API version unchanged.
 
 Revenue events contain invoice/customer IDs, original paid timestamp, currency,
 amount paid and discount amount/code-used flag. No names, email addresses,
-payment card data or code strings are sent. Customers are keyed by Stripe
+payment card data are sent. Customer-facing discount code strings are sent
+in separate `stripe_discount_code_used` events, one per invoice/promotion ID.
+The code breakdown counts distinct Stripe customer IDs per code across all
+invoices, so renewal applications do not inflate the customer count. Repeated
+reconciliation backfills these events without resending revenue. Customers are keyed by Stripe
 customer ID; revenue includes all live invoice payments, including founders'
 live purchases, and does not filter PostHog's internal/test-person flag.
 

@@ -70,6 +70,27 @@ await sql`UPDATE stripe_revenue_sync_state SET lease_until=now()+interval '10 mi
 assert.equal((await sync.reconcileStripeRevenue()).busy,true);
 await sql`UPDATE stripe_revenue_sync_state SET lease_until=NULL`;
 console.log('ok - historical backfill, renewal payments, repeat reconciliation and sync lock');
+const withCodes={...base,id:'in_codes',amount_paid:0,
+ discounts:[{id:'di_1',promotion_code:{id:'promo_A',code:'FREEPRO'}},
+ {id:'di_2',promotion_code:{id:'promo_A',code:'FREEPRO'}},
+ {id:'di_3',promotion_code:{id:'promo_B',code:'EARLY'}}],
+ total_discount_amounts:[{discount:'di_1',amount:1000},{discount:{id:'di_2'},amount:500},{discount:'di_3',amount:2500}]};
+const codes=sync.invoiceDiscountPayloads(withCodes);
+assert.equal(codes.length,2);
+assert.equal(codes[0].properties.discount_code,'FREEPRO');
+assert.equal(codes[0].properties.discount_amount_cents,1500);
+assert.equal(codes[1].properties.discount_amount_cents,2500);
+assert.equal(codes[0].properties.stripe_customer_id,'cus_1');
+assert.throws(()=>sync.invoiceDiscountPayloads({...withCodes,discounts:['di_missing']}));
+assert.throws(()=>sync.invoiceDiscountPayloads({...withCodes,discounts:[{id:'di_1',promotion_code:'promo_A'}]}));
+assert.equal(sync.invoiceDiscountPayloads({...base,livemode:false}).length,0);
+invoices.set(withCodes.id,withCodes);
+await sync.queueRevenueInvoice(withCodes.id);await sync.queueRevenueInvoice(withCodes.id);
+assert.equal((await sql`SELECT count(*)::integer AS n FROM stripe_revenue_outbox WHERE payload->>'event'='stripe_discount_code_used'`)[0].n,2);
+assert.equal((await sync.deliverRevenue()).delivered,3);
+assert.equal((await sync.reconcileStripeRevenue()).delivered,0);
+assert.equal((await sql`SELECT sum((payload->'properties'->>'amount_cents')::integer)::integer AS cents FROM stripe_revenue_outbox WHERE payload->>'event'='stripe_invoice_paid'`)[0].cents,4500);
+console.log('ok - multiple code names, code-specific discount amounts, historical enrichment and repeat sync without revenue duplication');
 // More than a run's 300-invoice budget must resume, then wrap for discovery.
 for(let i=0;i<301;i++)invoices.set(`in_page_${i}`,{...base,id:`in_page_${i}`,amount_paid:0});
 const page1=await sync.reconcileStripeRevenue();assert.equal(page1.complete,false);

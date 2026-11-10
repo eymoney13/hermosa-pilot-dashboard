@@ -53,16 +53,53 @@ export function invoiceRevenuePayload(invoice: Stripe.Invoice) {
   };
 }
 
+// Separate events let historical code names be enriched without resending or
+// changing the already-counted revenue event. One event per invoice/code.
+export function invoiceDiscountPayloads(invoice: Stripe.Invoice) {
+  const revenue = invoiceRevenuePayload(invoice);
+  if (!revenue) return [];
+  const byCode = new Map<string, { code: string; cents: number }>();
+  for (const discount of invoice.discounts ?? []) {
+    if (typeof discount === "string") throw new Error("Invoice discount was not expanded");
+    if (!discount.promotion_code) continue;
+    const promotion = discount.promotion_code;
+    // Never silently mark an unresolved promotion as delivered. The full
+    // expansion is requested by both callers; retry if Stripe omits it.
+    if (typeof promotion === "string") throw new Error("Promotion code was not expanded");
+    const cents = (invoice.total_discount_amounts ?? []).reduce((sum, item) =>
+      sum + ((typeof item.discount === "string" ? item.discount : item.discount.id) === discount.id ? item.amount : 0), 0);
+    const prior = byCode.get(promotion.id);
+    byCode.set(promotion.id, { code: promotion.code, cents: (prior?.cents ?? 0) + cents });
+  }
+  return [...byCode].map(([id, discount]) => ({
+    ...revenue,
+    event: "stripe_discount_code_used",
+    dedupeKey: `${invoice.id}:code:${id}`,
+    properties: {
+      ...revenue.properties,
+      stripe_promotion_code_id: id,
+      discount_code: discount.code,
+      discount_amount_cents: discount.cents,
+    },
+  }));
+}
+
+async function enqueueInvoice(sql: Awaited<ReturnType<typeof revenueDb>>, invoice: Stripe.Invoice) {
+  const revenue = invoiceRevenuePayload(invoice);
+  if (!revenue) return false;
+  for (const payload of [revenue, ...invoiceDiscountPayloads(invoice)]) {
+    await sql`INSERT INTO stripe_revenue_outbox (invoice_id, payload)
+      VALUES (${payload.dedupeKey}, ${JSON.stringify(payload)}::jsonb)
+      ON CONFLICT (invoice_id) DO NOTHING`;
+  }
+  return true;
+}
+
 export async function queueRevenueInvoice(invoiceId: string) {
   // Expand on retrieval: webhook payloads may contain only discount IDs.
-  const invoice = await stripe().invoices.retrieve(invoiceId, { expand: ["discounts"] });
-  const payload = invoiceRevenuePayload(invoice);
-  if (!payload) return false;
+  const invoice = await stripe().invoices.retrieve(invoiceId, { expand: ["discounts.promotion_code"] });
   const sql = await revenueDb();
-  await sql`INSERT INTO stripe_revenue_outbox (invoice_id, payload)
-    VALUES (${invoice.id}, ${JSON.stringify(payload)}::jsonb)
-    ON CONFLICT (invoice_id) DO NOTHING`;
-  return true;
+  return enqueueInvoice(sql, invoice);
 }
 
 export async function deliverRevenue(limit = 25) {
@@ -115,12 +152,9 @@ export async function reconcileStripeRevenue() {
     // Scan all paid invoices, using paid_at (not creation date) for inclusion.
     for (let page = 0; page < 3; page++) {
       const invoices = await stripe().invoices.list({ status: "paid", limit: 100,
-        ...(cursor ? { starting_after: cursor } : {}), expand: ["data.discounts"] });
+        ...(cursor ? { starting_after: cursor } : {}), expand: ["data.discounts.promotion_code"] });
       for (const invoice of invoices.data) {
-        const payload = invoiceRevenuePayload(invoice);
-        if (payload) await sql`INSERT INTO stripe_revenue_outbox (invoice_id, payload)
-          VALUES (${invoice.id}, ${JSON.stringify(payload)}::jsonb)
-          ON CONFLICT (invoice_id) DO NOTHING`;
+        await enqueueInvoice(sql, invoice);
         scanned++;
       }
       complete = !invoices.has_more;
