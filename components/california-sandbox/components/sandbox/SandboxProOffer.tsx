@@ -26,19 +26,19 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocat
     posthog.capture("alert_upgrade_clicked", {page_source:"california_pro_offer", selected_beach:beach?.code ?? null, subscriber_plan:"free"});
   };
 
-  // Seen, not merely rendered: the card often mounts below the fold, and the
-  // funnel step means the reader actually had a chance to buy. Seen again
+  // Count an offer view only when both paid options are fully in the viewport.
+  // Observe the options, not a percentage of the differently sized card. Seen again
   // when the card moves to a new view or beach, or a different link sends the
   // reader to it, so cta_location and page_context stay honest.
-  const card = useRef<HTMLElement>(null);
+  const paidOptions = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const el = card.current;
+    const el = paidOptions.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     const seen = new IntersectionObserver((entries) => {
-      if (!entries.some((e) => e.isIntersecting)) return;
+      if (!entries.some((e) => e.isIntersecting && e.intersectionRatio >= 1)) return;
       posthog.capture("pro_offer_viewed", { ...context, checkout_ready: checkoutReady });
       seen.disconnect();
-    }, { threshold: 0.5 });
+    }, { threshold: 1 });
     seen.observe(el);
     return () => seen.disconnect();
     // context is rebuilt every render; its inputs are what matter.
@@ -54,7 +54,7 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocat
   ].filter(Boolean) as string[];
 
   return (
-    <section ref={card} id="sandbox-pro" className={s.proOffer} aria-label="Neptune Pro">
+    <section id="sandbox-pro" className={s.proOffer} aria-label="Neptune Pro">
       <div className={s.proGlow} aria-hidden="true" />
       <div className={s.proInner}>
         {/* The product name IS the headline. A tagline above it pushed the
@@ -90,7 +90,7 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocat
         </ul>
 
         {checkoutReady ? (
-          <div className={s.planChoices}>
+          <div ref={paidOptions} className={s.planChoices}>
             <Link onClick={() => clicked("yearly")} prefetch={false} className={`${s.primary} ${s.annualPrimary}`} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $20/year <span>Save $4 with annual billing</span></Link>
             <Link onClick={() => clicked("monthly")} prefetch={false} className={s.annualChoice} href="/pro/start?plan=monthly&from=%2Fcalifornia">{CTA}</Link>
           </div>
