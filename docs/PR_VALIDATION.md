@@ -48,3 +48,7 @@ Keep this PR in draft until a controlled preview rehearsal on the final reviewed
 5. Enable a controlled rollout, inspect checkout/activation/webhook errors and actual analytics amounts, then broaden access after smoke checks.
 
 The PR branch has automatic Vercel deployment disabled. Existing deployment exclusions and all existing cron schedules are retained; the lifecycle cron is added at 16:00 UTC. This PR does not authorize merging, migrating production, changing production configuration, or enabling live billing.
+
+## Final commit rehearsal completed
+
+The real Stripe expiry/first-renewal/late-setup checks, actual Next.js/Clerk browser signup for free/monthly/yearly buyers, external promo mailbox delivery, real webhook network transport, ownership checks, and local server analytics replay checks were subsequently completed against application commit `2ae5bd6`. See [final rehearsal results and limitations](PROMO_FINAL_REHEARSAL_2026-11-11.md). The production change procedure is prepared in [the rollout and rollback proposal](PROMO_PRODUCTION_ROLLOUT.md). No production change is authorized by this report.

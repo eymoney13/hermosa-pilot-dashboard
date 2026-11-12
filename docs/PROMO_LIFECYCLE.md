@@ -42,3 +42,7 @@ Use test keys, a branch database, test Clerk accounts, and a controlled email re
 The clean PR worktree uses `npm ci`; normal TypeScript discovery passes without overrides. The older checkout’s duplicate empty type folders are not included in the PR. Current main already supplies `sendAlertVerification`; it is preserved. Script module-variable lint errors are fixed. See `PR_VALIDATION.md` for current results and remaining rollout gates.
 
 Before deploying, configure the production Clerk instance for public signup with password and email-code verification. Only the development instance was changed during testing. Keep this PR in draft until production migration, Clerk settings, and rollout timing are approved. This PR branch has automatic Vercel deployment disabled.
+
+## Final rehearsal and proposed rollout
+
+[Final PR rehearsal](PROMO_FINAL_REHEARSAL_2026-11-11.md) records the completed isolated checks on application commit `2ae5bd6`, including actual email delivery and webhook network transport. [Production rollout and rollback](PROMO_PRODUCTION_ROLLOUT.md) gives the exact change order and containment steps. Production remains unchanged.
