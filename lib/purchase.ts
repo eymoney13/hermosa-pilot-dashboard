@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
 import { proMailer } from "./proMailer";
+import { checkoutPrices } from "./checkoutPrices";
 import { promoEnabled, reconcilePromo } from "./promoAccess";
 import { purchaseEmail } from "./purchaseEmail";
 import { stripe, subscriptionDb as db, siteUrl, PRO_PLANS, isProPlan, hasLiveSubscription, type ProPlan, type Stripe } from "./subscription";
@@ -20,6 +21,7 @@ export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogI
   if (!isPaymentFirstEnabled()) throw new Error("Checkout is unavailable");
   if (!process.env.PRO_ACTIVATION_EMAIL_FROM || !process.env.GMAIL_APP_PASSWORD) throw new Error("Activation email is not configured");
   siteUrl(); // Validate the return origin before creating anything at Stripe.
+  const prices = await checkoutPrices();
   const buyerEmail = normalizedEmail(rawEmail);
   if (!buyerEmail && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(browserAttempt)) throw new Error("Invalid checkout attempt");
   if (buyerEmail && !validEmail(buyerEmail)) throw new Error("Enter a valid checkout email");
@@ -87,13 +89,21 @@ export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogI
   // when Stripe first creates it, but subsequent POSTs may arrive later.
   const existing = attempt.checkout_session_id ? await stripe().checkout.sessions.retrieve(attempt.checkout_session_id) : null;
   if (existing?.status === "complete") return `${siteUrl()}/pro/recover`;
-  if (existing?.status === "open" && existing.url) return existing.url;
+  if (existing?.status === "open" && existing.url) {
+    const items = await stripe().checkout.sessions.listLineItems(existing.id, { limit: 2 });
+    if (items.data.length === 1 && !items.has_more && items.data[0].quantity === 1 && items.data[0].price?.id === prices[plan]) return existing.url;
+    // Pre-migration checkout links used newly generated products, which cannot
+    // enforce the monthly-only coupon restriction. Retire them before retrying.
+    await stripe().checkout.sessions.expire(existing.id);
+    await db()`UPDATE pro_checkout_attempts SET expires_at = now() - interval '1 second'
+      WHERE email = ${email} AND attempt_id = ${attempt.attempt_id}`;
+    return startPurchase(plan, rawEmail, rawPosthogId, browserAttempt);
+  }
   if (new Date(attempt.expires_at).getTime() - Date.now() < 31 * 60_000) throw new Error("Please try again after this checkout expires");
   const history = user ? await db()`SELECT stripe_customer_id, promo_redeemed_at FROM pro_subscriptions WHERE clerk_user_id = ${user.id} ORDER BY updated_at DESC` : [];
   const customer = history.find(row => row.stripe_customer_id)?.stripe_customer_id;
   const redeemed = history.some(row => row.promo_redeemed_at);
   const noCardPromo = promoEnabled() && attempt.plan === "monthly";
-  const { cents, interval } = PRO_PLANS[attempt.plan];
   const session = await stripe().checkout.sessions.create({
     mode: "subscription", ...(customer ? { customer } : buyerEmail ? { customer_email: buyerEmail } : {}), payment_method_types: ["card"],
     allow_promotion_codes: !noCardPromo || !redeemed,
@@ -106,8 +116,7 @@ export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogI
       ...(/^[\w$.:-]{1,200}$/.test(rawPosthogId) ? { posthog_distinct_id: rawPosthogId } : {}) },
     custom_text: { submit: { message: (noCardPromo ? "Eligible free monthly promos end automatically unless you choose Keep Pro. Paid subscriptions renew until canceled." : "Renews automatically until canceled.") + " After checkout, activate your account using the same email. Full refund within 7 days of your first purchase; contact ethan@projectneptune.co." } },
     subscription_data: { metadata: { flow: "payment_first_v1", plan: attempt.plan } },
-    line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: cents,
-      recurring: { interval }, product_data: { name: "Neptune Pro" } } }],
+    line_items: [{ quantity: 1, price: prices[attempt.plan] }],
     success_url: `${siteUrl()}/pro/activate?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${siteUrl()}/california#sandbox-pro`,
   }, { idempotencyKey: `neptune-purchase-${attempt.attempt_id}` });
