@@ -1,3 +1,4 @@
+import { recordPromoSignup } from "./promoSignupAnalytics";
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
@@ -190,6 +191,7 @@ export async function activatePurchase(sessionId: string): Promise<boolean> {
           AND (other.promo_access_ends_at IS NULL OR other.promo_access_ends_at > now())
           AND other.checkout_session_id IS DISTINCT FROM ${sessionId})
     RETURNING id`;
+  if (rows.length === 1) await recordPromoSignup(sessionId, user.createdAt);
   return rows.length === 1;
 }
 // Uniform public response; links go only to the checkout mailbox. Database

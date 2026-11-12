@@ -41,7 +41,7 @@ export default function DirectCheckout({ action, plan, autoStart, promoEntry = f
   }, [autoStart, plan]);
   return <form ref={form} action={action} onSubmit={() => {
     prepare();
-    posthog.capture("checkout_started", { ...planProperties(plan), board_location: "California" });
+    posthog.capture("checkout_started", { ...planProperties(plan), board_location: "California", checkout_entry: promoEntry ? "promo_redemption" : "paid_checkout" });
   }} className="mt-4">
     <input type="hidden" name="attempt" />
     <input type="hidden" name="ph_id" />
