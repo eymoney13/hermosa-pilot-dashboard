@@ -9,6 +9,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 const require = createRequire(import.meta.url);
 let userId = 'account', subscription = null, customer = 'customer', portalCalls = 0;
 const mocks = {
+ '@/lib/promoAccess': {startKeepPro:async()=> 'https://checkout.stripe.test/setup'},
  '@/lib/purchase': { isPaymentFirstEnabled: () => true },
  'next/link': { __esModule: true, default: ({children, ...props}) => { delete props.prefetch; return React.createElement('a', props, children); } },
  'next/navigation': { notFound: () => { throw Error('404'); }, redirect: url => { throw Error(`redirect:${url}`); } },
@@ -61,4 +62,6 @@ await assert.rejects(page({from:'https://example.com'}), /404/);
 userId = null;
 await assert.rejects(page(), /redirect:\/sign-in/);
 await assert.rejects(page({preview:'ended'}), /redirect:\/sign-in/);
+subscription={status:'active',plan:'monthly',current_period_end:'2030-01-01T00:00:00Z',promo_access_ends_at:'2030-01-01T00:00:00Z'};userId='account';
+html=renderToStaticMarkup(await page());assert.match(html,/Free Pro through/);assert.match(html,/Keep Pro: add a card/);assert.match(html,/first charge is scheduled/);assert.doesNotMatch(html,/Manage billing in Stripe/);
 console.log('Passed account-page state, renewal disclosure, and billing authorization checks.');

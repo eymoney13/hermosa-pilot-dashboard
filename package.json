@@ -11,7 +11,11 @@
     "test:alerts": "node scripts/test-sandbox-alerts.mjs",
     "test:california": "node scripts/test-california.mjs",
     "test:alerts-resend": "node scripts/test-alerts-resend.mjs",
-    "test:alert-email": "node scripts/test-alert-email.mjs"
+    "test:alert-email": "node scripts/test-alert-email.mjs",
+    "test:onboarding": "node scripts/test-pro-onboarding.mjs",
+    "test:promo-analytics": "node scripts/test-promo-analytics.mjs",
+    "test:pro-account": "node scripts/test-pro-account.mjs",
+    "test:stripe-revenue": "node scripts/test-stripe-revenue.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.7",

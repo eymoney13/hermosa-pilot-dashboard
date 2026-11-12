@@ -7,8 +7,8 @@ if (!process.env.DATABASE_URL || !process.env.STRIPE_SECRET_KEY?.startsWith('sk_
   throw new Error('Set an isolated test DATABASE_URL, a Stripe test key, and NEPTUNE_TEST_DATABASE_CONFIRMED=true.');
 }
 const sql = neon(process.env.DATABASE_URL);
-const files = ['subscriptions-schema.sql', 'payment-first-schema.sql'];
+const files = ['subscriptions-schema.sql', 'payment-first-schema.sql', 'promo-lifecycle-schema.sql'];
 const statements = files.flatMap(file => readFileSync(new URL(file, import.meta.url), 'utf8')
   .replace(/--[^\n]*/g, '').split(';').map(value => value.trim()).filter(Boolean));
 await sql.transaction(statements.map(statement => sql.query(statement)));
-console.log('Applied payment-first schema to the explicitly selected test database.');
+console.log('Applied payment-first and promo lifecycle schemas to the explicitly selected test database.');

@@ -1,0 +1,523 @@
+{
+  "commit": "2ae5bd6166d0383850650c888a741473253665ec",
+  "testOnly": true,
+  "appOrigin": "http://localhost:3001",
+  "databaseHost": "ep-green-river-av6f5kpd.c-11.us-east-1.aws.neon.tech",
+  "migration": {
+    "testOnly": true,
+    "host": "ep-green-river-av6f5kpd.c-11.us-east-1.aws.neon.tech",
+    "commit": "2ae5bd6166d0383850650c888a741473253665ec",
+    "existingRows": 9,
+    "migrationApplications": 2,
+    "existingFieldsPreserved": true
+  },
+  "purchases": {
+    "promo": {
+      "session": "cs_test_b0Wo1MBXgKowzRcM4d5uiD1R6HQ9w28KLoglIlXuMSsPk1DkIHqQkIVMBw",
+      "subscription": "sub_1UapDm6zec8cCFXo6h3fmIAm",
+      "status": "active",
+      "amountPaid": 0,
+      "discountCodeUsed": true,
+      "clerkPasswordEnabled": true,
+      "verifiedCheckoutOwner": true,
+      "promoDeadline": "2026-12-12T04:02:45.000Z",
+      "plan": "monthly"
+    },
+    "monthly": {
+      "session": "cs_test_b0AGl6bydiEC8yvmEPyKKw3Bgu3LcvswNWJ23gFhywqTVgQa5X6aqjzhgY",
+      "subscription": "sub_1UapLZ6zec8cCFXozDrQMo2W",
+      "status": "active",
+      "amountPaid": 200,
+      "discountCodeUsed": false,
+      "clerkPasswordEnabled": true,
+      "verifiedCheckoutOwner": true,
+      "promoDeadline": null,
+      "plan": "monthly"
+    },
+    "yearly": {
+      "session": "cs_test_b0r2r0oB169XFKa7p477CGtOeww5EtpFP1GlTkfxfWhAt0fygiXRXHqVoT",
+      "subscription": "sub_1UapO56zec8cCFXoNvNNcFK2",
+      "status": "active",
+      "amountPaid": 2000,
+      "discountCodeUsed": false,
+      "clerkPasswordEnabled": true,
+      "verifiedCheckoutOwner": true,
+      "promoDeadline": null,
+      "plan": "yearly"
+    }
+  },
+  "networkWebhookReplays": 3,
+  "serverAnalytics": [
+    {
+      "event": "payment_succeeded",
+      "uuid": "f665eb0b-650b-45c1-8b55-1f6732341da0",
+      "timestamp": "2026-11-12T04:02:46.000Z",
+      "distinct_id": "01a1cdea-0303-7690-970e-428b4e6a7f92",
+      "properties": {
+        "plan": "monthly",
+        "price": 0,
+        "board_location": "California",
+        "amount_cents": 0,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 200,
+        "discount_code_used": true,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "uuid": "666b08ef-e215-49ba-85dd-3a315e6bf86a",
+      "timestamp": "2026-11-12T04:10:50.000Z",
+      "distinct_id": "final-monthly-browser",
+      "properties": {
+        "plan": "monthly",
+        "price": 2,
+        "board_location": "California",
+        "amount_cents": 200,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 0,
+        "discount_code_used": false,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "uuid": "e32b2c82-d27f-4f9c-87ec-d63b297ab8ec",
+      "timestamp": "2026-11-12T04:13:26.000Z",
+      "distinct_id": "final-yearly-browser",
+      "properties": {
+        "plan": "annual",
+        "price": 20,
+        "board_location": "California",
+        "amount_cents": 2000,
+        "subtotal_cents": 2000,
+        "discount_amount_cents": 0,
+        "discount_code_used": false,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "uuid": "e32b2c82-d27f-4f9c-87ec-d63b297ab8ec",
+      "timestamp": "2026-11-12T04:13:26.000Z",
+      "distinct_id": "final-yearly-browser",
+      "properties": {
+        "plan": "annual",
+        "price": 20,
+        "board_location": "California",
+        "amount_cents": 2000,
+        "subtotal_cents": 2000,
+        "discount_amount_cents": 0,
+        "discount_code_used": false,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "uuid": "666b08ef-e215-49ba-85dd-3a315e6bf86a",
+      "timestamp": "2026-11-12T04:10:50.000Z",
+      "distinct_id": "final-monthly-browser",
+      "properties": {
+        "plan": "monthly",
+        "price": 2,
+        "board_location": "California",
+        "amount_cents": 200,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 0,
+        "discount_code_used": false,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "uuid": "f665eb0b-650b-45c1-8b55-1f6732341da0",
+      "timestamp": "2026-11-12T04:02:46.000Z",
+      "distinct_id": "01a1cdea-0303-7690-970e-428b4e6a7f92",
+      "properties": {
+        "plan": "monthly",
+        "price": 0,
+        "board_location": "California",
+        "amount_cents": 0,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 200,
+        "discount_code_used": true,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "uuid": "e32b2c82-d27f-4f9c-87ec-d63b297ab8ec",
+      "timestamp": "2026-11-12T04:13:26.000Z",
+      "distinct_id": "final-yearly-browser",
+      "properties": {
+        "plan": "annual",
+        "price": 20,
+        "board_location": "California",
+        "amount_cents": 2000,
+        "subtotal_cents": 2000,
+        "discount_amount_cents": 0,
+        "discount_code_used": false,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "uuid": "666b08ef-e215-49ba-85dd-3a315e6bf86a",
+      "timestamp": "2026-11-12T04:10:50.000Z",
+      "distinct_id": "final-monthly-browser",
+      "properties": {
+        "plan": "monthly",
+        "price": 2,
+        "board_location": "California",
+        "amount_cents": 200,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 0,
+        "discount_code_used": false,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "uuid": "f665eb0b-650b-45c1-8b55-1f6732341da0",
+      "timestamp": "2026-11-12T04:02:46.000Z",
+      "distinct_id": "01a1cdea-0303-7690-970e-428b4e6a7f92",
+      "properties": {
+        "plan": "monthly",
+        "price": 0,
+        "board_location": "California",
+        "amount_cents": 0,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 200,
+        "discount_code_used": true,
+        "currency": "USD",
+        "livemode": false
+      }
+    }
+  ],
+  "webhookResponses": [
+    "2026-11-11 20:02:50  <--  [204] POST http://localhost:3001/api/pro/webhook [evt_1UapDn6zec8cCFXojZDcN6jw]",
+    "2026-11-11 20:02:51  <--  [204] POST http://localhost:3001/api/pro/webhook [evt_1UapDq6zec8cCFXoc1saCV3D]",
+    "2026-11-11 20:02:55  <--  [204] POST http://localhost:3001/api/pro/webhook [evt_1UapDn6zec8cCFXo6CqIYn1h]",
+    "2026-11-11 20:10:53  <--  [204] POST http://localhost:3001/api/pro/webhook [evt_1UapLa6zec8cCFXoGlcp1ARl]",
+    "2026-11-11 20:10:55  <--  [204] POST http://localhost:3001/api/pro/webhook [evt_1UapLa6zec8cCFXoXouR2Vve]",
+    "2026-11-11 20:13:29  <--  [204] POST http://localhost:3001/api/pro/webhook [evt_1UapO66zec8cCFXo7CFqLeBU]",
+    "2026-11-11 20:13:32  <--  [204] POST http://localhost:3001/api/pro/webhook [evt_1UapO76zec8cCFXoxZsypMuO]"
+  ],
+  "billingBoundary": {
+    "scenarios": {
+      "expiry": {
+        "clock": "clock_1Uap4Y6zec8cCFXoj22dSHtu",
+        "customer": "cus_Vc3AhCkLyRTJe2",
+        "frozenTime": 1794455594,
+        "session": "cs_test_b0M1z32NVM4iK9B49JjI72vvLpp8Js6sO6QGoZzwYxJYdS4U3yYfDnY5yK",
+        "subscription": "sub_1Uap5C6zec8cCFXoTbLuUiUw",
+        "deadline": 1797047594,
+        "appTime": 1797047654000,
+        "observedSubscriptionStatus": "canceled",
+        "invoices": [
+          {
+            "id": "in_1Uap5C6zec8cCFXoI1zX3U4p",
+            "status": "paid",
+            "amountDue": 0,
+            "amountPaid": 0,
+            "billingReason": "subscription_create",
+            "periodStart": 1794455594,
+            "periodEnd": 1794455594,
+            "linePeriods": [
+              {
+                "amount": 200,
+                "start": 1794455594,
+                "end": 1797047594
+              }
+            ],
+            "paymentIntent": [],
+            "attemptCount": 0
+          }
+        ],
+        "proAlertsStopped": true
+      },
+      "keep": {
+        "clock": "clock_1Uap5z6zec8cCFXoile5IIC3",
+        "customer": "cus_Vc3CDD2mHyG4br",
+        "frozenTime": 1794455683,
+        "session": "cs_test_b0dmzAsDYvXHKgMzioNJ4rJOjiT1RwGhEVxqGu66Cr0g6gKtVVPDK6MArF",
+        "subscription": "sub_1Uap6d6zec8cCFXoGIDOV3WZ",
+        "deadline": 1797047683,
+        "setupSession": "cs_test_c0Q3IswlBk4Vac8DziHGKPd5FIzSVmzZ0FF4htHT4vQn4bQU280xAEBiNe",
+        "appTime": 1797051343000,
+        "observedSubscriptionStatus": "active",
+        "invoices": [
+          {
+            "id": "in_1Uap7x6zec8cCFXojmjAeXEY",
+            "status": "paid",
+            "amountDue": 200,
+            "amountPaid": 200,
+            "billingReason": "subscription_cycle",
+            "periodStart": 1794455683,
+            "periodEnd": 1797047683,
+            "linePeriods": [
+              {
+                "amount": 200,
+                "start": 1797047683,
+                "end": 1799726083
+              }
+            ],
+            "paymentIntent": [
+              "pi_3Uap7z6zec8cCFXo0bWNh6hZ"
+            ],
+            "attemptCount": 1
+          },
+          {
+            "id": "in_1Uap6c6zec8cCFXoVWxI3LNx",
+            "status": "paid",
+            "amountDue": 0,
+            "amountPaid": 0,
+            "billingReason": "subscription_create",
+            "periodStart": 1794455683,
+            "periodEnd": 1794455683,
+            "linePeriods": [
+              {
+                "amount": 200,
+                "start": 1794455683,
+                "end": 1797047683
+              }
+            ],
+            "paymentIntent": [],
+            "attemptCount": 0
+          }
+        ],
+        "firstRenewalPayment": {
+          "id": "pi_3Uap7z6zec8cCFXo0bWNh6hZ",
+          "status": "succeeded",
+          "amountReceived": 200,
+          "currency": "usd"
+        }
+      },
+      "late": {
+        "clock": "clock_1Uap866zec8cCFXotuZFYMd0",
+        "customer": "cus_Vc3EJedtxuqLZe",
+        "frozenTime": 1794455813,
+        "session": "cs_test_b0997M5MMJAvXlU5NdQ0u630580JKABGPW11oN4hUoChvWjwIQAqiupZwZ",
+        "subscription": "sub_1Uap8g6zec8cCFXoL97ucpWb",
+        "deadline": 1797047813,
+        "setupSession": "cs_test_c011PhsVFOpRvI6tMqiHhQFZfkupjWA9Qzwcd5KYZIF4iXqaah7cHfy2bJ",
+        "appTime": 1797047873000,
+        "observedSubscriptionStatus": "canceled",
+        "invoices": [
+          {
+            "id": "in_1Uap8f6zec8cCFXoVlzC3jOP",
+            "status": "paid",
+            "amountDue": 0,
+            "amountPaid": 0,
+            "billingReason": "subscription_create",
+            "periodStart": 1794455813,
+            "periodEnd": 1794455813,
+            "linePeriods": [
+              {
+                "amount": 200,
+                "start": 1794455813,
+                "end": 1797047813
+              }
+            ],
+            "paymentIntent": [],
+            "attemptCount": 0
+          }
+        ],
+        "proAlertsStopped": true
+      }
+    },
+    "checks": [
+      {
+        "name": "expiry: real test Checkout created without mandatory card collection"
+      },
+      {
+        "name": "expiry: no-card checkout, scheduled expiry, activation and signed webhook replay",
+        "subscription": "sub_1Uap5C6zec8cCFXoTbLuUiUw",
+        "deadline": "2026-12-12T03:53:14.000Z"
+      },
+      {
+        "name": "expiry: automatic expiry cancels without any paid invoice or Pro entitlement",
+        "invoices": [
+          {
+            "id": "in_1Uap5C6zec8cCFXoI1zX3U4p",
+            "status": "paid",
+            "amountDue": 0,
+            "amountPaid": 0,
+            "billingReason": "subscription_create",
+            "periodStart": 1794455594,
+            "periodEnd": 1794455594,
+            "linePeriods": [
+              {
+                "amount": 200,
+                "start": 1794455594,
+                "end": 1797047594
+              }
+            ],
+            "paymentIntent": [],
+            "attemptCount": 0
+          }
+        ]
+      },
+      {
+        "name": "keep: real test Checkout created without mandatory card collection"
+      },
+      {
+        "name": "keep: no-card checkout, scheduled expiry, activation and signed webhook replay",
+        "subscription": "sub_1Uap6d6zec8cCFXoGIDOV3WZ",
+        "deadline": "2026-12-12T03:54:43.000Z"
+      },
+      {
+        "name": "keep: actual setup-only Checkout created, no immediate invoice payment"
+      },
+      {
+        "name": "keep: Keep Pro clears cancellation, preserves original renewal date, no setup purchase event"
+      },
+      {
+        "name": "late: real test Checkout created without mandatory card collection"
+      },
+      {
+        "name": "late: no-card checkout, scheduled expiry, activation and signed webhook replay",
+        "subscription": "sub_1Uap8g6zec8cCFXoL97ucpWb",
+        "deadline": "2026-12-12T03:56:53.000Z"
+      },
+      {
+        "name": "late: actual setup-only Checkout created, no immediate invoice payment"
+      },
+      {
+        "name": "keep: first renewal is a paid $2 USD invoice at the original promo deadline",
+        "invoice": "in_1Uap7x6zec8cCFXojmjAeXEY",
+        "amountPaid": 200,
+        "periodStart": "2026-12-12T03:54:43.000Z",
+        "nextPeriodEnd": "2027-01-12T03:54:43.000Z"
+      },
+      {
+        "name": "late: automatic expiry cancels without any paid invoice or Pro entitlement",
+        "invoices": [
+          {
+            "id": "in_1Uap8f6zec8cCFXoVlzC3jOP",
+            "status": "paid",
+            "amountDue": 0,
+            "amountPaid": 0,
+            "billingReason": "subscription_create",
+            "periodStart": 1794455813,
+            "periodEnd": 1794455813,
+            "linePeriods": [
+              {
+                "amount": 200,
+                "start": 1794455813,
+                "end": 1797047813
+              }
+            ],
+            "paymentIntent": [],
+            "attemptCount": 0
+          }
+        ]
+      },
+      {
+        "name": "late: setup completed after expiry does not resume subscription or create a charge"
+      }
+    ],
+    "analytics": [
+      {
+        "event": "payment_succeeded",
+        "distinctId": "promo-test-1794455575100-expiry-browser",
+        "dedupeKey": "cs_test_b0M1z32NVM4iK9B49JjI72vvLpp8Js6sO6QGoZzwYxJYdS4U3yYfDnY5yK",
+        "timestamp": "2026-11-12T03:53:55.000Z",
+        "properties": {
+          "plan": "monthly",
+          "price": 0,
+          "board_location": "California",
+          "amount_cents": 0,
+          "subtotal_cents": 200,
+          "discount_amount_cents": 200,
+          "discount_code_used": true,
+          "currency": "USD",
+          "livemode": false
+        }
+      },
+      {
+        "event": "payment_succeeded",
+        "distinctId": "promo-test-1794455575100-keep-browser",
+        "dedupeKey": "cs_test_b0dmzAsDYvXHKgMzioNJ4rJOjiT1RwGhEVxqGu66Cr0g6gKtVVPDK6MArF",
+        "timestamp": "2026-11-12T03:55:23.000Z",
+        "properties": {
+          "plan": "monthly",
+          "price": 0,
+          "board_location": "California",
+          "amount_cents": 0,
+          "subtotal_cents": 200,
+          "discount_amount_cents": 200,
+          "discount_code_used": true,
+          "currency": "USD",
+          "livemode": false
+        }
+      },
+      {
+        "event": "payment_succeeded",
+        "distinctId": "promo-test-1794455575100-keep-browser",
+        "dedupeKey": "cs_test_b0dmzAsDYvXHKgMzioNJ4rJOjiT1RwGhEVxqGu66Cr0g6gKtVVPDK6MArF",
+        "timestamp": "2026-11-12T03:55:23.000Z",
+        "properties": {
+          "plan": "monthly",
+          "price": 0,
+          "board_location": "California",
+          "amount_cents": 0,
+          "subtotal_cents": 200,
+          "discount_amount_cents": 200,
+          "discount_code_used": true,
+          "currency": "USD",
+          "livemode": false
+        }
+      },
+      {
+        "event": "payment_succeeded",
+        "distinctId": "promo-test-1794455575100-late-browser",
+        "dedupeKey": "cs_test_b0997M5MMJAvXlU5NdQ0u630580JKABGPW11oN4hUoChvWjwIQAqiupZwZ",
+        "timestamp": "2026-11-12T03:57:30.000Z",
+        "properties": {
+          "plan": "monthly",
+          "price": 0,
+          "board_location": "California",
+          "amount_cents": 0,
+          "subtotal_cents": 200,
+          "discount_amount_cents": 200,
+          "discount_code_used": true,
+          "currency": "USD",
+          "livemode": false
+        }
+      },
+      {
+        "event": "payment_succeeded",
+        "distinctId": "promo-test-1794455575100-keep-browser",
+        "dedupeKey": "cs_test_b0dmzAsDYvXHKgMzioNJ4rJOjiT1RwGhEVxqGu66Cr0g6gKtVVPDK6MArF",
+        "timestamp": "2026-11-12T03:55:23.000Z",
+        "properties": {
+          "plan": "monthly",
+          "price": 0,
+          "board_location": "California",
+          "amount_cents": 0,
+          "subtotal_cents": 200,
+          "discount_amount_cents": 200,
+          "discount_code_used": true,
+          "currency": "USD",
+          "livemode": false
+        }
+      }
+    ],
+    "errors": []
+  },
+  "externalMailDelivery": {
+    "recoveryEmailReceived": true,
+    "clerkVerificationEmailReceived": true,
+    "matchingBrowserVerified": true
+  },
+  "ownershipMismatchRejected": true
+}

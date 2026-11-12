@@ -58,3 +58,17 @@ export async function isEntitled(): Promise<boolean> {
   const jar = await cookies();
   return process.env.NODE_ENV === "development" && jar.get(DEV_COOKIE)?.value === "1";
 }
+
+export async function accountStatus() {
+  const { getAccountState } = await import("./subscription");
+  if (!isClerkConfigured()) return { entitled: await isEntitled(), signedIn: false, state: { kind: "free" as const } };
+  const { userId } = await auth();
+  if (!userId) return { entitled: false, signedIn: false, state: { kind: "free" as const } };
+  try {
+    const state = subscriptionsEnforced() ? await getAccountState(userId) : { kind: "free" as const };
+    return { entitled: subscriptionsEnforced() ? state.kind === "pro" || state.kind === "promo" : await isEntitled(), signedIn: true, state };
+  } catch (error) {
+    console.error("[entitlement] account lookup", error);
+    return { entitled: false, signedIn: true, state: { kind: "free" as const } };
+  }
+}

@@ -20,14 +20,14 @@ const api = { invoices: {
   },
 }};
 function load(file, mocks) {
-  const module={exports:{}};
+  const testModule={exports:{}};
   const code=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   vm.runInNewContext(`(function(require,module,exports,process){${code}\n})`,{Date,console,Response,fetch:async(...args)=>{
     captures.push(JSON.parse(args[1].body));
     if(captureFails==='timeout') throw Error('timeout');
     return {ok:!captureFails,status:captureFails?503:200,json:async()=>({status:acknowledgementStatus})};
-  },AbortSignal})(name=>{if(name in mocks)return mocks[name];throw Error(name)},module,module.exports,process);
-  return module.exports;
+  },AbortSignal})(name=>{if(name in mocks)return mocks[name];throw Error(name)},testModule,testModule.exports,process);
+  return testModule.exports;
 }
 process.env.NEXT_PUBLIC_POSTHOG_KEY='phc_fake';process.env.NEXT_PUBLIC_POSTHOG_HOST='https://posthog.test';
 const capture=load('lib/posthogCapture.ts',{'server-only':{},'node:crypto':{createHash}});
@@ -105,6 +105,8 @@ await pg.close();
 // Exercise the actual signed webhook handler with fake external adapters.
 let queueFails=false, pending=false, grants=0;
 const webhook=load('app/api/pro/webhook/route.ts',{
+ '@/lib/proLifecycle': {runProLifecycle:async()=>({failed:0})},
+ '@/lib/promoAccess': {completeKeepPro:async()=>{}},
  '@/lib/purchase':{syncPurchase:async()=>{grants++;return {active:true,email:'fake@example.test'}},sendRecovery:async()=>{},refreshPurchaseSubscription:async()=>{}},
  '@/lib/posthogCapture':{capturePostHogEvent:async()=>{}},
  '@/lib/analytics':{planProperties:()=>({})},

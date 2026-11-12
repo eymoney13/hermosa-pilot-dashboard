@@ -1,4 +1,5 @@
-import { isPaymentFirstEnabled } from "@/lib/purchase";
+import { startKeepPro } from "@/lib/promoAccess";
+import { isPaymentFirstEnabled, refreshPurchaseSubscription } from "@/lib/purchase";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -27,7 +28,7 @@ function billingAvailable() {
 }
 
 export default async function ProManagePage({ searchParams }: {
-  searchParams: Promise<{ from?: string; error?: string; preview?: string }>;
+  searchParams: Promise<{ from?: string; error?: string; preview?: string; kept?: string }>;
 }) {
   const query = await searchParams;
   // Sample presentation only: no auth, customer lookup, or Stripe action.
@@ -43,9 +44,15 @@ export default async function ProManagePage({ searchParams }: {
   if (!returnTo) notFound();
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
-  const [subscription, customerId] = await Promise.all([
+  const [initialSubscription, customerId] = await Promise.all([
     getAccountSubscription(userId), getStripeCustomerId(userId),
   ]);
+  let subscription = initialSubscription;
+  if (query.kept && subscription) {
+    await refreshPurchaseSubscription(subscription.stripe_subscription_id);
+    subscription = await getAccountSubscription(userId);
+  }
+  async function keepPro() { "use server"; redirect(await startKeepPro()); }
   const managePath = `/pro/manage?from=${encodeURIComponent(returnTo)}`;
 
   async function openBillingPortal() {
@@ -62,18 +69,21 @@ export default async function ProManagePage({ searchParams }: {
     redirect(url);
   }
 
-  return <AccountView subscription={subscription} customerId={customerId} returnTo={returnTo} billingAction={openBillingPortal} error={query.error} />;
+  return <AccountView subscription={subscription} customerId={customerId} returnTo={returnTo} billingAction={openBillingPortal} keepAction={keepPro} error={query.error} />;
 }
 
-function AccountView({ subscription, customerId, returnTo, billingAction, error, preview = false }: {
+function AccountView({ subscription, customerId, returnTo, billingAction, keepAction, error, preview = false }: {
   subscription: (SubscriptionRow & { plan: string | null }) | null;
   customerId: string | null;
   returnTo: string;
   billingAction?: () => Promise<void>;
+  keepAction?: () => Promise<void>;
   error?: string;
   preview?: boolean;
 }) {
   const entitled = entitlementFrom(subscription ?? undefined);
+  const promo = entitled && subscription?.promo_access_ends_at;
+  const promoDate = promo ? new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "America/Los_Angeles" }).format(new Date(promo)) : null;
   const paymentIssue = subscription?.status === "past_due" || subscription?.status === "unpaid";
   const endDate = subscription?.current_period_end
     ? new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "America/Los_Angeles" }).format(new Date(subscription.current_period_end))
@@ -88,7 +98,11 @@ function AccountView({ subscription, customerId, returnTo, billingAction, error,
     </h1>
     <section aria-label="Subscription status" className="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-6">
       <p className="font-semibold">{entitled ? "Pro access is active" : "Pro access is inactive"}</p>
-      {entitled ? <>
+      {promo ? <>
+        <p className="mt-3">Free Pro through {promoDate} (Pacific time). No card required. Access ends automatically unless you choose to continue.</p>
+        <p className="mt-3">Keep Pro for $2/month. Your first charge is scheduled for {promoDate}. Renews automatically monthly until canceled.</p>
+        <form action={keepAction} className="mt-4"><button className="rounded-lg bg-teal-800 px-5 py-3 font-medium text-white">Keep Pro: add a card</button></form>
+      </> : entitled ? <>
         <p className="mt-3">{plan === "yearly" ? "Annual" : "Monthly"} plan · {PRO_PLANS[plan].label}</p>
         {endDate && <p className="mt-2 text-gray-600">Current paid period ends {endDate} (Pacific time).</p>}
         <p className="mt-3 text-gray-600">Your forecasts and Pro alerts are available. View renewal and cancellation details in Stripe below.</p>
@@ -108,7 +122,7 @@ function AccountView({ subscription, customerId, returnTo, billingAction, error,
       </div>
       <p className="mt-3 text-sm text-gray-600">Renews automatically. Cancel anytime. Use the same verified account email at checkout, then activate your purchase.</p>
     </section>}
-    {customerId && <section aria-label="Billing" className="mt-10 border-t border-gray-200 pt-6">
+    {customerId && !promo && <section aria-label="Billing" className="mt-10 border-t border-gray-200 pt-6">
       <h2 className="text-xl font-semibold">Billing and invoices</h2>
       <p className="mt-3 text-gray-600">{entitled ? "Manage your subscription, payment methods, and invoices securely in Stripe." : "Your previous invoices and saved payment methods remain available in Stripe."}</p>
       <form action={billingAction} className="mt-4"><button disabled={preview} className="rounded-lg bg-teal-800 px-5 py-3 font-medium text-white hover:bg-teal-900">{entitled ? "Manage billing in Stripe" : "View invoices and payment methods"}</button></form>

@@ -1,0 +1,18 @@
+{
+  "clerkEnvironment": "development",
+  "testUserId": "user_3LzMpoLCkcFI7LBW7pODprDLoyZ",
+  "testEmail": "neptune-inline-1794452173140+clerk_test@example.com",
+  "passwordEnabled": true,
+  "emailVerified": true,
+  "subscription": {
+    "clerk_user_id": "user_3LzMpoLCkcFI7LBW7pODprDLoyZ",
+    "status": "active",
+    "checkout_session_id": "cs_test_b05Jo5dz1hXdZxTmXjJHVOezz6gFqSVh1m6ZhOu1xWTfNSK47QVP0dlDw8",
+    "promo_access_ends_at": "2026-12-12T02:56:23.000Z",
+    "promo_redeemed_at": "2026-11-12T02:57:10.000Z",
+    "stripe_subscription_id": "sub_1UaoBY6zec8cCFXorQHgT4hI"
+  },
+  "browserReturn": "http://localhost:3000/california?pro=activated",
+  "proForecastVisible": true,
+  "productionChanged": false
+}

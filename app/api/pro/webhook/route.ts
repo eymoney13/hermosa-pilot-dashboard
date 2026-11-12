@@ -1,3 +1,5 @@
+import { runProLifecycle } from "@/lib/proLifecycle";
+import { completeKeepPro } from "@/lib/promoAccess";
 import { syncPurchase, refreshPurchaseSubscription, sendRecovery } from "@/lib/purchase";
 import { capturePostHogEvent } from "@/lib/posthogCapture";
 import { planProperties } from "@/lib/analytics";
@@ -77,6 +79,11 @@ export async function POST(request: Request): Promise<Response> {
       case "checkout.session.async_payment_succeeded":
       case "checkout.session.completed": {
         const session = event.data.object;
+        if (session.metadata?.flow === "keep_pro_v1") {
+          await completeKeepPro(session.id);
+          await refreshPurchaseSubscription(session.metadata.subscription_id);
+          break;
+        }
         // Checkout notifications also seed the outbox, including legacy flows.
         // A database/Stripe failure returns 500 for Stripe to retry. A PostHog
         // outage leaves a queued row and never prevents fulfillment below.
@@ -139,6 +146,10 @@ export async function POST(request: Request): Promise<Response> {
         const sub = event.data.object;
         if (sub.metadata?.flow === "payment_first_v1") await refreshPurchaseSubscription(sub.id);
         else await updateSubscriptionStatus(sub.id, sub.status, periodEnd(sub));
+        if (event.type === "customer.subscription.deleted" && sub.metadata?.promo_no_card === "1") {
+          const result = await runProLifecycle(sub.id);
+          if (result.failed) throw new Error("Promo notice delivery pending");
+        }
         break;
       }
     }

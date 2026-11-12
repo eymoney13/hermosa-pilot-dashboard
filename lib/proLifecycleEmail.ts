@@ -1,0 +1,10 @@
+import { siteUrl } from "./subscription";
+export type LifecycleKind = "reminder" | "ended" | "winback";
+export function lifecycleEmail(kind: LifecycleKind, deadline: string) {
+  const date = new Date(deadline).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "America/Los_Angeles" });
+  const subject = kind === "reminder" ? `Your free Neptune Pro ends ${date}` : kind === "ended" ? "Your Neptune Pro access has ended" : "Ready for another beach day with Neptune Pro?";
+  const body = kind === "reminder" ? `Your free Neptune Pro ends ${date}. Your account and saved beaches stay. Pro 3-day forecasts, history and beach alerts will pause. Keep Pro for $2/month, renewing automatically until canceled. Add a card to continue; your first charge is scheduled for ${date}.` : kind === "ended" ? "Your Neptune Pro access has ended. You are on the free plan. Your account and saved beaches are still here. Pro forecasts, history and beach alerts are paused." : "You can get Neptune Pro again for $2/month for 3-day forecasts, history and beach alerts. This is the last follow-up about your expired promo.";
+  const url = `${siteUrl()}${kind === "reminder" ? "/pro/manage" : "/california#sandbox-pro"}`;
+  const action = kind === "reminder" ? "Keep Pro" : "Get Pro again, $2/month";
+  return { subject, text: `${body}\n\n${action}: ${url}`, html: `<!doctype html><html lang="en"><body style="margin:0;background:#f4f6f5;font-family:Arial,Helvetica,sans-serif;color:#183b3b"><div style="display:none;max-height:0;overflow:hidden">${subject}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px"><table role="presentation" style="max-width:560px;background:white;border-top:4px solid #176b65" cellpadding="28"><tr><td><p>NEPTUNE PRO</p><h1 style="font-size:26px">${subject}</h1><p style="line-height:1.7">${body}</p><a href="${url}" style="display:inline-block;background:#176b65;color:white;padding:16px 24px;border-radius:6px;text-decoration:none">${action}</a></td></tr></table></td></tr></table></body></html>` };
+}

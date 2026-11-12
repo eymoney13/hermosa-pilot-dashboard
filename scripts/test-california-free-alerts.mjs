@@ -5,7 +5,7 @@ import ts from 'typescript';
 import {PGlite} from '@electric-sql/pglite';
 process.env.DATABASE_URL="memory";
 const pg = new PGlite();
-for (const schema of ['alerts','subscriptions','sandbox-alerts','california-alerts','california-free-alerts']) await pg.exec(readFileSync(`scripts/${schema}-schema.sql`,'utf8'));
+for (const schema of ['alerts','subscriptions','payment-first','promo-lifecycle','sandbox-alerts','california-alerts','california-free-alerts']) await pg.exec(readFileSync(`scripts/${schema}-schema.sql`,'utf8'));
 const sql = async (parts,...values) => (await pg.query(parts.reduce((s,p,i)=>s+(i?`$${i}`:'')+p,''),values)).rows;
 const load = (file,mocks) => {const m={exports:{}}; const js=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;vm.runInNewContext(`(function(require,module,exports,process){${js}})`,{console,Date,Set})(name=>{if(name in mocks)return mocks[name];throw Error(name);},m,m.exports,process);return m.exports;};
 let n=0; const check=(name,fn)=>{fn();console.log(`ok ${++n} - ${name}`);};
@@ -44,7 +44,8 @@ for(let i=0;i<5;i++) assert.ok((await actions.verifyCaliforniaAlertCode(second.i
 assert.ok((await actions.verifyCaliforniaAlertCode(second.id,sentCode)).error);
 check('verification rejects codes after five guesses',()=>{});
 const policy=load('lib/sandboxAlertPolicy.ts',{});
-const delivery=load('lib/sandboxAlertSend.ts',{'server-only':{},'@neondatabase/serverless':{neon:()=>sql},'./sandboxAlertPolicy':policy});
+const alertMail=load('lib/alertMail.ts',{'./data':{formatMonthDayYear:value=>value}});
+const delivery=load('lib/sandboxAlertSend.ts',{'./alertMail':alertMail,'server-only':{},'@neondatabase/serverless':{neon:()=>sql},'./sandboxAlertPolicy':policy});
 let mails=[];const send=async(...args)=>{if(args[0]==='new@example.com') mails.push(args);return true;};
 await delivery.sendSandboxAlerts([{code:'A',name:'A',status:'Not recommended'}],'2026-10-09',false,send);
 assert.equal(mails.length,1);assert.equal(mails[0][0],'new@example.com');

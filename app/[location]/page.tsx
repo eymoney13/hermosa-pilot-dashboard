@@ -9,7 +9,7 @@ import BeachAlertSignup from "@/components/BeachAlertSignup";
 import FaqAccordion from "@/components/FaqAccordion";
 import { loadDashboardData } from "@/lib/loadData";
 import { isAlertsConfigured } from "@/lib/alerts";
-import { isEntitled } from "@/lib/entitlement";
+import { accountStatus, isEntitled } from "@/lib/entitlement";
 import { isClerkConfigured } from "@/lib/clerkConfig";
 import { isLiveBillingEnabled, isStripeConfigured } from "@/lib/subscription";
 import { redactForEntitlement } from "@/lib/paywall";
@@ -75,7 +75,7 @@ export default async function LocationPage({
     config.slug,
     config.newsFilterTerms
   );
-  const [{ beaches: allBeaches, predictionDate }, news, entitled] = await Promise.all([
+  const [{ beaches: allBeaches, predictionDate }, news, access] = await Promise.all([
     loadDashboardData(config),
     newsEnabled
       ? fetchNewsAlerts(getNewsFeedUrls(), newsFilterTerms)
@@ -88,8 +88,10 @@ export default async function LocationPage({
     //
     // This is the first half of the isolation invariant: no paywall flag, no
     // contact with the auth or billing stack at all.
-    features.paywall ? isEntitled() : Promise.resolve(false),
+    features.paywall ? (location === "california" ? accountStatus() : isEntitled().then(entitled => ({ entitled, signedIn: false, state: { kind: "free" as const } }))) : Promise.resolve({ entitled: false, signedIn: false, state: { kind: "free" as const } }),
   ]);
+
+  const { entitled } = access;
 
   // THE SECURITY BOUNDARY. Everything below this line runs on data that has
   // already had the paid half removed, and `beaches` is handed whole to
@@ -113,10 +115,12 @@ export default async function LocationPage({
         fallbackCenter={config.mapFallbackCenter}
         listTopStations={config.listTopStations}
         entitled={entitled}
+        signedIn={access.signedIn}
+        accountState={access.state}
         alertsEnabled={alertsEnabled}
         openForecast={openForecast}
         checkoutReady={isClerkConfigured() && isStripeConfigured() && isPaymentFirstEnabled()}
-        account={<AccountControl location={config.slug} hideAvatar={entitled} />}
+        account={<AccountControl location={config.slug} hideAvatar={access.signedIn} />}
         faq={<FaqAccordion />}
         news={news}
         newsEnabled={newsEnabled}

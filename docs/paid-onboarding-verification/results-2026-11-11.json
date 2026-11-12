@@ -1,0 +1,52 @@
+{
+  "stripeMode": "test",
+  "clerkMode": "development",
+  "databaseBranch": "br-shy-heart-avxtjyd7",
+  "productionChanged": false,
+  "results": [
+    {
+      "plan": "monthly",
+      "session": "cs_test_b0PrMqdnAo2QPFHFLmYOkEwXa6f8Hwex2QG7cjDSKqvX6sLIyxyN5mNKqm",
+      "subscription": "sub_1UaoQi6zec8cCFXoOd2W4uQk",
+      "invoice": "in_1UaoQg6zec8cCFXoDvrI3TMS",
+      "amountPaid": 200,
+      "currency": "usd",
+      "discountAmount": 0,
+      "clerkUser": "user_3LzNxLXKxEHM373YF4VAhTzNFtU",
+      "emailVerified": true,
+      "passwordEnabled": true,
+      "stored": {
+        "clerk_user_id": "user_3LzNxLXKxEHM373YF4VAhTzNFtU",
+        "status": "active",
+        "plan": "monthly",
+        "price_cents": 200,
+        "promo_access_ends_at": null,
+        "promo_redeemed_at": null
+      },
+      "browserReturn": "/california?pro=activated",
+      "proForecastVisible": true
+    },
+    {
+      "plan": "yearly",
+      "session": "cs_test_a0V1NEXGbuv6xVcNO8pAQXSuNYfMDPvgzDgPjV1ZvDYqFiRz7WzCEAOkMW",
+      "subscription": "sub_1UaoTF6zec8cCFXoj7wMgzft",
+      "invoice": "in_1UaoTD6zec8cCFXocMmubeL1",
+      "amountPaid": 2000,
+      "currency": "usd",
+      "discountAmount": 0,
+      "clerkUser": "user_3LzOOIboXQk7JY3KHlzbEoUbRiw",
+      "emailVerified": true,
+      "passwordEnabled": true,
+      "stored": {
+        "clerk_user_id": "user_3LzOOIboXQk7JY3KHlzbEoUbRiw",
+        "status": "active",
+        "plan": "yearly",
+        "price_cents": 2000,
+        "promo_access_ends_at": null,
+        "promo_redeemed_at": null
+      },
+      "browserReturn": "/california?pro=activated",
+      "proForecastVisible": true
+    }
+  ]
+}

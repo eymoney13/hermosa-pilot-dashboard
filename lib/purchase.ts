@@ -1,7 +1,8 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
-import nodemailer from "nodemailer";
+import { proMailer } from "./proMailer";
+import { promoEnabled, reconcilePromo } from "./promoAccess";
 import { purchaseEmail } from "./purchaseEmail";
 import { stripe, subscriptionDb as db, siteUrl, PRO_PLANS, isProPlan, hasLiveSubscription, type ProPlan, type Stripe } from "./subscription";
 import { normalizedEmail, verifiedBuyer, paymentFirstAllowed, paidCheckout } from "./purchasePolicy";
@@ -29,6 +30,8 @@ export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogI
   if (user && await hasLiveSubscription(user.id)) return `${siteUrl()}/california`;
   const paid = await db()`SELECT checkout_session_id FROM pro_subscriptions
     WHERE checkout_email = ${buyerEmail} AND status IN ('active', 'trialing', 'past_due')
+      AND (current_period_end IS NULL OR current_period_end > now())
+      AND (promo_access_ends_at IS NULL OR promo_access_ends_at > now())
     LIMIT 1`;
   // Don't expose another customer's receipt or whether the email is registered.
   if (paid.length) return `${siteUrl()}/pro/recover`;
@@ -86,23 +89,29 @@ export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogI
   if (existing?.status === "complete") return `${siteUrl()}/pro/recover`;
   if (existing?.status === "open" && existing.url) return existing.url;
   if (new Date(attempt.expires_at).getTime() - Date.now() < 31 * 60_000) throw new Error("Please try again after this checkout expires");
+  const history = user ? await db()`SELECT stripe_customer_id, promo_redeemed_at FROM pro_subscriptions WHERE clerk_user_id = ${user.id} ORDER BY updated_at DESC` : [];
+  const customer = history.find(row => row.stripe_customer_id)?.stripe_customer_id;
+  const redeemed = history.some(row => row.promo_redeemed_at);
+  const noCardPromo = promoEnabled() && attempt.plan === "monthly";
   const { cents, interval } = PRO_PLANS[attempt.plan];
   const session = await stripe().checkout.sessions.create({
-    mode: "subscription", ...(buyerEmail ? { customer_email: buyerEmail } : {}), payment_method_types: ["card"],
-    allow_promotion_codes: true,
+    mode: "subscription", ...(customer ? { customer } : buyerEmail ? { customer_email: buyerEmail } : {}), payment_method_types: ["card"],
+    allow_promotion_codes: !noCardPromo || !redeemed,
     // Save a card even when a coupon makes the first annual invoice free.
-    payment_method_collection: "always",
+    payment_method_collection: noCardPromo ? "if_required" : "always",
     expires_at: Math.floor(new Date(attempt.expires_at).getTime() / 1000),
     // Analytics join key only. Shape-checked because it arrives from the form.
     metadata: { flow: "payment_first_v1", plan: attempt.plan, attempt_id: attempt.attempt_id,
+      ...(noCardPromo ? { promo_no_card: "1" } : {}),
       ...(/^[\w$.:-]{1,200}$/.test(rawPosthogId) ? { posthog_distinct_id: rawPosthogId } : {}) },
-    custom_text: { submit: { message: "Renews automatically until canceled. After checkout, activate your account using the same email. Full refund within 7 days of your first purchase; contact ethan@projectneptune.co." } },
+    custom_text: { submit: { message: (noCardPromo ? "Eligible free monthly promos end automatically unless you choose Keep Pro. Paid subscriptions renew until canceled." : "Renews automatically until canceled.") + " After checkout, activate your account using the same email. Full refund within 7 days of your first purchase; contact ethan@projectneptune.co." } },
     subscription_data: { metadata: { flow: "payment_first_v1", plan: attempt.plan } },
     line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: cents,
       recurring: { interval }, product_data: { name: "Neptune Pro" } } }],
     success_url: `${siteUrl()}/pro/activate?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${siteUrl()}/california#sandbox-pro`,
   }, { idempotencyKey: `neptune-purchase-${attempt.attempt_id}` });
+  if (promoEnabled()) await db()`INSERT INTO pro_direct_checkout_reconcile (checkout_session_id) VALUES (${session.id}) ON CONFLICT DO NOTHING`;
   await db()`UPDATE pro_checkout_attempts SET checkout_session_id = ${session.id} WHERE email = ${email} AND attempt_id = ${attempt.attempt_id}`;
   if (!session.url) throw new Error("Checkout is unavailable");
   return session.url;
@@ -119,26 +128,32 @@ export async function syncPurchase(sessionId: string) {
   const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
   const email = session.customer_details?.email;
   if (!subId || !customerId || !email || !isProPlan(session.metadata?.plan)) return null;
-  const sub = await stripe().subscriptions.retrieve(subId);
+  const sub = await reconcilePromo(await stripe().subscriptions.retrieve(subId), session.metadata?.promo_no_card === "1" && (session.amount_total === 0 || session.payment_status === "no_payment_required"), normalizedEmail(email));
   const end = subscriptionPeriodEnd(sub);
   const plan = session.metadata!.plan as ProPlan;
   await db()`INSERT INTO pro_subscriptions
     (clerk_user_id, stripe_customer_id, stripe_subscription_id, status, current_period_end,
-     price_cents, plan, checkout_session_id, checkout_email, stripe_observed_at)
+     price_cents, plan, checkout_session_id, checkout_email, stripe_observed_at, promo_access_ends_at, promo_redeemed_at, ended_at)
     VALUES (NULL, ${customerId}, ${subId}, ${sub.status}, ${end?.toISOString() ?? null},
-      ${PRO_PLANS[plan].cents}, ${plan}, ${session.id}, ${normalizedEmail(email)}, ${observed})
+      ${PRO_PLANS[plan].cents}, ${plan}, ${session.id}, ${normalizedEmail(email)}, ${observed}, ${sub.metadata.promo_no_card === "1" && sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null}, ${sub.metadata.promo_redeemed_at ? new Date(Number(sub.metadata.promo_redeemed_at) * 1000).toISOString() : null}, ${sub.ended_at ? new Date(sub.ended_at * 1000).toISOString() : null})
     ON CONFLICT (stripe_subscription_id) DO UPDATE SET
       status = EXCLUDED.status, current_period_end = EXCLUDED.current_period_end,
+      promo_access_ends_at = EXCLUDED.promo_access_ends_at,
+      promo_redeemed_at = COALESCE(pro_subscriptions.promo_redeemed_at, EXCLUDED.promo_redeemed_at), ended_at = EXCLUDED.ended_at,
       stripe_observed_at = EXCLUDED.stripe_observed_at, updated_at = now()
     WHERE pro_subscriptions.stripe_observed_at <= EXCLUDED.stripe_observed_at`;
   return { sessionId: session.id, email: normalizedEmail(email), subscriptionId: subId,
-    active: sub.status === "active" && !!end && end.getTime() > Date.now() };
+    freeUntil: sub.metadata.promo_no_card === "1" && sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : undefined,
+    active: sub.status === "active" && !!end && end.getTime() > Date.now() && !(sub.metadata.promo_no_card === "1" && sub.cancel_at && sub.cancel_at * 1000 <= Date.now()) };
 }
 export async function refreshPurchaseSubscription(id: string): Promise<void> {
   const observed = new Date().toISOString();
   const sub = await stripe().subscriptions.retrieve(id);
   const end = subscriptionPeriodEnd(sub);
   await db()`UPDATE pro_subscriptions SET status = ${sub.status}, current_period_end = ${end?.toISOString() ?? null},
+    promo_access_ends_at = ${sub.metadata.promo_no_card === "1" && sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null},
+    promo_redeemed_at = COALESCE(promo_redeemed_at, ${sub.metadata.promo_redeemed_at ? new Date(Number(sub.metadata.promo_redeemed_at) * 1000).toISOString() : null}),
+    ended_at = ${sub.ended_at ? new Date(sub.ended_at * 1000).toISOString() : null},
     stripe_observed_at = ${observed}, updated_at = now()
     WHERE stripe_subscription_id = ${id} AND stripe_observed_at <= ${observed}`;
 }
@@ -151,9 +166,12 @@ export async function activatePurchase(sessionId: string): Promise<boolean> {
   const rows = await db()`UPDATE pro_subscriptions SET clerk_user_id = ${user.id}, updated_at = now()
     WHERE checkout_session_id = ${sessionId} AND checkout_email = ${purchase.email}
       AND status = 'active' AND current_period_end > now()
+      AND (promo_access_ends_at IS NULL OR promo_access_ends_at > now())
       AND (clerk_user_id IS NULL OR clerk_user_id = ${user.id})
       AND NOT EXISTS (SELECT 1 FROM pro_subscriptions other
         WHERE other.clerk_user_id = ${user.id} AND other.status IN ('active', 'trialing', 'past_due')
+          AND (other.current_period_end IS NULL OR other.current_period_end > now())
+          AND (other.promo_access_ends_at IS NULL OR other.promo_access_ends_at > now())
           AND other.checkout_session_id IS DISTINCT FROM ${sessionId})
     RETURNING id`;
   return rows.length === 1;
@@ -172,14 +190,16 @@ export async function sendRecovery(email: string, initialOnly = false): Promise<
       AND (recovery_sent_at IS NULL OR recovery_sent_at < now() - interval '10 minutes')
     RETURNING checkout_session_id` as Array<{ checkout_session_id: string }>;
   if (!rows.length) return;
-  const transport = nodemailer.createTransport({service: "gmail", auth: { user: sender, pass: password.replace(/\s+/g, "") }});
+  const transport = proMailer();
   try {
     const client = await clerkClient();
     const existing = await client.users.getUserList({emailAddress: [email], limit: 1});
     const links: string[] = [];
+    let freeUntil: string | undefined;
     for (const row of rows) {
       const purchase = await syncPurchase(row.checkout_session_id);
       if (!purchase?.active || normalizedEmail(purchase.email) !== email) continue;
+      freeUntil = purchase.freeUntil;
       if (existing.data.length) {
         links.push(`${siteUrl()}/sign-in?purchase=${encodeURIComponent(row.checkout_session_id)}`);
       } else {
@@ -201,7 +221,7 @@ export async function sendRecovery(email: string, initialOnly = false): Promise<
     }
     if (!links.length) return;
     await transport.sendMail({ from: {name: "Neptune Pro", address: sender}, to: email,
-      ...purchaseEmail(links, existing.data.length > 0) });
+      ...purchaseEmail(links, existing.data.length > 0, { freeUntil }) });
   } catch (error) {
     await db()`UPDATE pro_subscriptions SET recovery_sent_at = NULL WHERE checkout_email = ${email}`;
     throw error;

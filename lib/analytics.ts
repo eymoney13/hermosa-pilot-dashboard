@@ -9,7 +9,7 @@ import { PRO_PLANS, type ProPlan } from "./proPlans";
 // locked-forecast links only scroll to the card, so the card's own events carry
 // the moment forward; california_bottom means the reader scrolled there alone.
 // This is the product question: what makes someone want Pro?
-export type CtaLocation = "california_bottom" | "header_get_pro" | "list_banner" | "beach_forecast_lock";
+export type CtaLocation = "california_bottom" | "header_get_pro" | "list_banner" | "beach_forecast_lock" | "lapsed_notice";
 
 // A paid feature a free reader tried to open: locked_feature_clicked. Kept out
 // of the purchase funnel on purpose; it is diagnostic, answering which
