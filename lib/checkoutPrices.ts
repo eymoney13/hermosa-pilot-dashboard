@@ -1,4 +1,5 @@
 import "server-only";
+import { CheckoutError } from "./checkoutError";
 import { stripe, PRO_PLANS, type ProPlan, type Stripe } from "./subscription";
 
 // Never fall back to inline prices: coupon product restrictions depend on these
@@ -10,7 +11,7 @@ export async function checkoutPrices(): Promise<Record<ProPlan, string>> {
     yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID,
   };
   for (const id of Object.values(ids)) {
-    if (!id || !/^price_[A-Za-z0-9]+$/.test(id)) throw new Error("Stripe checkout prices are not configured");
+    if (!id || !/^price_[A-Za-z0-9]+$/.test(id)) throw new CheckoutError("configuration", "Stripe checkout prices are not configured");
   }
   const products: string[] = [];
   for (const plan of ["monthly", "yearly"] as const) {
@@ -21,10 +22,10 @@ export async function checkoutPrices(): Promise<Record<ProPlan, string>> {
         price.type !== "recurring" || price.recurring?.interval !== PRO_PLANS[plan].interval ||
         price.recurring.interval_count !== 1 || price.recurring.usage_type !== "licensed" ||
         typeof product === "string" || product.deleted || !product.active) {
-      throw new Error(`Invalid Stripe ${plan} checkout price`);
+      throw new CheckoutError("configuration", `Invalid Stripe ${plan} checkout price`);
     }
     products.push(product.id);
   }
-  if (products[0] === products[1]) throw new Error("Monthly and annual checkout require separate Stripe products");
+  if (products[0] === products[1]) throw new CheckoutError("configuration", "Monthly and annual checkout require separate Stripe products");
   return ids as Record<ProPlan, string>;
 }

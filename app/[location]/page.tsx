@@ -1,3 +1,4 @@
+import { promoEnabled } from "@/lib/promoAccess";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -120,6 +121,7 @@ export default async function LocationPage({
         alertsEnabled={alertsEnabled}
         openForecast={openForecast}
         checkoutReady={isClerkConfigured() && isStripeConfigured() && isPaymentFirstEnabled()}
+        promoReady={promoEnabled()}
         account={<AccountControl location={config.slug} hideAvatar={access.signedIn} />}
         faq={<FaqAccordion />}
         news={news}
