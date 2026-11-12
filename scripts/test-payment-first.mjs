@@ -36,8 +36,15 @@ const sessions = new Map(), subscriptions = new Map(), keys = new Map(), mails =
 let creations = 0;
 let smtpFails = false;
 const invitations = [], knownEmails = new Set();
+const prices = new Map(['monthly','yearly'].map(plan => [`price_${plan}`, {
+  id:`price_${plan}`,active:true,livemode:false,currency:'usd',unit_amount:plan==='monthly'?200:2000,
+  type:'recurring',recurring:{interval:plan==='monthly'?'month':'year',interval_count:1,usage_type:'licensed'},
+  product:{id:`prod_${plan}`,active:true},
+}]));
 const stripe = {
+  prices: {retrieve:async id=>structuredClone(prices.get(id))},
   checkout: {sessions: {
+    listLineItems: async id => ({data:sessions.get(id).line_items.map(i=>({...i,price:{id:i.price}})),has_more:false}),
     retrieve: async id => { if (!sessions.has(id)) throw Object.assign(Error('missing'), {code:'resource_missing',param:'id'}); return structuredClone(sessions.get(id)); },
     expire: async id => { const session=sessions.get(id); if (session.status !== 'open') throw Error('not open'); session.status='expired'; return structuredClone(session); },
     create: async (params, opts = {}) => {
@@ -74,7 +81,7 @@ function load(file) {
   vm.runInNewContext(`(function(require,module,exports,process){${code}\n})`, {console,Date,Set,crypto,URL})(req,testModule,testModule.exports,process);
   return testModule.exports;
 }
-Object.assign(process.env, {STRIPE_SECRET_KEY:'sk_test_fake', DATABASE_URL:'memory', NEPTUNE_PAYMENT_FIRST_ENABLED:'true', NEPTUNE_TEST_CHECKOUT_ENABLED:'true', NEXT_PUBLIC_SITE_URL:'http://localhost:3000', PRO_ACTIVATION_EMAIL_FROM:'sender@example.com', GMAIL_APP_PASSWORD:'fake'});
+Object.assign(process.env, {STRIPE_SECRET_KEY:'sk_test_fake', STRIPE_PRO_MONTHLY_PRICE_ID:'price_monthly', STRIPE_PRO_YEARLY_PRICE_ID:'price_yearly', DATABASE_URL:'memory', NEPTUNE_PAYMENT_FIRST_ENABLED:'true', NEPTUNE_TEST_CHECKOUT_ENABLED:'true', NEXT_PUBLIC_SITE_URL:'http://localhost:3000', PRO_ACTIVATION_EMAIL_FROM:'sender@example.com', GMAIL_APP_PASSWORD:'fake'});
 delete process.env.NEPTUNE_LIVE_BILLING_ENABLED;
 const policy = load('lib/purchasePolicy.ts'), purchase = load('lib/purchase.ts'), billing = load('lib/subscription.ts');
 let checks = 0;
@@ -95,8 +102,8 @@ await purchase.startPurchase('yearly','annual-buyer@example.com');
 const annual = sessions.get('cs_test_3');
 check('switching monthly to annual expires the old checkout and bills $20/year', () => {
   assert.equal(oldMonthly.status,'expired');
-  assert.equal(annual.line_items[0].price_data.unit_amount,2000);
-  assert.equal(annual.line_items[0].price_data.recurring.interval,'year');
+  assert.equal(annual.line_items[0].price,'price_yearly');
+  assert.equal(prices.get(annual.line_items[0].price).recurring.interval,'year');
   assert.equal(annual.metadata.plan,'yearly');
 });
 check('both plans offer promo codes and always collect a renewal card', () => {
@@ -115,7 +122,7 @@ const annualRetry = await purchase.startPurchase('yearly','annual-buyer@example.
 check('annual retries reuse the same checkout', () => assert.equal(annualRetry, annual.url));
 const session = sessions.get('cs_test_1');
 check('checkout is anonymous, fixed price, and returns to activation', () => {
-  assert.equal(session.client_reference_id,undefined); assert.equal(session.line_items[0].price_data.unit_amount,200);
+  assert.equal(session.client_reference_id,undefined); assert.equal(session.line_items[0].price,'price_monthly');
   assert.ok(session.success_url.includes('/pro/activate?session_id={CHECKOUT_SESSION_ID}'));
 });
 assert.equal(await purchase.syncPurchase('cs_test_1'),null);
@@ -277,7 +284,7 @@ check('direct annual checkout lets Stripe collect email and reuses browser attem
   const direct = sessions.get(directId);
   assert.equal(direct.customer_email, undefined);
   assert.equal(direct.allow_promotion_codes, true);
-  assert.equal(direct.line_items[0].price_data.recurring.interval, 'year');
+  assert.equal(prices.get(direct.line_items[0].price).recurring.interval, 'year');
 });
 const directMonthlyUrl = await purchase.startPurchase('monthly', '', '', browserToken);
 check('changing direct checkout plan expires the old session and selects monthly', () => {
@@ -285,7 +292,7 @@ check('changing direct checkout plan expires the old session and selects monthly
   const monthly = sessions.get(directMonthlyUrl.split('/').at(-1));
   assert.equal(monthly.allow_promotion_codes, true);
   assert.equal(monthly.customer_email, undefined);
-  assert.equal(monthly.line_items[0].price_data.recurring.interval, 'month');
+  assert.equal(prices.get(monthly.line_items[0].price).recurring.interval, 'month');
 });
 const directMonthlyId = directMonthlyUrl.split('/').at(-1);
 paid(directMonthlyId, 'stripe-collected@example.com', 'sub_direct');
@@ -533,5 +540,33 @@ for (const [paidPlan,cents] of [['monthly',200],['yearly',2000]]) {
  assert.equal((await billing.getAccountState(user.id)).kind,'pro');
  check(`paid ${paidPlan} without a code requires verified ownership and grants paid access without promo expiry`,()=>{});
 }
+const priceConfig = load('lib/checkoutPrices.ts');
+const originalMonthly = structuredClone(prices.get('price_monthly'));
+for (const [label,patch] of [
+ ['inactive',{active:false}],['live/test mismatch',{livemode:true}],['wrong currency',{currency:'eur'}],
+ ['wrong amount',{unit_amount:201}],['wrong interval',{recurring:{interval:'year',interval_count:1,usage_type:'licensed'}}],
+ ['metered',{recurring:{interval:'month',interval_count:1,usage_type:'metered'}}],
+ ['inactive product',{product:{id:'prod_monthly',active:false}}],['deleted product',{product:{id:'prod_monthly',deleted:true}}],
+ ['shared product',{product:{id:'prod_yearly',active:true}}],
+]) {
+ prices.set('price_monthly',{...originalMonthly,...patch});
+ await assert.rejects(()=>priceConfig.checkoutPrices());
+ check(`fixed prices reject ${label}`,()=>{});
+}
+prices.set('price_monthly',originalMonthly);
+delete process.env.STRIPE_PRO_MONTHLY_PRICE_ID;
+await assert.rejects(()=>priceConfig.checkoutPrices(),/not configured/);
+process.env.STRIPE_PRO_MONTHLY_PRICE_ID='price_monthly';
+check('fixed prices require explicit configuration without inline fallback',()=>{});
+user=null;
+const legacyUrl=await purchase.startPurchase('monthly','legacy-open-price@example.test');
+const legacySession=[...sessions.values()].find(s=>s.url===legacyUrl);
+legacySession.line_items=[{quantity:1,price:'price_legacy_inline'}];
+const newUrl=await purchase.startPurchase('monthly','legacy-open-price@example.test');
+assert.notEqual(newUrl,legacyUrl);assert.equal(legacySession.status,'expired');
+const replacement=[...sessions.values()].find(s=>s.url===newUrl);
+assert.equal(replacement.line_items[0].price,'price_monthly');
+assert.equal(replacement.line_items[0].price_data,undefined);
+check('legacy open checkout expires and is replaced with the restricted fixed product',()=>{});
 await pg.close();
 console.log(`Passed ${checks} payment-flow checks.`);

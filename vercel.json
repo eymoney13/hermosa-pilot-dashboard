@@ -7,7 +7,8 @@
       "codex/california-rollout": false,
       "codex/california-public-launch": false,
       "codex/california-redirect-fix": false,
-      "codex/promo-onboarding-pr": false
+      "codex/promo-onboarding-pr": false,
+      "codex/stripe-fixed-prices": false
     }
   },
   "crons": [
