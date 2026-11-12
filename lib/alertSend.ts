@@ -287,6 +287,7 @@ export async function sendAlertsForLocation(
         WHERE paid.email = s.email AND paid.location = 'sandbox'
           AND px.station_code = x.station_code
           AND ((d.free_enabled AND d.clerk_user_id IS NULL) OR (p.status IN ('active','trialing','past_due')
+          AND (p.promo_access_ends_at IS NULL OR p.promo_access_ends_at > now())
           AND (p.current_period_end IS NULL OR p.current_period_end > now())))
       )
       AND NOT EXISTS (

@@ -91,16 +91,18 @@ const LIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
 export interface SubscriptionRow {
   status: string;
   current_period_end: string | null;
+  promo_access_ends_at?: string | null;
 }
 
 /** Whether a stored row still grants access right now. */
 export function entitlementFrom(row: SubscriptionRow | undefined): boolean {
   if (!row || !LIVE_STATUSES.has(row.status)) return false;
+  if (row.promo_access_ends_at && new Date(row.promo_access_ends_at).getTime() <= Date.now()) return false;
   // A cancellation mid-month leaves the row live until the period it was paid
   // for runs out. Stripe keeps status "active" until then and only flips it at
   // the boundary, so this is a backstop for a webhook that never arrived
   // rather than the normal path.
-  if (row.current_period_end && new Date(row.current_period_end) < new Date()) {
+  if (row.current_period_end && new Date(row.current_period_end).getTime() <= Date.now()) {
     return false;
   }
   return true;
@@ -109,7 +111,7 @@ export function entitlementFrom(row: SubscriptionRow | undefined): boolean {
 /** Does this account hold a live subscription? */
 export async function hasLiveSubscription(clerkUserId: string): Promise<boolean> {
   const rows = (await subscriptionDb()`
-    SELECT status, current_period_end
+    SELECT status, current_period_end, promo_access_ends_at
       FROM pro_subscriptions
      WHERE clerk_user_id = ${clerkUserId}
   `) as SubscriptionRow[];
@@ -256,19 +258,6 @@ export async function getStripeCustomerId(
   return rows[0]?.stripe_customer_id ?? null;
 }
 
-/** Most relevant subscription for the signed-in account's status page. */
-export async function getAccountSubscription(clerkUserId: string): Promise<(SubscriptionRow & { plan: string | null }) | null> {
-  const rows = await subscriptionDb()`
-    SELECT status, current_period_end, plan FROM pro_subscriptions
-    WHERE clerk_user_id = ${clerkUserId}
-    ORDER BY CASE WHEN status IN ('active', 'trialing', 'past_due')
-      AND (current_period_end IS NULL OR current_period_end >= now()) THEN 0 ELSE 1 END,
-      updated_at DESC
-    LIMIT 1
-  `;
-  return rows[0] as (SubscriptionRow & { plan: string | null }) | undefined ?? null;
-}
-
 /**
  * A Stripe-hosted session where someone can see their invoices, change their
  * card and cancel.
@@ -301,3 +290,27 @@ export function constructWebhookEvent(
 }
 
 export type { Stripe };
+
+export interface AccountSubscription extends SubscriptionRow {
+  stripe_subscription_id: string;
+  stripe_customer_id: string | null;
+  plan: ProPlan;
+  ended_at: string | null;
+  promo_redeemed_at: string | null;
+}
+export async function getAccountSubscription(clerkUserId: string): Promise<AccountSubscription | null> {
+  const rows = await subscriptionDb()`SELECT status, current_period_end, promo_access_ends_at, ended_at, promo_redeemed_at,
+    stripe_subscription_id, stripe_customer_id, plan FROM pro_subscriptions WHERE clerk_user_id = ${clerkUserId}
+    ORDER BY CASE WHEN status IN ('active','trialing','past_due') AND (current_period_end IS NULL OR current_period_end > now())
+      AND (promo_access_ends_at IS NULL OR promo_access_ends_at > now()) THEN 0 ELSE 1 END, updated_at DESC LIMIT 1`;
+  return (rows[0] as AccountSubscription | undefined) ?? null;
+}
+export type AccountState = { kind: "pro" | "promo" | "lapsed" | "free"; promoEndsAt?: string; endedAt?: string; promo?: boolean; plan?: ProPlan };
+export async function getAccountState(clerkUserId: string): Promise<AccountState> {
+  const row = await getAccountSubscription(clerkUserId);
+  if (!row) return { kind: "free" };
+  if (entitlementFrom(row)) return { kind: row.promo_access_ends_at ? "promo" : "pro", promoEndsAt: row.promo_access_ends_at ?? undefined, plan: row.plan };
+  const end = row.ended_at ?? row.promo_access_ends_at ?? row.current_period_end;
+  if (end && new Date(end).getTime() <= Date.now() && new Date(end).getTime() > Date.now() - 60 * 86400000) return { kind: "lapsed", endedAt: end, promo: !!row.promo_redeemed_at && !!row.promo_access_ends_at, plan: row.plan };
+  return { kind: "free" };
+}

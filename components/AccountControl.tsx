@@ -1,3 +1,4 @@
+import { isPaymentFirstEnabled } from "@/lib/purchase";
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
@@ -55,12 +56,12 @@ export default async function AccountControl({
 
   return (
     <div className="flex items-center gap-3">
-      {customerId && (
+      {(customerId || (isStripeConfigured() && isPaymentFirstEnabled())) && (
         <Link
           href={`/pro/manage?from=${encodeURIComponent(`/${location}`)}`}
           className="text-xs text-gray-500 underline-offset-2 transition-colors hover:text-gray-800 hover:underline"
         >
-          Manage subscription
+          Account
         </Link>
       )}
       {!hideAvatar && <UserButton />}

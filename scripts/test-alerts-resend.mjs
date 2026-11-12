@@ -12,7 +12,7 @@ import {PGlite} from '@electric-sql/pglite';
 process.env.DATABASE_URL='postgres://pglite/test';
 
 const pg = new PGlite();
-for (const f of ['alerts-schema.sql','subscriptions-schema.sql','payment-first-schema.sql',
+for (const f of ['alerts-schema.sql','subscriptions-schema.sql','payment-first-schema.sql','promo-lifecycle-schema.sql',
                  'sandbox-alerts-schema.sql','california-free-alerts-schema.sql',
                  'california-alerts-schema.sql','alert-deliveries-schema.sql']) {
   await pg.exec(readFileSync(`scripts/${f}`,'utf8'));

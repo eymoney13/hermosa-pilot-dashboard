@@ -28,11 +28,13 @@ export default async function SignInPage({searchParams}: {searchParams: Promise<
 
   const purchaseId = (await searchParams).purchase ?? (await cookies()).get("neptune_activation")?.value;
   let target = "/california";
-  try { if (purchaseId && (await syncPurchase(purchaseId))?.active) target = `/pro/activate?session_id=${encodeURIComponent(purchaseId)}`; } catch { /* Invalid receipt never grants access. */ }
+  let receipt = null;
+  try { if (purchaseId) receipt = await syncPurchase(purchaseId); } catch { /* Invalid receipt never grants access. */ }
+  if (receipt?.active) target = `/pro/activate?session_id=${encodeURIComponent(purchaseId!)}`;
   if (await currentUser()) redirect(target);
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-16">
-      <SignIn routing="hash" forceRedirectUrl={target} signUpUrl="/pro/recover" />
+      <SignIn routing="hash" initialValues={receipt?.active ? { emailAddress: receipt.email } : undefined} forceRedirectUrl={target} signUpUrl={receipt?.active ? `/sign-up?purchase=${encodeURIComponent(purchaseId!)}` : "/pro/recover"} />
     </main>
   );
 }

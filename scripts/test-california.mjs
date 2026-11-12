@@ -4,7 +4,7 @@ import ts from 'typescript';
 import vm from 'node:vm';
 import {PGlite} from '@electric-sql/pglite';
 const pg=new PGlite();
-for(const name of ['alerts','subscriptions','payment-first','sandbox-alerts','alert-deliveries'])await pg.exec(readFileSync(`scripts/${name}-schema.sql`,'utf8'));
+for(const name of ['alerts','subscriptions','payment-first','promo-lifecycle','sandbox-alerts','alert-deliveries'])await pg.exec(readFileSync(`scripts/${name}-schema.sql`,'utf8'));
 await pg.exec(`INSERT INTO alert_subscribers(email,location) VALUES ('original@example.com','southbay'); INSERT INTO alert_subscriptions VALUES (1,'A',now()),(1,'B',now());`);
 const before=(await pg.query('SELECT * FROM alert_subscribers')).rows;
 await pg.exec(readFileSync('scripts/california-free-alerts-schema.sql','utf8'));
@@ -37,6 +37,8 @@ date='2026-09-22';await legacy();check('grandfathered free high resumes after Pr
 await pg.exec("UPDATE pro_subscriptions SET status='active'");date='2026-09-23';beaches[0].status='Normal';await paid();check('upgrade preserves clear-up eligibility after a legacy high',()=>{assert.equal(mails.length,4);assert.match(mails[3][1],/back to low/);});
 beaches[1].status='Not recommended';await legacy();check('non-overlapping original free beach remains covered during Pro',()=>assert.equal(mails.length,5));
 const aliases=sender.alertEnabledLocations().map(c=>c.slug);check('cron schedules the Pro dataset once',()=>{assert.equal(aliases.filter(s=>s==='sandbox'||s==='california').length,1);});
+await pg.exec("UPDATE pro_subscriptions SET status='active', promo_access_ends_at=now()-interval '1 second'");
+date='2026-09-24';beaches[0].status='Not recommended';const beforeExpiry=mails.length;await paid();assert.equal(mails.length,beforeExpiry);await legacy();check('expired promo stops Pro mail and releases overlapping grandfathered alerts',()=>assert.equal(mails.length,beforeExpiry+1));
 await pg.exec('DELETE FROM alert_subscribers WHERE id=1');assert.equal((await pg.query('SELECT count(*)::int AS n FROM legacy_alert_grants')).rows[0].n,0);check('existing unsubscribe deletion also removes legacy grants',()=>{});
 const storage=load('lib/sandboxAlerts.ts',{'server-only':{},'@neondatabase/serverless':{neon:()=>sql},'./alerts':{normalizeEmail:s=>s.toLowerCase(),isValidEmail:()=>true}});
 const stations=await storage.listAlertStations('original@example.com','california');check('California reads existing Pro follow records without migration',()=>assert.equal(stations[0],'A'));

@@ -19,6 +19,7 @@ export async function sendSandboxAlerts(beaches: BeachData[], date: string, dryR
     WHERE s.location = 'sandbox' AND ((d.free_enabled AND d.clerk_user_id IS NULL) OR EXISTS (
       SELECT 1 FROM pro_subscriptions p WHERE p.clerk_user_id = d.clerk_user_id
       AND p.status IN ('active','trialing','past_due')
+      AND (p.promo_access_ends_at IS NULL OR p.promo_access_ends_at > now())
       AND (p.current_period_end IS NULL OR p.current_period_end > now())
     )) GROUP BY s.id, d.states, d.clerk_user_id
   `;

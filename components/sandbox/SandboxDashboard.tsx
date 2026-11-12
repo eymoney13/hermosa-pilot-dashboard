@@ -4,6 +4,8 @@ import SandboxSupportLinks from "@/components/sandbox/SandboxSupportLinks";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import posthog from "posthog-js";
 import Link from "next/link";
+import ProLapsedNotice from "./ProLapsedNotice";
+import type { AccountState } from "@/lib/subscription";
 import { UserButton } from "@clerk/nextjs";
 import { ArrowLeft, ArrowRight, ChevronRight, List, Map, Waves } from "lucide-react";
 import { formatMonthDayYear, orderForList, STATUS_BAND, type BeachData } from "@/lib/data";
@@ -26,12 +28,14 @@ import s from "./SandboxDashboard.module.css";
 const ORANGE_COUNTY_STATIONS = ["OSB04", "0", "BNB05", "DSB4Z"];
 const ORANGE_COUNTY_ADVISORY = { label: "OC Beach Info", href: "https://ocbeachinfo.com/" };
 
-export default function SandboxDashboard({ beaches, predictionDate, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, openForecast = false, account, faq, news, newsEnabled, advisory }: {
+export default function SandboxDashboard({ beaches, predictionDate, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, openForecast = false, signedIn = entitled, accountState, account, faq, news, newsEnabled, advisory }: {
   beaches: BeachData[];
   predictionDate: string | null;
   fallbackCenter: [number, number];
   listTopStations?: string[];
   entitled: boolean;
+  signedIn?: boolean;
+  accountState?: AccountState;
   alertsEnabled: boolean;
   checkoutReady: boolean;
   openForecast?: boolean;
@@ -100,9 +104,10 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
             page_context: active ? "beach_page" : view,
             ...(active ? beachProperties(active, "southbay") : {}),
           });
-        }}>Get Pro</a>}{entitled && <UserButton />}<SandboxMenu account={account} /></div>
+        }}>Get Pro</a>}{signedIn && <UserButton />}<SandboxMenu account={account} /></div>
       </header>
       <div className={s.content}>
+        {accountState?.kind === "lapsed" && accountState.endedAt && <ProLapsedNotice endedAt={accountState.endedAt} promo={accountState.promo} onInterest={() => setProMoment("lapsed_notice")} properties={{ page_context: active ? "beach_page" : view, ...(active ? beachProperties(active, "southbay") : {}) }} />}
         {(view === "map" || view === "list") ? (
           <section className={s.mapIntroduction} aria-label="Beach water quality forecast">
             <h1>Beach water quality.<br /><span>Predicted like the weather.</span></h1>

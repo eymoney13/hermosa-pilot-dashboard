@@ -6,7 +6,8 @@
       "codex/pro-launch-followup": false,
       "codex/california-rollout": false,
       "codex/california-public-launch": false,
-      "codex/california-redirect-fix": false
+      "codex/california-redirect-fix": false,
+      "codex/promo-onboarding-pr": false
     }
   },
   "crons": [
@@ -21,6 +22,10 @@
     {
       "path": "/api/analytics/stripe-sync",
       "schedule": "30 14 * * *"
+    },
+    {
+      "path": "/api/pro/lifecycle",
+      "schedule": "0 16 * * *"
     }
   ]
 }

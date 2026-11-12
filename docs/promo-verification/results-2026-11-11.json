@@ -1,0 +1,468 @@
+{
+  "runId": "promo-test-1794449561748",
+  "migration": {
+    "branch": "br-shy-heart-avxtjyd7",
+    "name": "promo-no-card-verification-2026-11-11",
+    "schemaOnly": true,
+    "initialSubscriptions": 0,
+    "initialAlertSubscribers": 0,
+    "migrationRuns": 3,
+    "legacyFixtureRowsPreserved": true,
+    "tables": [
+      "pro_checkout_attempts",
+      "pro_direct_checkout_reconcile",
+      "pro_email_preferences",
+      "pro_lifecycle_delivery",
+      "pro_promo_operation",
+      "pro_promo_redemptions",
+      "pro_subscriptions",
+      "pro_waitlist"
+    ],
+    "productionTouched": false,
+    "testOnlyHelperRerunPassed": true
+  },
+  "scenarios": {
+    "expiry": {
+      "clock": "clock_1UanVZ6zec8cCFXo5uiM3T4U",
+      "customer": "cus_Vc1YnezgVb54F0",
+      "session": "cs_test_b0nWvvq3hYgdSHUAgm62nol9CeqLE7bidjW8A1b62AZRvmMvDMVDIkHXpq",
+      "subscription": "sub_1UanWK6zec8cCFXoJYue2UrA",
+      "promoEnd": "2026-12-12T02:13:01.000Z",
+      "status": "canceled",
+      "invoices": [
+        {
+          "id": "in_1UanWJ6zec8cCFXo62cfHG1g",
+          "status": "paid",
+          "amountDue": 0,
+          "amountPaid": 0,
+          "billingReason": "subscription_create",
+          "periodStart": 1794449581,
+          "periodEnd": 1794449581,
+          "linePeriods": [
+            {
+              "amount": 200,
+              "start": 1794449581,
+              "end": 1797041581
+            }
+          ],
+          "paymentIntent": [],
+          "attemptCount": 0
+        }
+      ],
+      "proAlertsStopped": true
+    },
+    "keep": {
+      "clock": "clock_1UanYZ6zec8cCFXoIpHmuEKL",
+      "customer": "cus_Vc1bvlVyP6MegA",
+      "session": "cs_test_b02tzkF66eQgpGvZC4Ce5eVo5lmaUhu2rlfZktPUytPZPKG8sMbxtOBjGh",
+      "subscription": "sub_1UanZ86zec8cCFXoYr4E9vro",
+      "setupSession": "cs_test_c0HQD0la5vyIuvxRuZg3nJd6RW38lCN6f27t0N9OZZuAJqlSDjMWQJDIiL",
+      "promoEnd": "2026-12-12T02:16:07.000Z",
+      "status": "active",
+      "invoices": [
+        {
+          "id": "in_1Uanbf6zec8cCFXonZZg4ZNA",
+          "status": "paid",
+          "amountDue": 200,
+          "amountPaid": 200,
+          "billingReason": "subscription_cycle",
+          "periodStart": 1794449767,
+          "periodEnd": 1797041767,
+          "linePeriods": [
+            {
+              "amount": 200,
+              "start": 1797041767,
+              "end": 1799720167
+            }
+          ],
+          "paymentIntent": [
+            "pi_3UancP6zec8cCFXo0uUphxab"
+          ],
+          "attemptCount": 1
+        },
+        {
+          "id": "in_1UanZ86zec8cCFXoLhqSiYi9",
+          "status": "paid",
+          "amountDue": 0,
+          "amountPaid": 0,
+          "billingReason": "subscription_create",
+          "periodStart": 1794449767,
+          "periodEnd": 1794449767,
+          "linePeriods": [
+            {
+              "amount": 200,
+              "start": 1794449767,
+              "end": 1797041767
+            }
+          ],
+          "paymentIntent": [],
+          "attemptCount": 0
+        }
+      ],
+      "firstRenewalPayment": {
+        "id": "pi_3UancP6zec8cCFXo0uUphxab",
+        "status": "succeeded",
+        "amountReceived": 200,
+        "currency": "usd"
+      }
+    },
+    "late": {
+      "clock": "clock_1Uanfs6zec8cCFXoFEEtTWv5",
+      "customer": "cus_Vc1jUMJ1mSi3OR",
+      "session": "cs_test_b04Pr4uDsGVbQvnL753ED9pg7IvkldpaQGQzeuxC7nkBTN3NL4MdDZFRPU",
+      "subscription": "sub_1Uangc6zec8cCFXothCSsFQJ",
+      "setupSession": "cs_test_c0ZjLqddtP2WteKC9WcI3jVxTgmei90i3kvR8pM81hTA0N5I6uQYmG1S2M",
+      "promoEnd": "2026-12-12T02:23:40.000Z",
+      "status": "canceled",
+      "invoices": [
+        {
+          "id": "in_1Uangb6zec8cCFXo3V4jtyIZ",
+          "status": "paid",
+          "amountDue": 0,
+          "amountPaid": 0,
+          "billingReason": "subscription_create",
+          "periodStart": 1794450220,
+          "periodEnd": 1794450220,
+          "linePeriods": [
+            {
+              "amount": 200,
+              "start": 1794450220,
+              "end": 1797042220
+            }
+          ],
+          "paymentIntent": [],
+          "attemptCount": 0
+        }
+      ],
+      "proAlertsStopped": true
+    }
+  },
+  "checks": [
+    {
+      "name": "expiry: real test Checkout created without mandatory card collection"
+    },
+    {
+      "name": "expiry: no-card checkout, scheduled expiry, activation and signed webhook replay",
+      "subscription": "sub_1UanWK6zec8cCFXoJYue2UrA",
+      "deadline": "2026-12-12T02:13:01.000Z"
+    },
+    {
+      "name": "expiry: automatic expiry cancels without any paid invoice or Pro entitlement",
+      "invoices": [
+        {
+          "id": "in_1UanWJ6zec8cCFXo62cfHG1g",
+          "status": "paid",
+          "amountDue": 0,
+          "amountPaid": 0,
+          "billingReason": "subscription_create",
+          "periodStart": 1794449581,
+          "periodEnd": 1794449581,
+          "paymentIntent": [],
+          "attemptCount": 0
+        }
+      ]
+    },
+    {
+      "name": "keep: real test Checkout created without mandatory card collection"
+    },
+    {
+      "name": "keep: no-card checkout, scheduled expiry, activation and signed webhook replay",
+      "subscription": "sub_1UanZ86zec8cCFXoYr4E9vro",
+      "deadline": "2026-12-12T02:16:07.000Z"
+    },
+    {
+      "name": "keep: actual setup-only Checkout created, no immediate invoice payment"
+    },
+    {
+      "name": "keep: Keep Pro clears cancellation, preserves original renewal date, no setup purchase event"
+    },
+    {
+      "name": "keep: first renewal is a paid $2 USD invoice at the original promo deadline",
+      "invoice": "in_1Uanbf6zec8cCFXonZZg4ZNA",
+      "amountPaid": 200,
+      "periodStart": "2026-12-12T02:16:07.000Z",
+      "nextPeriodEnd": "2027-01-12T02:16:07.000Z"
+    },
+    {
+      "name": "expiry: automatic expiry cancels without any paid invoice or Pro entitlement",
+      "invoices": [
+        {
+          "id": "in_1UanWJ6zec8cCFXo62cfHG1g",
+          "status": "paid",
+          "amountDue": 0,
+          "amountPaid": 0,
+          "billingReason": "subscription_create",
+          "periodStart": 1794449581,
+          "periodEnd": 1794449581,
+          "linePeriods": [
+            {
+              "amount": 200,
+              "start": 1794449581,
+              "end": 1797041581
+            }
+          ],
+          "paymentIntent": [],
+          "attemptCount": 0
+        }
+      ]
+    },
+    {
+      "name": "expiry: lifecycle delivery and replay at simulated time",
+      "time": "2026-12-19T02:15:01.000Z",
+      "subjects": [
+        "Ready for another beach day with Neptune Pro?"
+      ]
+    },
+    {
+      "name": "late: real test Checkout created without mandatory card collection"
+    },
+    {
+      "name": "late: no-card checkout, scheduled expiry, activation and signed webhook replay",
+      "subscription": "sub_1Uangc6zec8cCFXothCSsFQJ",
+      "deadline": "2026-12-12T02:23:40.000Z"
+    },
+    {
+      "name": "late: lifecycle delivery and replay at simulated time",
+      "time": "2026-12-10T02:23:40.000Z",
+      "subjects": [
+        "Your free Neptune Pro ends December 11"
+      ]
+    },
+    {
+      "name": "late: actual setup-only Checkout created, no immediate invoice payment"
+    },
+    {
+      "name": "late: automatic expiry cancels without any paid invoice or Pro entitlement",
+      "invoices": [
+        {
+          "id": "in_1Uangb6zec8cCFXo3V4jtyIZ",
+          "status": "paid",
+          "amountDue": 0,
+          "amountPaid": 0,
+          "billingReason": "subscription_create",
+          "periodStart": 1794450220,
+          "periodEnd": 1794450220,
+          "linePeriods": [
+            {
+              "amount": 200,
+              "start": 1794450220,
+              "end": 1797042220
+            }
+          ],
+          "paymentIntent": [],
+          "attemptCount": 0
+        }
+      ]
+    },
+    {
+      "name": "late: setup completed after expiry does not resume subscription or create a charge"
+    },
+    {
+      "name": "late: automatic expiry cancels without any paid invoice or Pro entitlement",
+      "invoices": [
+        {
+          "id": "in_1Uangb6zec8cCFXo3V4jtyIZ",
+          "status": "paid",
+          "amountDue": 0,
+          "amountPaid": 0,
+          "billingReason": "subscription_create",
+          "periodStart": 1794450220,
+          "periodEnd": 1794450220,
+          "linePeriods": [
+            {
+              "amount": 200,
+              "start": 1794450220,
+              "end": 1797042220
+            }
+          ],
+          "paymentIntent": [],
+          "attemptCount": 0
+        }
+      ]
+    },
+    {
+      "name": "keep: first renewal is a paid $2 USD invoice at the original promo deadline",
+      "invoice": "in_1Uanbf6zec8cCFXonZZg4ZNA",
+      "amountPaid": 200,
+      "periodStart": "2026-12-12T02:16:07.000Z",
+      "nextPeriodEnd": "2027-01-12T02:16:07.000Z"
+    },
+    {
+      "name": "expiry: automatic expiry cancels without any paid invoice or Pro entitlement",
+      "invoices": [
+        {
+          "id": "in_1UanWJ6zec8cCFXo62cfHG1g",
+          "status": "paid",
+          "amountDue": 0,
+          "amountPaid": 0,
+          "billingReason": "subscription_create",
+          "periodStart": 1794449581,
+          "periodEnd": 1794449581,
+          "linePeriods": [
+            {
+              "amount": 200,
+              "start": 1794449581,
+              "end": 1797041581
+            }
+          ],
+          "paymentIntent": [],
+          "attemptCount": 0
+        }
+      ]
+    }
+  ],
+  "localMailSubjects": [
+    {
+      "scenario": "expiry",
+      "subject": "Welcome to Neptune Pro: activate your account"
+    },
+    {
+      "scenario": "keep",
+      "subject": "Welcome to Neptune Pro: activate your account"
+    },
+    {
+      "scenario": "expiry",
+      "subject": "Your Neptune Pro access has ended"
+    },
+    {
+      "scenario": "expiry",
+      "subject": "Ready for another beach day with Neptune Pro?"
+    },
+    {
+      "scenario": "late",
+      "subject": "Welcome to Neptune Pro: activate your account"
+    },
+    {
+      "scenario": "late",
+      "subject": "Your free Neptune Pro ends December 11"
+    },
+    {
+      "scenario": "late",
+      "subject": "Your Neptune Pro access has ended"
+    }
+  ],
+  "analytics": [
+    {
+      "event": "payment_succeeded",
+      "distinctId": "promo-test-1794449561748-expiry-browser",
+      "dedupeKey": "cs_test_b0nWvvq3hYgdSHUAgm62nol9CeqLE7bidjW8A1b62AZRvmMvDMVDIkHXpq",
+      "properties": {
+        "plan": "monthly",
+        "price": 0,
+        "board_location": "California",
+        "amount_cents": 0,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 200,
+        "discount_code_used": true,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "distinctId": "promo-test-1794449561748-keep-browser",
+      "dedupeKey": "cs_test_b02tzkF66eQgpGvZC4Ce5eVo5lmaUhu2rlfZktPUytPZPKG8sMbxtOBjGh",
+      "properties": {
+        "plan": "monthly",
+        "price": 0,
+        "board_location": "California",
+        "amount_cents": 0,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 200,
+        "discount_code_used": true,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "distinctId": "promo-test-1794449561748-keep-browser",
+      "dedupeKey": "cs_test_b02tzkF66eQgpGvZC4Ce5eVo5lmaUhu2rlfZktPUytPZPKG8sMbxtOBjGh",
+      "properties": {
+        "plan": "monthly",
+        "price": 0,
+        "board_location": "California",
+        "amount_cents": 0,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 200,
+        "discount_code_used": true,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "distinctId": "promo-test-1794449561748-keep-browser",
+      "dedupeKey": "cs_test_b02tzkF66eQgpGvZC4Ce5eVo5lmaUhu2rlfZktPUytPZPKG8sMbxtOBjGh",
+      "properties": {
+        "plan": "monthly",
+        "price": 0,
+        "board_location": "California",
+        "amount_cents": 0,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 200,
+        "discount_code_used": true,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "distinctId": "promo-test-1794449561748-keep-browser",
+      "dedupeKey": "cs_test_b02tzkF66eQgpGvZC4Ce5eVo5lmaUhu2rlfZktPUytPZPKG8sMbxtOBjGh",
+      "properties": {
+        "plan": "monthly",
+        "price": 0,
+        "board_location": "California",
+        "amount_cents": 0,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 200,
+        "discount_code_used": true,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "distinctId": "promo-test-1794449561748-late-browser",
+      "dedupeKey": "cs_test_b04Pr4uDsGVbQvnL753ED9pg7IvkldpaQGQzeuxC7nkBTN3NL4MdDZFRPU",
+      "properties": {
+        "plan": "monthly",
+        "price": 0,
+        "board_location": "California",
+        "amount_cents": 0,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 200,
+        "discount_code_used": true,
+        "currency": "USD",
+        "livemode": false
+      }
+    },
+    {
+      "event": "payment_succeeded",
+      "distinctId": "promo-test-1794449561748-keep-browser",
+      "dedupeKey": "cs_test_b02tzkF66eQgpGvZC4Ce5eVo5lmaUhu2rlfZktPUytPZPKG8sMbxtOBjGh",
+      "properties": {
+        "plan": "monthly",
+        "price": 0,
+        "board_location": "California",
+        "amount_cents": 0,
+        "subtotal_cents": 200,
+        "discount_amount_cents": 200,
+        "discount_code_used": true,
+        "currency": "USD",
+        "livemode": false
+      }
+    }
+  ],
+  "testAdapters": {
+    "clerkIdentity": true,
+    "clerkInvitation": true,
+    "outboundEmail": "local capture",
+    "posthogDelivery": "local capture",
+    "applicationTime": "aligned with Stripe clock",
+    "sqlTime": "now() replaced with the same test-clock instant"
+  },
+  "productionTouched": false,
+  "realEmailsSent": false
+}
