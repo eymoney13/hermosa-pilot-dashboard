@@ -5,10 +5,11 @@ import posthog from "posthog-js";
 import { planProperties } from "@/lib/analytics";
 import ProCheckoutButton from "./ProCheckoutButton";
 
-export default function DirectCheckout({ action, plan, autoStart }: {
+export default function DirectCheckout({ action, plan, autoStart, promoEntry = false }: {
   action: (form: FormData) => Promise<void>;
   plan: "monthly" | "yearly";
   autoStart: boolean;
+  promoEntry?: boolean;
 }) {
   const form = useRef<HTMLFormElement>(null);
   const started = useRef(false);
@@ -44,6 +45,9 @@ export default function DirectCheckout({ action, plan, autoStart }: {
   }} className="mt-4">
     <input type="hidden" name="attempt" />
     <input type="hidden" name="ph_id" />
-    <ProCheckoutButton />
+    {promoEntry && <><label htmlFor="promo-code" className="block font-medium">Promo code</label>
+      <input id="promo-code" name="promo_code" required maxLength={64} autoComplete="off" autoCapitalize="characters" spellCheck={false}
+        className="mt-2 w-full rounded border border-gray-400 bg-white p-3 text-gray-900" /></>}
+    <ProCheckoutButton label={promoEntry ? "Apply promo and continue" : undefined} />
   </form>;
 }

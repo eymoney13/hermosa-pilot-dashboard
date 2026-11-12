@@ -12,8 +12,9 @@ import s from "./SandboxDashboard.module.css";
 // requires test keys; live checkout still requires the live-billing switch.
 const CTA = "Join Neptune Pro for $2/month";
 
-export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocation, pageContext, beach }: {
+export default function SandboxProOffer({ checkoutReady, promoReady = false, alertsEnabled, ctaLocation, pageContext, beach }: {
   checkoutReady: boolean;
+  promoReady?: boolean;
   alertsEnabled: boolean;
   ctaLocation: CtaLocation;
   pageContext: PageContext;
@@ -90,10 +91,12 @@ export default function SandboxProOffer({ checkoutReady, alertsEnabled, ctaLocat
         </ul>
 
         {checkoutReady ? (
-          <div ref={paidOptions} className={s.planChoices}>
+          <><div ref={paidOptions} className={s.planChoices}>
             <Link onClick={() => clicked("yearly")} prefetch={false} className={`${s.primary} ${s.annualPrimary}`} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $20/year <span>Save $4 with annual billing</span></Link>
             <Link onClick={() => clicked("monthly")} prefetch={false} className={s.annualChoice} href="/pro/start?plan=monthly&from=%2Fcalifornia">{CTA}</Link>
           </div>
+          {promoReady && <Link href="/pro/redeem" prefetch={false} className={s.annualChoice} style={{ marginTop: 12 }}
+            onClick={() => posthog.capture("promo_redemption_clicked", context)}>Have a promo code? Redeem here</Link>}</>
         ) : (
           <>
             <button className={`${s.primary} ${s.annualPrimary}`} disabled>Join for $20/year <span>Save $4 with annual billing</span></button>

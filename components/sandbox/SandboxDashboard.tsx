@@ -28,7 +28,7 @@ import s from "./SandboxDashboard.module.css";
 const ORANGE_COUNTY_STATIONS = ["OSB04", "0", "BNB05", "DSB4Z"];
 const ORANGE_COUNTY_ADVISORY = { label: "OC Beach Info", href: "https://ocbeachinfo.com/" };
 
-export default function SandboxDashboard({ beaches, predictionDate, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, openForecast = false, signedIn = entitled, accountState, account, faq, news, newsEnabled, advisory }: {
+export default function SandboxDashboard({ beaches, predictionDate, fallbackCenter, listTopStations, entitled, alertsEnabled, checkoutReady, promoReady = false, openForecast = false, signedIn = entitled, accountState, account, faq, news, newsEnabled, advisory }: {
   beaches: BeachData[];
   predictionDate: string | null;
   fallbackCenter: [number, number];
@@ -38,6 +38,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
   accountState?: AccountState;
   alertsEnabled: boolean;
   checkoutReady: boolean;
+  promoReady?: boolean;
   openForecast?: boolean;
   account: ReactNode;
   faq: ReactNode;
@@ -178,7 +179,7 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
         )}
         {!active && view !== "map" && alertSignup}
         {!active && (view === "map" || view === "list") && <div id="behind-the-forecast"><ForecastComparison /></div>}
-        {!entitled && <SandboxProOffer checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} ctaLocation={proMoment ?? "california_bottom"} pageContext={active ? "beach_page" : view} beach={active} />}
+        {!entitled && <SandboxProOffer promoReady={promoReady} checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} ctaLocation={proMoment ?? "california_bottom"} pageContext={active ? "beach_page" : view} beach={active} />}
         {/* List and map only. Inside a beach card the reader is looking at one
             beach, and a list of every beach they follow is a different job; on
             News it has nothing to do with what is on screen. */}

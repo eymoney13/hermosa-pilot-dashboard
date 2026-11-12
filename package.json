@@ -15,7 +15,8 @@
     "test:onboarding": "node scripts/test-pro-onboarding.mjs",
     "test:promo-analytics": "node scripts/test-promo-analytics.mjs",
     "test:pro-account": "node scripts/test-pro-account.mjs",
-    "test:stripe-revenue": "node scripts/test-stripe-revenue.mjs"
+    "test:stripe-revenue": "node scripts/test-stripe-revenue.mjs",
+    "test:promo-redemption": "node scripts/test-promo-redemption.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.7",

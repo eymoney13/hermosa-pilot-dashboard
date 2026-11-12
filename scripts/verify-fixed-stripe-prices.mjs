@@ -16,7 +16,7 @@ for(const [plan,id] of Object.entries(ids)){
  assert.equal(p.recurring.usage_type,'licensed');assert.equal(p.product.active,true);prices[plan]=p;
 }
 assert.notEqual(prices.monthly.product.id,prices.yearly.product.id);
-const codes=await api.promotionCodes.list({code:'ELNINO',active:true,limit:100,expand:['data.promotion.coupon']});
+const codes=await api.promotionCodes.list({code:'ELNINO',active:true,limit:100,expand:['data.promotion.coupon.applies_to']});
 let promo=codes.data.find(p=>{const c=p.promotion.coupon;return typeof c==='object'&&c.percent_off===100&&c.duration==='repeating'&&c.duration_in_months===1&&c.applies_to?.products?.length===1&&c.applies_to.products[0]===prices.monthly.product.id;});
 if(!promo){
  assert.ok(process.argv.includes('--prepare-elnino'),'Test ELNINO needs a one-month coupon restricted to the monthly product. Re-run with --prepare-elnino to replace it in TEST MODE ONLY.');

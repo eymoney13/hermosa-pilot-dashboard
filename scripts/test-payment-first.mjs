@@ -41,7 +41,13 @@ const prices = new Map(['monthly','yearly'].map(plan => [`price_${plan}`, {
   type:'recurring',recurring:{interval:plan==='monthly'?'month':'year',interval_count:1,usage_type:'licensed'},
   product:{id:`prod_${plan}`,active:true},
 }]));
+const promoCode = {id:'promo_elnino',code:'ELNINO',active:true,livemode:false,customer:null,customer_account:null,
+ expires_at:null,max_redemptions:200,times_redeemed:0,restrictions:{first_time_transaction:false},
+ promotion:{type:'coupon',coupon:{id:'coupon_elnino',valid:true,percent_off:100,duration:'repeating',duration_in_months:1,
+ applies_to:{products:['prod_monthly']},redeem_by:null,max_redemptions:200,times_redeemed:0}}};
+let promotionResults=[promoCode];
 const stripe = {
+  promotionCodes:{list:async()=>({data:structuredClone(promotionResults)})},
   prices: {retrieve:async id=>structuredClone(prices.get(id))},
   checkout: {sessions: {
     listLineItems: async id => ({data:sessions.get(id).line_items.map(i=>({...i,price:{id:i.price}})),has_more:false}),
@@ -568,5 +574,55 @@ const replacement=[...sessions.values()].find(s=>s.url===newUrl);
 assert.equal(replacement.line_items[0].price,'price_monthly');
 assert.equal(replacement.line_items[0].price_data,undefined);
 check('legacy open checkout expires and is replaced with the restricted fixed product',()=>{});
+const promoAttempt=crypto.randomUUID();
+const promoUrl=await purchase.startPurchase('monthly','','promo-browser',promoAttempt,' elnino ');
+const promoSession=[...sessions.values()].find(s=>s.url===promoUrl);
+assert.ok(promoSession.custom_text.submit.message.startsWith('Free month of Neptune Pro. No card required. Access ends automatically after one month.'));
+assert.equal(promoSession.discounts[0].promotion_code,'promo_elnino');
+assert.equal(promoSession.allow_promotion_codes,undefined);
+assert.equal(promoSession.payment_method_collection,'if_required');
+assert.equal(promoSession.metadata.flow,'payment_first_v1');
+assert.equal(promoSession.metadata.plan,'monthly');
+assert.equal(promoSession.metadata.posthog_distinct_id,'promo-browser');
+assert.equal(promoSession.metadata.promo_no_card,'1');
+assert.equal(promoSession.line_items[0].price,'price_monthly');
+assert.equal(await purchase.startPurchase('monthly','','promo-browser',promoAttempt,'ELNINO'),promoUrl);
+check('promo entry applies the validated Stripe promotion to monthly checkout and reuses retries',()=>{});
+await assert.rejects(purchase.startPurchase('yearly','','',crypto.randomUUID(),'ELNINO'),/monthly/);
+await assert.rejects(purchase.startPurchase('monthly','','',crypto.randomUUID(),''),/Invalid/);
+await assert.rejects(purchase.startPurchase('monthly','','',crypto.randomUUID(),'x'.repeat(65)),/Invalid/);
+check('promo entry rejects annual plans and missing or malformed codes before Checkout',()=>{});
+const plainUrl=await purchase.startPurchase('monthly','','promo-browser',promoAttempt);
+assert.notEqual(plainUrl,promoUrl);assert.equal(promoSession.status,'expired');
+assert.equal([...sessions.values()].find(s=>s.url===plainUrl).discounts,undefined);
+check('switching from promo to ordinary checkout retires the promo session rather than silently carrying its discount',()=>{});
+const plainSession=[...sessions.values()].find(s=>s.url===plainUrl);
+assert.notEqual(await purchase.startPurchase('monthly','','promo-browser',promoAttempt,'ELNINO'),plainUrl);
+assert.equal(plainSession.status,'expired');
+check('switching from ordinary monthly checkout to promo creates a pre-applied discounted session',()=>{});
+const validatePromo=load('lib/promoCheckout.ts').checkoutPromotion;
+for(const [label,patch] of [
+ ['inactive',{active:false}],['wrong code',{code:'OTHER'}],['wrong mode',{livemode:true}],
+ ['expired',{expires_at:1}],['exhausted',{max_redemptions:1,times_redeemed:1}],['customer-specific',{customer:'cus_other'}],
+ ['partial discount',{promotion:{coupon:{...promoCode.promotion.coupon,percent_off:50}}}],
+ ['three months',{promotion:{coupon:{...promoCode.promotion.coupon,duration_in_months:3}}}],
+ ['unrestricted coupon',{promotion:{coupon:{...promoCode.promotion.coupon,applies_to:undefined}}}],
+ ['annual product',{promotion:{coupon:{...promoCode.promotion.coupon,applies_to:{products:['prod_yearly']}}}}],
+ ['invalid coupon',{promotion:{coupon:{...promoCode.promotion.coupon,valid:false}}}],
+ ['exhausted coupon',{promotion:{coupon:{...promoCode.promotion.coupon,max_redemptions:1,times_redeemed:1}}}],
+]){promotionResults=[{...promoCode,...patch}];await assert.rejects(validatePromo('ELNINO','price_monthly'));check(`promo entry rejects ${label}`,()=>{});}
+promotionResults=[promoCode,promoCode];await assert.rejects(validatePromo('ELNINO','price_monthly'));
+promotionResults=[promoCode];process.env.NEPTUNE_PROMO_LIFECYCLE_ENABLED='false';
+await assert.rejects(validatePromo('ELNINO','price_monthly'));process.env.NEPTUNE_PROMO_LIFECYCLE_ENABLED='true';
+check('ambiguous or disabled promos fail closed',()=>{});
+const safeDiagnostic=load('lib/checkoutError.ts').checkoutDiagnostic;
+const savedSender=process.env.PRO_ACTIVATION_EMAIL_FROM;
+delete process.env.PRO_ACTIVATION_EMAIL_FROM;
+try{await purchase.startPurchase('monthly','','',crypto.randomUUID(),'ELNINO');assert.fail('Expected missing email configuration to fail');}
+catch(error){assert.equal(safeDiagnostic(error).category,'configuration');}
+process.env.PRO_ACTIVATION_EMAIL_FROM=savedSender;
+try{await purchase.startPurchase('monthly','','',crypto.randomUUID(),'INVALID');assert.fail('Expected invalid code to fail');}
+catch(error){assert.equal(safeDiagnostic(error).category,'invalid_promotion');}
+check('checkout diagnostics distinguish missing email configuration from invalid promo input',()=>{});
 await pg.close();
 console.log(`Passed ${checks} payment-flow checks.`);
