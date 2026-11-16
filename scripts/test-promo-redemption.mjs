@@ -34,16 +34,24 @@ console.log('ok - promo route fixes monthly, validates through purchase, retains
 const events=[];const analytics={planProperties:plan=>({plan:plan==='yearly'?'annual':'monthly'}),beachProperties:()=>({})};
 for(const path of ['components/sandbox/SandboxProOffer.tsx','components/california-sandbox/components/sandbox/SandboxProOffer.tsx']){
  const css={__esModule:true,default:new Proxy({},{get:(_,key)=>key})};
- const Offer=load(path,{'next/link':link,react:{...React,useRef:()=>({current:null}),useEffect:()=>{}},'posthog-js':{__esModule:true,default:{capture:(...args)=>events.push(args)}},'@/lib/analytics':analytics,'@/components/california-sandbox/lib/analytics':analytics,'./SandboxDashboard.module.css':css}).default;
+ let selectedPlan="yearly";
+ const Offer=load(path,{'next/link':link,react:{...React,useRef:()=>({current:null}),useEffect:()=>{},useState:()=>[selectedPlan,next=>{selectedPlan=next;}]},'posthog-js':{__esModule:true,default:{capture:(...args)=>events.push(args)}},'@/lib/analytics':analytics,'@/components/california-sandbox/lib/analytics':analytics,'./SandboxDashboard.module.css':css,'./SandboxProOffer.module.css':css}).default;
  const props={checkoutReady:true,promoReady:true,alertsEnabled:true,ctaLocation:'dashboard',pageContext:'dashboard'};
  const tree=Offer(props);const rendered=renderToStaticMarkup(tree);
- assert.match(rendered,/Have a promo code\? Redeem here/);assert.match(rendered,/href="\/pro\/redeem"/);
- assert.match(rendered,/plan=yearly/);assert.match(rendered,/plan=monthly/);
+ assert.match(rendered,/Have a (?:promo )?code\?/);assert.match(rendered,/href="\/pro\/redeem"/);
+ assert.match(rendered,/plan=yearly/);
+ if(path==='components/sandbox/SandboxProOffer.tsx'){
+   function findMonthly(node){if(!React.isValidElement(node))return;if(node.type==='button' && node.props['aria-pressed']===false)return node;for(const c of React.Children.toArray(node.props.children)){const result=findMonthly(c);if(result)return result;}}
+   findMonthly(tree).props.onClick();
+   assert.equal(selectedPlan,'monthly');
+   assert.match(renderToStaticMarkup(Offer(props)),/href="\/pro\/start\?plan=monthly&amp;from=%2Fcalifornia"/);
+ }else assert.match(rendered,/plan=monthly/);
  function find(node){if(!React.isValidElement(node))return; if(node.props.href==='/pro/redeem')return node;for(const c of React.Children.toArray(node.props.children)){const r=find(c);if(r)return r;}}
  find(tree).props.onClick();assert.equal(events.at(-1)[0],'promo_redemption_clicked');
  assert.doesNotMatch(renderToStaticMarkup(Offer({...props,checkoutReady:false})),/href="\/pro\/redeem"/);
  const disabled=renderToStaticMarkup(Offer({...props,promoReady:false}));
- assert.doesNotMatch(disabled,/href="\/pro\/redeem"/);assert.match(disabled,/plan=monthly/);assert.match(disabled,/plan=yearly/);
+ assert.doesNotMatch(disabled,/href="\/pro\/redeem"/);assert.match(disabled,/plan=monthly/);
+ if(path!=='components/sandbox/SandboxProOffer.tsx')assert.match(disabled,/plan=yearly/);
 }
 console.log('ok - third CTA exists in both offers, preserves paid links, adds a separate promo event, and respects checkout availability');
 
