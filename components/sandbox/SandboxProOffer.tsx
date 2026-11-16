@@ -1,16 +1,16 @@
 "use client";
 import posthog from "posthog-js";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BeachData } from "@/lib/data";
 import { beachProperties, planProperties, type CtaLocation, type PageContext } from "@/lib/analytics";
-import s from "./SandboxDashboard.module.css";
+import card from "./SandboxProOffer.module.css";
 
 // Sandbox-only Pro upgrade card.
 //
 // checkoutReady comes from the sandbox-only payment-first gate. Test checkout
 // requires test keys; live checkout still requires the live-billing switch.
-const CTA = "Join Neptune Pro for $2/month";
+
 
 export default function SandboxProOffer({ checkoutReady, promoReady = false, alertsEnabled, ctaLocation, pageContext, beach }: {
   checkoutReady: boolean;
@@ -21,14 +21,15 @@ export default function SandboxProOffer({ checkoutReady, promoReady = false, ale
   // The beach on screen, when the card sits under one.
   beach?: BeachData;
 }) {
+  const [plan, setPlan] = useState<"yearly" | "monthly">("yearly");
   const context = { board_location: "California", cta_location: ctaLocation, page_context: pageContext, ...(beach ? beachProperties(beach, "southbay") : {}) };
   const clicked = (plan: "monthly" | "yearly") => {
     posthog.capture("pro_cta_clicked", { ...context, ...planProperties(plan) });
-    posthog.capture("alert_upgrade_clicked", {page_source:"california_pro_offer", selected_beach:beach?.code ?? null, subscriber_plan:"free"});
+    posthog.capture("alert_upgrade_clicked", { page_source: "california_pro_offer", selected_beach: beach?.code ?? null, subscriber_plan: "free" });
   };
 
-  // Count an offer view only when both paid options are fully in the viewport.
-  // Observe the options, not a percentage of the differently sized card. Seen again
+  // Count an offer view when the billing selector and CTA are fully visible.
+  // Observe the controls, not a percentage of the differently sized card. Seen again
   // when the card moves to a new view or beach, or a different link sends the
   // reader to it, so cta_location and page_context stay honest.
   const paidOptions = useRef<HTMLDivElement>(null);
@@ -46,65 +47,33 @@ export default function SandboxProOffer({ checkoutReady, promoReady = false, ale
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkoutReady, ctaLocation, pageContext, beach?.code]);
 
-  // Pro only. The Free column was cut: a reader looking at this card is already
-  // using the free board, so listing what they have back to them spends half
-  // the space saying nothing and makes the card read like a pricing page.
-  const features = [
-    "3-day water quality forecasts. Plan your beach days",
-    alertsEnabled ? "Email alerts for multiple beaches" : null,
-  ].filter(Boolean) as string[];
-
   return (
-    <section id="sandbox-pro" className={s.proOffer} aria-label="Neptune Pro">
-      <div className={s.proGlow} aria-hidden="true" />
-      <div className={s.proInner}>
-        {/* The product name IS the headline. A tagline above it pushed the
-            one word a reader needs into small grey type and said nothing the
-            feature list does not already say. */}
-        <h2 className={s.proHeadline}>Neptune Pro</h2>
-        <p className={s.proMission}>Our mission is to build the most accurate real-time beach water quality platform to help prevent millions of oceanborne illnesses a year and make checking the water as easy as checking the weather. We’re just getting started; joining Neptune Pro helps bring that mission to life.</p>
+    <section id="sandbox-pro" className={card.wrapper} aria-labelledby="pro-comparison-title">
+      <div className={card.offer}>
+      <h2 id="pro-comparison-title" className={card.headline}>Don’t just check today.<br /><span>Check the future.</span></h2>
+      <div className={card.comparison}>
+        <article className={card.free} aria-label="Neptune Free">
+          <header className={card.planHeader}><p className={card.eyebrow}>The everyday check</p><h3>Neptune</h3></header>
+          <div className={card.feature}><p className={card.eyebrow}>Forecast access</p><h4>Today’s forecast</h4><p>Check before you go.</p><div className={card.days} aria-label="Today only"><span>Today</span><span className={card.locked}>Day 1</span><span className={card.locked}>Day 2</span><span className={card.locked}>Day 3</span></div></div>
+          {alertsEnabled && <div className={card.feature}><p className={card.eyebrow}>Bacteria alerts</p><h4>1 beach</h4><p>Alerts for your go-to spot.</p></div>}
 
-        <ul className={s.proFeatures}>
-          {features.map((f) => (
-            <li key={f}>
-              {/* Drawn rather than a ✓ glyph: the character renders at a
-                  different weight and baseline in every font, and these sit
-                  in a tight column where that shows. */}
-              <svg
-                className={s.proTick}
-                viewBox="0 0 16 16"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path
-                  d="M3.5 8.5l3 3 6-6.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.1"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {f}
-            </li>
-          ))}
-        </ul>
+        </article>
+        <article className={card.pro} aria-label="Neptune Pro">
+          <header className={card.planHeader}><p className={card.eyebrow}>More days. More beaches.</p><h3>Neptune Pro</h3></header>
+          <div className={card.feature}><p className={card.eyebrow}>Forecast access</p><h4>Today + the next 3 days</h4><p>Find the day that fits your plans.</p><div className={card.days} aria-label="Today and the next three days included"><span>Today</span><span>Day 1</span><span>Day 2</span><span>Day 3</span></div></div>
+          {alertsEnabled && <div className={card.feature}><p className={card.eyebrow}>Bacteria alerts</p><h4>Unlimited beaches</h4><p>Alerts across your favorite spots.</p></div>}
 
-        {checkoutReady ? (
-          <><div ref={paidOptions} className={s.planChoices}>
-            <Link onClick={() => clicked("yearly")} prefetch={false} className={`${s.primary} ${s.annualPrimary}`} href="/pro/start?plan=yearly&from=%2Fcalifornia">Join for $20/year <span>Save $4 with annual billing</span></Link>
-            <Link onClick={() => clicked("monthly")} prefetch={false} className={s.annualChoice} href="/pro/start?plan=monthly&from=%2Fcalifornia">{CTA}</Link>
-            <p className={s.checkoutNote}>Renews automatically. Cancel anytime. Enter your email in Stripe, then activate your account. Already subscribed? <Link prefetch={false} href="/pro/recover">Recover your purchase</Link>.</p>
-          </div>
-          {promoReady && <Link href="/pro/redeem" prefetch={false} className={s.annualChoice} style={{ marginTop: 12 }}
-            onClick={() => posthog.capture("promo_redemption_clicked", context)}>Have a promo code? Redeem here</Link>}</>
-        ) : (
-          <>
-            <button className={`${s.primary} ${s.annualPrimary}`} disabled>Join for $20/year <span>Save $4 with annual billing</span></button>
-            <button className={s.annualChoice} disabled>{CTA}</button>
-            <p className={s.checkoutNote}>Checkout is currently unavailable in this preview.</p>
-          </>
-        )}
+        </article>
+      </div>
+      </div>
+      <div className={card.upgrade} ref={paidOptions}>
+        <div className={card.planSelector} role="group" aria-label="Choose billing period">
+          <button type="button" aria-pressed={plan === "yearly"} onClick={() => setPlan("yearly")}><strong>$20<span>/year</span></strong><small>Save 17%</small></button>
+          <button type="button" aria-pressed={plan === "monthly"} onClick={() => setPlan("monthly")}><strong>$2<span>/month</span></strong></button>
+        </div>
+        {checkoutReady ? <Link className={card.upgradeCta} prefetch={false} onClick={() => clicked(plan)} href={`/pro/start?plan=${plan}&from=%2Fcalifornia`}>Get Neptune Pro <span aria-hidden="true">→</span></Link> : <button className={card.upgradeCta} type="button" disabled>Get Neptune Pro <span aria-hidden="true">→</span></button>}
+        {checkoutReady && promoReady && <Link className={card.redeemLink} prefetch={false} href="/pro/redeem" onClick={() => posthog.capture("promo_redemption_clicked", context)}>Have a code? <span>Redeem</span></Link>}
+        {!checkoutReady && <p className={card.previewNote}>Checkout is currently unavailable in this preview.</p>}
       </div>
     </section>
   );
