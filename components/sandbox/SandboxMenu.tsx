@@ -42,6 +42,7 @@ export default function SandboxMenu({ account }: { account?: ReactNode }) {
 
   return (
     <>
+      {account && <div className={s.headerAccount}>{account}</div>}
       <button ref={trigger} type="button" className={s.menuButton} aria-label="Open Neptune menu" aria-haspopup="dialog" aria-expanded={open} aria-controls={id} onClick={() => setOpen(true)}>
         <Menu size={21} aria-hidden="true" />
       </button>
@@ -71,7 +72,6 @@ export default function SandboxMenu({ account }: { account?: ReactNode }) {
           {/* No slice: the array is the whole nav now. It was sliced to 3
               when a fourth entry needed its own "Transparency" heading. */}
           {sandboxLinks.map((link) => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? "page" : undefined} onClick={close}>{link.label}<ArrowUpRight size={17} aria-hidden="true" /></Link>)}
-          {account && <div className={s.menuAccount}>{account}</div>}
         </nav>
         <Link href="/california" className={s.drawerBack} onClick={close}><ArrowLeft size={17} aria-hidden="true" />Back to Water Quality</Link>
       </dialog>

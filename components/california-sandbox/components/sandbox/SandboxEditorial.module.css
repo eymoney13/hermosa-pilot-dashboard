@@ -223,3 +223,9 @@
 }
 
 .drawerNav .menuAccount a { font-family: inherit; font-size: 21px; font-weight: inherit; color: inherit; text-decoration: none; }
+
+.headerAccount { display: flex; align-items: center; flex-shrink: 0; }
+.headerAccount > a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border: 1px solid #2c8487; border-radius: 5px; color: #246f72; background: transparent; font-size: 13px; font-weight: 600; white-space: nowrap; text-decoration: none; }
+.headerAccount > a:hover { background: #edf5f3; color: #173a3c; text-decoration: none; }
+.headerAccount a:focus-visible { outline: 3px solid #368a8c; outline-offset: 4px; }
+@media (max-width: 600px) { .headerAccount > a { padding: 0 10px; } }
