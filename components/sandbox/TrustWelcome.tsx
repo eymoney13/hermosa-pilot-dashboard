@@ -6,12 +6,27 @@ import s from "./TrustWelcome.module.css";
 
 export default function TrustWelcome() {
   const dialog = useRef<HTMLDialogElement>(null);
+  const firstVisit = useRef<boolean | null>(null);
   useEffect(() => {
-    // Show on each sandbox visit while the introduction is being reviewed.
     const element = dialog.current;
     if (!element) return;
+    // Keep the decision stable when React replays effects in development.
+    if (firstVisit.current === null) {
+      try {
+        firstVisit.current = localStorage.getItem("neptune:trust-welcome-seen") !== "1";
+      } catch {
+        // Visitors can still continue when browser storage is unavailable.
+        firstVisit.current = true;
+      }
+    }
+    if (!firstVisit.current) return;
     const previousOverflow = document.body.style.overflow;
     element.showModal();
+    try {
+      localStorage.setItem("neptune:trust-welcome-seen", "1");
+    } catch {
+      // Storage restrictions must not prevent the dialog from working.
+    }
     document.body.style.overflow = "hidden";
     const restore = () => { document.body.style.overflow = previousOverflow; };
     element.addEventListener("close", restore);
