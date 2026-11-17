@@ -171,15 +171,14 @@ export default function SandboxDashboard({ beaches, predictionDate, fallbackCent
               <div className={s.countyGroups}>{countyGroups.map((group) => <section key={group.county} aria-label={group.county}><h3 className={s.countyHeading}>{group.county}<span>{group.beaches.length} {group.beaches.length === 1 ? "beach" : "beaches"}</span></h3><ul className={s.beaches}>{group.beaches.map((beach) => <li key={beach.code}><button onClick={() => openBeach(beach.code)}><span className={s.beachName}>{beach.name}</span><span className={`${s.band} ${s.listReading} ${bandClass(beach.status)}`}><span className={s.listBandLabel}><span className={s.dot} />{STATUS_BAND[beach.status].short} risk</span></span><ChevronRight size={18} aria-hidden="true" /></button></li>)}</ul></section>)}</div>
             )}
             {view === "map" && <div className={s.mapRequest}><Link href="/california/request-beach">Request your beach <ArrowRight size={16} aria-hidden="true" /></Link></div>}
-            {view === "map" && <a className={s.scrollInvitation} href="#read-the-water"><span><small>THE MAP IS JUST THE START</small><strong>What is the water telling you?</strong><span>A quick guide to the colors, the forecast, and your next beach day.</span></span><span className={s.scrollArrow} aria-hidden="true">↓</span></a>}
-            {view === "map" && <ScrollOnboarding />}
-            {view === "map" && alertSignup && <div className={s.guideAlert}>{alertSignup}</div>}
 
           </section>
         )}
         {!active && view !== "map" && alertSignup}
-        {!active && (view === "map" || view === "list") && <div id="behind-the-forecast"><ForecastComparison /></div>}
         {!entitled && <SandboxProOffer promoReady={promoReady} checkoutReady={checkoutReady} alertsEnabled={alertsEnabled} ctaLocation={proMoment ?? "california_bottom"} pageContext={active ? "beach_page" : view} beach={active} />}
+        {!active && view === "map" && <ScrollOnboarding />}
+        {!active && view === "map" && alertSignup && <div className={s.guideAlert}>{alertSignup}</div>}
+        {!active && (view === "map" || view === "list") && <div id="behind-the-forecast"><ForecastComparison /></div>}
         {/* List and map only. Inside a beach card the reader is looking at one
             beach, and a list of every beach they follow is a different job; on
             News it has nothing to do with what is on screen. */}

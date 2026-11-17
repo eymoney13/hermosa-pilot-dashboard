@@ -20,7 +20,7 @@ export default function ScrollOnboarding() {
       <a href="#behind-the-forecast">How does the forecast work? <ArrowDown size={15} aria-hidden="true" /></a>
     </div>
     <div className={s.explorer}>
-      <p className={s.kicker}>ONE INDEX. THREE SIGNALS.</p>
+      <p className={s.kicker}>THE NEPTUNE INDEX</p>
       <p className={s.try}>Tap a color to learn what it means.</p>
       <div className={s.choices} role="group" aria-label="Explore risk categories">{readings.map((item, index) => <button key={item.label} aria-pressed={selected === index} onClick={() => setSelected(index)} style={{ color: item.color, background: selected === index ? item.background : undefined }}><i style={{ background: item.color }} />{item.label}</button>)}</div>
       <div className={s.reading} aria-live="polite" style={{ background: reading.background, color: reading.color }}><h3>{reading.title}</h3><p>{reading.text}</p></div>
