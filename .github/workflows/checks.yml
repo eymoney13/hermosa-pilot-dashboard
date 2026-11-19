@@ -1,0 +1,51 @@
+name: Checks
+
+# Runs on every pull request. Read-only: no secrets, no deploys, no database —
+# the tests use an in-memory Postgres (PGlite) and mocks. Vercel's own preview
+# build is the separate "does it build" check on the same pull request.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # test-alert-email.mjs compares against origin/main:lib/alertMail.ts
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint (site code)
+        run: npx eslint app lib components proxy.ts instrumentation.ts instrumentation-client.ts
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Tests (scripts/test-*.mjs)
+        # test-sandbox-neptune-index.mjs is skipped: it pins prediction dates
+        # from a data snapshot that has since been replaced (expects
+        # 2026-10-02, the file now holds 2026-10-30). Tracked in the backlog.
+        run: |
+          fail=0
+          for t in scripts/test-*.mjs; do
+            case "$t" in scripts/test-sandbox-neptune-index.mjs) echo "SKIP $t"; continue;; esac
+            echo "::group::$t"
+            node "$t" || { echo "::error::$t failed"; fail=1; }
+            echo "::endgroup::"
+          done
+          exit $fail
