@@ -41,9 +41,10 @@ function todayUtc(): string {
 export async function GET(request: Request) {
   // Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` automatically.
   // Reject anything else so the public cannot make the site send email.
-  if (
-    request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  // An unset secret must fail closed: otherwise the literal header
+  // "Bearer undefined" would match on any deployment without CRON_SECRET.
+  const secret = process.env.CRON_SECRET;
+  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return new Response("Unauthorized", { status: 401 });
   }
 
