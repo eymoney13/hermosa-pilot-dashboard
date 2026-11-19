@@ -43,8 +43,10 @@ export const maxDuration = 300;
 export async function GET(request: Request) {
   // Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` automatically when
   // the CRON_SECRET env var is set. Reject anything else so the endpoint can't
-  // be triggered by the public.
-  if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+  // be triggered by the public. An unset secret must fail closed: otherwise the
+  // literal header "Bearer undefined" would match on any deployment without it.
+  const secret = process.env.CRON_SECRET;
+  if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
     return new Response('Unauthorized', { status: 401 });
   }
 
