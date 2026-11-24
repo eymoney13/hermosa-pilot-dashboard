@@ -2,7 +2,7 @@ import { recordPromoSignup } from "./promoSignupAnalytics";
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
-import { proMailer } from "./proMailer";
+import { proMailConfigured, sendProMail } from "./proMailer";
 import { checkoutPrices } from "./checkoutPrices";
 import { checkoutPromotion } from "./promoCheckout";
 import { CheckoutError } from "./checkoutError";
@@ -22,7 +22,7 @@ function validEmail(email: string) { return email.length <= 254 && /^[^\s@]+@[^\
 // tabs/processes. Stripe idempotency makes retries return that same checkout.
 export async function startPurchase(plan: ProPlan, rawEmail: string, rawPosthogId = "", browserAttempt = "", rawPromoCode?: string): Promise<string> {
   if (!isPaymentFirstEnabled()) throw new CheckoutError("configuration", "Checkout is unavailable");
-  if (!process.env.PRO_ACTIVATION_EMAIL_FROM || !process.env.GMAIL_APP_PASSWORD) throw new CheckoutError("configuration", "Activation email is not configured");
+  if (!proMailConfigured()) throw new CheckoutError("configuration", "Activation email is not configured");
   siteUrl(); // Validate the return origin before creating anything at Stripe.
   const prices = await checkoutPrices();
   if (rawPromoCode !== undefined && plan !== "monthly") throw new Error("Free-month promotions require monthly checkout");
@@ -199,16 +199,13 @@ export async function activatePurchase(sessionId: string): Promise<boolean> {
 export async function sendRecovery(email: string, initialOnly = false): Promise<void> {
   email = normalizedEmail(email);
   if (!validEmail(email)) throw new Error("Invalid email");
-  const sender = process.env.PRO_ACTIVATION_EMAIL_FROM;
-  const password = process.env.GMAIL_APP_PASSWORD;
-  if (!sender || !password) throw new Error("Activation email is not configured");
+  if (!proMailConfigured()) throw new Error("Activation email is not configured");
   const rows = await db()`UPDATE pro_subscriptions SET recovery_sent_at = now()
     WHERE checkout_email = ${email} AND checkout_session_id IS NOT NULL
       AND (${initialOnly} = false OR recovery_sent_at IS NULL)
       AND (recovery_sent_at IS NULL OR recovery_sent_at < now() - interval '10 minutes')
     RETURNING checkout_session_id` as Array<{ checkout_session_id: string }>;
   if (!rows.length) return;
-  const transport = proMailer();
   try {
     const client = await clerkClient();
     const existing = await client.users.getUserList({emailAddress: [email], limit: 1});
@@ -238,8 +235,7 @@ export async function sendRecovery(email: string, initialOnly = false): Promise<
       }
     }
     if (!links.length) return;
-    await transport.sendMail({ from: {name: "Neptune Pro", address: sender}, to: email,
-      ...purchaseEmail(links, existing.data.length > 0, { freeUntil }) });
+    await sendProMail({ to: email, ...purchaseEmail(links, existing.data.length > 0, { freeUntil }) });
   } catch (error) {
     await db()`UPDATE pro_subscriptions SET recovery_sent_at = NULL WHERE checkout_email = ${email}`;
     throw error;

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { subscriptionDb as db, siteUrl, stripe } from "./subscription";
 import { refreshPurchaseSubscription, syncPurchase, sendRecovery } from "./purchase";
 import { promoEnabled } from "./promoAccess";
-import { proMailer } from "./proMailer";
+import { sendProMail } from "./proMailer";
 import { lifecycleEmail, type LifecycleKind } from "./proLifecycleEmail";
 
 // Only promo-origin subscriptions enter this queue. Paid cancellations are unaffected.
@@ -69,7 +69,7 @@ export async function runProLifecycle(subscriptionId: string | null = null) {
           mail.html = mail.html.replace('</body>', `<p style="text-align:center"><a href="${url}">Stop promotional emails</a></p></body>`);
           headers = { "List-Unsubscribe": `<${url}>` };
         }
-        await proMailer().sendMail({ from: { name: "Neptune Pro", address: process.env.PRO_ACTIVATION_EMAIL_FROM! }, to: row.checkout_email, ...mail, headers });
+        await sendProMail({ to: row.checkout_email, ...mail, headers });
         await db()`UPDATE pro_lifecycle_delivery SET sent_at = now(), lease_until = NULL WHERE subscription_id = ${id} AND kind = ${kind} AND lease_token = ${token}`;
         sent++;
       } catch (error) { failed++; console.error('[pro/lifecycle] delivery', kind, error); }

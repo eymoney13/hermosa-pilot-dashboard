@@ -4,9 +4,8 @@ import { guardRecipient } from "./mailGuard";
 // Email transport for the daily bacteria alert run.
 //
 // Gmail SMTP is kept here unchanged behind a flag so the migration can be
-// rolled back by moving one environment variable, and so purchase/account mail
-// (lib/purchase.ts, also nodemailer) is untouched -- this module is only ever
-// used by the alert run.
+// rolled back by moving one environment variable. Pro account mail
+// (lib/proMailer.ts) reuses resendApiKey() and fromAddressEmail() from here.
 //
 // WHY THE MOVE. The 2026-10-12 run was the first time this system ever had a
 // bulk list: every previous day had 0 or 1 recipient. At 69 it returned

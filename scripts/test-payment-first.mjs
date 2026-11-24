@@ -75,7 +75,9 @@ const mocks = {
       }
     }
   })},
-  nodemailer: {createTransport: () => ({sendMail: async mail => { if (smtpFails) throw Error("SMTP failed"); mails.push(mail); }})},
+  // Pro mail is sent by lib/proMailer.ts (Resend); scripts/test-pro-mailer.mjs covers that module.
+  './proMailer': {sendProMail: async mail => { if (smtpFails) throw Error("Pro mail failed"); mails.push(mail); },
+                  proMailConfigured: () => Boolean(process.env.ALERT_FROM_ADDRESS)},
   '@neondatabase/serverless': {neon: () => sql},
   stripe: class { constructor() { return stripe; } }
 };
@@ -89,13 +91,23 @@ function load(file) {
   vm.runInNewContext(`(function(require,module,exports,process){${code}\n})`, {console,Date,Set,crypto,URL})(req,testModule,testModule.exports,process);
   return testModule.exports;
 }
-Object.assign(process.env, {STRIPE_SECRET_KEY:'sk_test_fake', STRIPE_PRO_MONTHLY_PRICE_ID:'price_monthly', STRIPE_PRO_YEARLY_PRICE_ID:'price_yearly', DATABASE_URL:'memory', NEPTUNE_PAYMENT_FIRST_ENABLED:'true', NEPTUNE_TEST_CHECKOUT_ENABLED:'true', NEXT_PUBLIC_SITE_URL:'http://localhost:3000', PRO_ACTIVATION_EMAIL_FROM:'sender@example.com', GMAIL_APP_PASSWORD:'fake'});
+Object.assign(process.env, {STRIPE_SECRET_KEY:'sk_test_fake', STRIPE_PRO_MONTHLY_PRICE_ID:'price_monthly', STRIPE_PRO_YEARLY_PRICE_ID:'price_yearly', DATABASE_URL:'memory', NEPTUNE_PAYMENT_FIRST_ENABLED:'true', NEPTUNE_TEST_CHECKOUT_ENABLED:'true', NEXT_PUBLIC_SITE_URL:'http://localhost:3000', ALERT_FROM_ADDRESS:'Project Neptune <updates@example.com>'});
 delete process.env.NEPTUNE_LIVE_BILLING_ENABLED;
 const policy = load('lib/purchasePolicy.ts'), purchase = load('lib/purchase.ts'), billing = load('lib/subscription.ts');
 let checks = 0;
 function check(label, fn) { fn(); checks++; console.log(`ok ${checks} - ${label}`); }
 check('migration preserves existing active and canceled subscribers and is re-runnable', () => {});
 check('live keys cannot use the test bypass', () => assert.equal(policy.paymentFirstAllowed({...process.env,STRIPE_SECRET_KEY:'sk_live_fake'}), false));
+check('a Preview links back to itself, production to the live domain', () => {
+  const saved = {...process.env};
+  delete process.env.NEXT_PUBLIC_SITE_URL;
+  Object.assign(process.env, {VERCEL_ENV:'preview', VERCEL_BRANCH_URL:'app-git-feature.vercel.app', VERCEL_PROJECT_PRODUCTION_URL:'projectneptune.co'});
+  assert.equal(billing.siteUrl(), 'https://app-git-feature.vercel.app');
+  process.env.VERCEL_ENV = 'production';
+  assert.equal(billing.siteUrl(), 'https://projectneptune.co');
+  for (const k of ['VERCEL_ENV','VERCEL_BRANCH_URL','VERCEL_PROJECT_PRODUCTION_URL']) delete process.env[k];
+  Object.assign(process.env, saved);
+});
 check('payment-first opt-in required', () => assert.equal(policy.paymentFirstAllowed({...process.env,NEPTUNE_PAYMENT_FIRST_ENABLED:''}), false));
 check('unpaid or foreign checkout cannot fulfill', () => {
   assert.equal(policy.paidCheckout({mode:'subscription',status:'complete',payment_status:'unpaid',metadata:{flow:'payment_first_v1'}}), false);
@@ -618,11 +630,11 @@ promotionResults=[promoCode];process.env.NEPTUNE_PROMO_LIFECYCLE_ENABLED='false'
 await assert.rejects(validatePromo('ELNINO','price_monthly'));process.env.NEPTUNE_PROMO_LIFECYCLE_ENABLED='true';
 check('ambiguous or disabled promos fail closed',()=>{});
 const safeDiagnostic=load('lib/checkoutError.ts').checkoutDiagnostic;
-const savedSender=process.env.PRO_ACTIVATION_EMAIL_FROM;
-delete process.env.PRO_ACTIVATION_EMAIL_FROM;
+const savedSender=process.env.ALERT_FROM_ADDRESS;
+delete process.env.ALERT_FROM_ADDRESS;
 try{await purchase.startPurchase('monthly','','',crypto.randomUUID(),'ELNINO');assert.fail('Expected missing email configuration to fail');}
 catch(error){assert.equal(safeDiagnostic(error).category,'configuration');}
-process.env.PRO_ACTIVATION_EMAIL_FROM=savedSender;
+process.env.ALERT_FROM_ADDRESS=savedSender;
 try{await purchase.startPurchase('monthly','','',crypto.randomUUID(),'INVALID');assert.fail('Expected invalid code to fail');}
 catch(error){assert.equal(safeDiagnostic(error).category,'invalid_promotion');}
 check('checkout diagnostics distinguish missing email configuration from invalid promo input',()=>{});
