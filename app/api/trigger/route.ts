@@ -9,19 +9,20 @@
 const OWNER = 'eymoney13';
 const REPO = 'project-neptune';
 
-// Dispatched in this order, spaced by DISPATCH_GAP_MS. The publish workflows
-// regenerate their own data, so strict ordering vs the full run is not required.
+// Dispatched in this order, spaced by DISPATCH_GAP_MS. California is the only
+// product, and /california reads public/data/southbay, so only two workflows run:
+//   - daily-full-run: all-beaches model run, committed to project-neptune. The
+//     South Bay job's accuracy step reads its outputs/mpn_comparison_all_beaches.csv.
+//   - daily-refresh-southbay: the only publisher for /california; also sends alerts.
+// The Hermosa, Manhattan, Cabrillo and Boston publish workflows are disabled in
+// project-neptune (not deleted) — re-enable one there and re-add it here to revive.
 const WORKFLOWS = [
   'daily-full-run.yml',
-  'daily-refresh.yml',
-  'daily-refresh-manhattan.yml',
   'daily-refresh-southbay.yml',
-  'daily-refresh-cabrillo.yml',
-  'daily-refresh-boston.yml',
 ];
 
-// Dispatching all six at once put every location workflow on the shared upstream
-// APIs in the same second. cdip.ucsd.edu served the first few and returned 403
+// Dispatching all six workflows at once (before the cut to two) put every
+// workflow on the shared upstream APIs in the same second. cdip.ucsd.edu served the first few and returned 403
 // to the rest, and a wave-blind run publishes noticeably elevated predictions
 // (2026-08-24 DHS113 read 46% high before project-neptune grew a guard against
 // publishing one). Each workflow reaches its CDIP step ~20s after its job
@@ -34,8 +35,8 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const dynamic = 'force-dynamic';
 
-// The staggered walk has to outlive the default execution window: five gaps plus
-// the dispatch calls themselves is ~155s, so budget the 300s ceiling. If this
+// The staggered walk must fit the execution window: one gap plus the dispatch
+// calls is ~35s today. 300s leaves room if workflows are added back. If this
 // ever times out mid-walk the trailing workflows are silently never dispatched,
 // so keep WORKFLOWS.length * DISPATCH_GAP_MS comfortably under it.
 export const maxDuration = 300;

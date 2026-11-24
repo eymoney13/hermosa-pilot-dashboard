@@ -95,12 +95,6 @@ const DEFAULT_FLAGS: FeatureFlags = {
 };
 
 const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
-  hermosa: {
-    neptuneIndex: true,
-    hidePercentSign: true,
-    hideExceedanceReadout: true,
-  },
-  manhattan: {}, // stays exactly as today
   // Nine beaches is past the point where the map alone answers "how does the
   // whole coast look today" — five of them are Dockweiler pins within 2 km of
   // each other, so telling them apart on the map means hovering each in turn.
@@ -145,28 +139,6 @@ const FEATURES_BY_LOCATION: Record<string, Partial<FeatureFlags>> = {
     siteAccuracyPercent: true,
     beachAlerts: true,
     paywall: true,
-  },
-  cabrillo: {}, // plain Manhattan-style — all flags default off
-  // Boston reads as a Good/Moderate/Poor board: its model ships its own
-  // Safe/Unsafe call against per-beach cutoffs of 10-25%, which the shared
-  // 30/50/75 tiers would collapse into a single "Normal" band. Moderate splits
-  // the Safe side at 75% of each beach's own cutoff (see MODERATE_BAND_RATIO),
-  // so it never contradicts that call. The probability still drives the page -
-  // it just speaks through the written summary.
-  boston: {
-    binaryVerdict: true,
-    predictionSummary: true,
-    // 13 beaches is past the point where the map alone answers "how does the
-    // whole coast look this week".
-    listTab: true,
-    // ...and past the point where 13 tabs are a usable way to pick one. They
-    // overflow into a horizontal scroller, so most are off-screen anyway.
-    hideBeachTabs: true,
-    // The week is what a reader came for; today's call is one cell of it.
-    forecastWindowFirst: true,
-    // The written summary already explains the drivers in prose. A ranked list
-    // of the same feature names underneath is the model talking about itself.
-    hideContributingFactors: true,
   },
 };
 

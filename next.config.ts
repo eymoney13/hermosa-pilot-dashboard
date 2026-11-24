@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/southbay", destination: "/california?region=southbay", permanent: true },
+      // Retired boards: California is the only product. Old QR codes and links land there.
+      ...["hermosa", "manhattan", "cabrillo", "boston"].map((slug) => ({
+        source: `/${slug}`,
+        destination: "/california",
+        permanent: true,
+      })),
       { source: "/sandbox", destination: "/california", permanent: true },
       { source: "/sandbox/:path*", destination: "/california/:path*", permanent: true },
     ];
