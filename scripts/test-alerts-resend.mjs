@@ -10,6 +10,8 @@ import {PGlite} from '@electric-sql/pglite';
 
 // db() guards on this before neon() is called; PGlite is what actually answers.
 process.env.DATABASE_URL='postgres://pglite/test';
+// These tests cover production mail; lib/mailGuard.ts reroutes everything else.
+process.env.VERCEL_ENV='production';
 
 const pg = new PGlite();
 for (const f of ['alerts-schema.sql','subscriptions-schema.sql','payment-first-schema.sql','promo-lifecycle-schema.sql',
@@ -26,7 +28,7 @@ const load = (file,mocks={}) => {
     {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   vm.runInNewContext(`(function(require,module,exports,process,console,fetch){${js}\n})`,
     {Date,URL,Response,JSON,Math,Array,Object,Number,String,Boolean,Promise,Error,Set,Map,isNaN,setTimeout,clearTimeout})
-    (name=>{if(name in mocks)return mocks[name];throw Error(`unmocked import: ${name}`);},
+    (name=>{if(name in mocks)return mocks[name];if(name==='./mailGuard')return load('lib/mailGuard.ts');throw Error(`unmocked import: ${name}`);},
      m,m.exports,process,{log(){},error(){}},globalThis.fetch);
   return m.exports;
 };
