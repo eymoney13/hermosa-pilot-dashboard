@@ -4,6 +4,8 @@ import { resolve, dirname } from 'node:path';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { PGlite } from '@electric-sql/pglite';
+// These tests cover production mail; lib/mailGuard.ts reroutes everything else.
+process.env.VERCEL_ENV='production';
 
 // Real PostgreSQL semantics in memory; Stripe, Clerk, and SMTP are fake adapters.
 // No credentials, network requests, emails, or persistent database writes.

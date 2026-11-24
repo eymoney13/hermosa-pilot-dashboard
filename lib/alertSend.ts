@@ -1,6 +1,7 @@
 import "server-only";
 import { sendSandboxAlerts } from "./sandboxAlertSend";
 import nodemailer, { type Transporter } from "nodemailer";
+import { guardTransport } from "./mailGuard";
 import { neon } from "@neondatabase/serverless";
 import { LOCATIONS, type BeachData, type LocationConfig } from "./data";
 import { featuresFor } from "./features";
@@ -101,7 +102,7 @@ function mailer(): Transporter {
   if (transport) return transport;
   const pass = process.env.GMAIL_APP_PASSWORD;
   if (!pass) throw new Error("GMAIL_APP_PASSWORD is not configured");
-  transport = nodemailer.createTransport({
+  transport = guardTransport(nodemailer.createTransport({
     service: "gmail",
     auth: {
       user: GMAIL_USER,
@@ -109,7 +110,7 @@ function mailer(): Transporter {
       // Google's UI and pasted that way often enough to be worth stripping.
       pass: pass.replace(/\s+/g, ""),
     },
-  });
+  }));
   return transport;
 }
 

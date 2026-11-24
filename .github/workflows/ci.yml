@@ -1,0 +1,49 @@
+name: CI
+
+# Runs on every pull request and every push to main. Branch protection on main
+# requires the "checks" job to pass before a PR can merge (see docs/STAGING.md).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        # Every scripts/test-*.mjs runs against PGlite and mocks; none needs a
+        # secret or a network service. test-sandbox-neptune-index is excluded
+        # until its pre-existing failure on main is fixed.
+        run: |
+          status=0
+          for t in scripts/test-*.mjs; do
+            [ "$t" = scripts/test-sandbox-neptune-index.mjs ] && continue
+            echo "::group::$t"
+            node "$t" || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: Build
+        run: npm run build

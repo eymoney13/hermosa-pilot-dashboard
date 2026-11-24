@@ -3,6 +3,8 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import vm from 'node:vm';
 import {PGlite} from '@electric-sql/pglite';
+// These tests cover production mail; lib/mailGuard.ts reroutes everything else.
+process.env.VERCEL_ENV='production';
 const pg=new PGlite();
 for(const name of ['alerts','subscriptions','payment-first','promo-lifecycle','sandbox-alerts','alert-deliveries'])await pg.exec(readFileSync(`scripts/${name}-schema.sql`,'utf8'));
 await pg.exec(`INSERT INTO alert_subscribers(email,location) VALUES ('original@example.com','southbay'); INSERT INTO alert_subscriptions VALUES (1,'A',now()),(1,'B',now());`);
@@ -16,7 +18,7 @@ const grants=(await pg.query('SELECT count(*)::int AS n FROM legacy_alert_grants
 check('grandfather snapshot does not expand on rerun',()=>assert.equal(grants,2));
 assert.deepEqual((await pg.query('SELECT * FROM alert_subscribers WHERE id=1')).rows,before);
 const sql=async(parts,...values)=>(await pg.query(parts.reduce((s,p,i)=>s+(i?`$${i}`:'')+p,''),values)).rows;
-const load=(file,mocks={})=>{const m={exports:{}};const js=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;vm.runInNewContext(`(function(require,module,exports,process){${js}\n})`,{Date,console,Math,JSON,Object,Array,String,Number,Boolean,RegExp,Intl})(name=>{if(name in mocks)return mocks[name];throw Error(name);},m,m.exports,process);return m.exports;};
+const load=(file,mocks={})=>{const m={exports:{}};const js=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;vm.runInNewContext(`(function(require,module,exports,process){${js}\n})`,{Date,console,Math,JSON,Object,Array,String,Number,Boolean,RegExp,Intl})(name=>{if(name in mocks)return mocks[name];if(name==='./mailGuard')return load('lib/mailGuard.ts');throw Error(name);},m,m.exports,process);return m.exports;};
 const formatMonthDayYear=(iso)=>{const [y,m,d]=iso.split('-').map(Number);if(!y||!m||!d)return iso;return new Date(Date.UTC(y,m-1,d)).toLocaleDateString('en-US',{timeZone:'UTC',month:'long',day:'numeric',year:'numeric'});};
 const policy=load('lib/sandboxAlertPolicy.ts');
 const alertMail=load('lib/alertMail.ts',{'./data':{formatMonthDayYear}});

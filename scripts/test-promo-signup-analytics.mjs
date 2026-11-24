@@ -8,11 +8,11 @@ await pg.exec('CREATE TABLE stripe_revenue_outbox(invoice_id text PRIMARY KEY,pa
 const sql=async(parts,...values)=>(await pg.query(parts.reduce((s,p,i)=>s+(i?`$${i}`:'')+p,''),values)).rows;
 let delivered=0, fail=false;
 const session={id:'cs_promo',created:1794400000,livemode:true,payment_status:'no_payment_required',metadata:{flow:'payment_first_v1',redeem_promotion_id:'promo_1',posthog_distinct_id:'browser_1'}};
-const module={exports:{}};
+const mod={exports:{}};
 const mocks={'server-only':{},'./subscription':{stripe:()=>({checkout:{sessions:{retrieve:async()=>{if(fail)throw Error('unavailable');return session}}}})},'./stripeRevenueSync':{revenueDb:async()=>sql,deliverRevenue:async()=>{delivered++}}};
 const source=ts.transpileModule(readFileSync('lib/promoSignupAnalytics.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-vm.runInNewContext(`(function(require,module,exports){${source}\n})`,{Date,console})(name=>mocks[name],module,module.exports);
-const {promoSignupPayload,recordPromoSignup}=module.exports;
+vm.runInNewContext(`(function(require,module,exports){${source}\n})`,{Date,console})(name=>mocks[name],mod,mod.exports);
+const {promoSignupPayload,recordPromoSignup}=mod.exports;
 const createdAt=(session.created+60)*1000;
 const event=promoSignupPayload(session,createdAt);
 assert.equal(event.event,'promo_account_created');assert.equal(event.distinctId,'browser_1');assert.equal(event.properties.email_verified,true);assert.equal(event.properties.pro_activated,true);assert.equal(event.properties.new_account,true);assert.equal(event.properties.livemode,true);

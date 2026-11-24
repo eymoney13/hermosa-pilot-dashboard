@@ -1,4 +1,5 @@
 import "server-only";
+import { guardRecipient } from "./mailGuard";
 
 // Email transport for the daily bacteria alert run.
 //
@@ -137,6 +138,8 @@ export function createResendSender(
   return {
     name: "resend",
     async send(msg, idempotencyKey) {
+      // Outside production this reroutes to the sandbox inbox (lib/mailGuard.ts).
+      const { to, subject } = guardRecipient(msg.to, msg.subject);
       let res: Response;
       try {
         res = await fetchImpl(RESEND_ENDPOINT, {
@@ -154,8 +157,8 @@ export function createResendSender(
           },
           body: JSON.stringify({
             from,
-            to: [msg.to],
-            subject: msg.subject,
+            to: [to],
+            subject,
             html: msg.html,
             text: msg.text,
             reply_to: replyTo,
