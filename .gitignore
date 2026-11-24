@@ -47,3 +47,5 @@ public/data/**/history_3day.test-fixture.csv
 
 # Python bytecode from the scripts/ helpers
 __pycache__/
+
+.workspace-backups/

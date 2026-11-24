@@ -51,47 +51,6 @@ export function dataSlugFor(config: LocationConfig): string {
 }
 
 export const LOCATIONS: Record<string, LocationConfig> = {
-  hermosa: {
-    slug: "hermosa",
-    displayName: "Hermosa Beach, CA",
-    stations: ["DHS114", "DHS115"],
-    beachNames: {
-      DHS114: "Hermosa Beach - 26th St",
-      DHS115: "Hermosa Beach - TK",
-    },
-    mapFallbackCenter: [33.862, -118.403],
-    timeZone: "America/Los_Angeles",
-  },
-  manhattan: {
-    slug: "manhattan",
-    displayName: "Manhattan Beach, CA",
-    stations: ["DHS113"],
-    beachNames: {
-      DHS113: "Manhattan Beach - 28th St",
-    },
-    mapFallbackCenter: [33.8945, -118.418],
-    timeZone: "America/Los_Angeles",
-    // News tab shows only Manhattan Beach + LA-area coverage. Includes local
-    // place names and LA news domains (matched against the article URL) to
-    // catch stories that never spell out the city/state.
-    newsFilterTerms: [
-      "manhattan beach",
-      "el porto",
-      "el segundo",
-      "south bay",
-      "los angeles",
-      "l.a.",
-      "la county",
-      "santa monica bay",
-      "latimes.com",
-      "ktla.com",
-      "dailybreeze.com",
-      "easyreadernews",
-      "kfiam640",
-      "lacounty.gov",
-      "abc7.com",
-    ],
-  },
   // South Bay overview: one dashboard spanning Dockweiler (seven stations),
   // Manhattan, Hermosa (two stations), and Redondo. Tab order follows the coast
   // north → south. Plain Manhattan-style UI (no feature flags — see
@@ -341,42 +300,6 @@ export const LOCATIONS: Record<string, LocationConfig> = {
     listTopStations: ["DHS113", "DHS114", "DHS115", "DHS116"],
     mapFallbackCenter: [33.895, -118.42],
     timeZone: "America/Los_Angeles",
-  },
-  // Cabrillo Beach (San Pedro) overview: three stations. Multi-beach, so the
-  // dashboard opens to the all-locations Map tab (like South Bay). Station
-  // coordinates come from the data files; the names below are placeholders —
-  // confirm the real display names.
-  cabrillo: {
-    slug: "cabrillo",
-    displayName: "Cabrillo Beach, CA",
-    stations: ["CB-01", "CB-02", "SMB-7-9"],
-    beachNames: {
-      "CB-01": "Inner Cabrillo Beach (boatlaunch)",
-      "CB-02": "Inner Cabrillo Beach (restrooms)",
-      "SMB-7-9": "Outer Cabrillo Beach",
-    },
-    mapFallbackCenter: [33.707, -118.283],
-    timeZone: "America/Los_Angeles",
-  },
-  // Boston-area beaches (Massachusetts). Unlike the CA locations, the roster is
-  // owned by the backend and published as boston_display.json — so `stations`
-  // and `beachNames` stay empty here and are resolved at load time. Boston's
-  // model ships its own Safe/Unsafe call against a per-beach threshold
-  // (DEFAULT 0.29), so it classifies on that threshold rather than the shared
-  // fixed tiers, keeping the dashboard in agreement with the backend.
-  boston: {
-    slug: "boston",
-    displayName: "Boston, MA",
-    stations: [],
-    beachNames: {},
-    rosterFile: "boston_display.json",
-    statusFromThreshold: true,
-    mapFallbackCenter: [42.33, -71.02],
-    timeZone: "America/New_York",
-    advisory: {
-      label: "Massachusetts Department of Public Health",
-      href: "https://www.mass.gov/info-details/interactive-beach-water-quality-dashboard",
-    },
   },
 };
 

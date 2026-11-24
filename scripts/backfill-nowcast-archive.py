@@ -33,7 +33,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ARCHIVE_ROOT = REPO_ROOT / "data" / "nowcast-archive"
-DEFAULT_SLUGS = ["hermosa", "manhattan", "cabrillo", "southbay"]
+DEFAULT_SLUGS = ["southbay"]
 DEFAULT_DAYS = 30
 
 
