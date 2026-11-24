@@ -24,8 +24,9 @@ redirects it to `/california`). Use it to try layout ideas without touching the 
 3. **Push and open a PR.** `git push -u origin feature/my-feature`, then `gh pr create`.
    Vercel builds a Preview and comments its URL on the PR. Open it on your phone, and
    share it with anyone who should look.
-4. **Let CI pass.** `.github/workflows/ci.yml` typechecks, lints, runs every
-   `scripts/test-*.mjs`, and builds. A red check blocks the merge.
+4. **Let the checks pass.** `.github/workflows/checks.yml` typechecks, lints and runs every
+   `scripts/test-*.mjs`; Vercel's preview build checks that the site builds. Once `main` is
+   protected (setup step 4), a red check blocks the merge.
 5. **Merge.** Production deploys from `main` in a couple of minutes.
 6. **If production breaks:** Vercel dashboard → Deployments → the previous good one →
    **Instant Rollback**. Then fix it on a branch and go through the routine again.
