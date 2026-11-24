@@ -98,6 +98,16 @@ let checks = 0;
 function check(label, fn) { fn(); checks++; console.log(`ok ${checks} - ${label}`); }
 check('migration preserves existing active and canceled subscribers and is re-runnable', () => {});
 check('live keys cannot use the test bypass', () => assert.equal(policy.paymentFirstAllowed({...process.env,STRIPE_SECRET_KEY:'sk_live_fake'}), false));
+check('a Preview links back to itself, production to the live domain', () => {
+  const saved = {...process.env};
+  delete process.env.NEXT_PUBLIC_SITE_URL;
+  Object.assign(process.env, {VERCEL_ENV:'preview', VERCEL_BRANCH_URL:'app-git-feature.vercel.app', VERCEL_PROJECT_PRODUCTION_URL:'projectneptune.co'});
+  assert.equal(billing.siteUrl(), 'https://app-git-feature.vercel.app');
+  process.env.VERCEL_ENV = 'production';
+  assert.equal(billing.siteUrl(), 'https://projectneptune.co');
+  for (const k of ['VERCEL_ENV','VERCEL_BRANCH_URL','VERCEL_PROJECT_PRODUCTION_URL']) delete process.env[k];
+  Object.assign(process.env, saved);
+});
 check('payment-first opt-in required', () => assert.equal(policy.paymentFirstAllowed({...process.env,NEPTUNE_PAYMENT_FIRST_ENABLED:''}), false));
 check('unpaid or foreign checkout cannot fulfill', () => {
   assert.equal(policy.paidCheckout({mode:'subscription',status:'complete',payment_status:'unpaid',metadata:{flow:'payment_first_v1'}}), false);

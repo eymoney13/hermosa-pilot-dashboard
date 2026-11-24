@@ -177,6 +177,11 @@ export function siteUrl(): string {
     return parsed.origin;
   }
   if (process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_")) throw new Error("Set NEXT_PUBLIC_SITE_URL to the dashboard origin before live billing");
+  // A Preview must send buyers (Stripe return URLs, activation links) back to
+  // itself, not to the live site, which can't see test-mode checkouts.
+  if (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL) {
+    return `https://${process.env.VERCEL_BRANCH_URL}`;
+  }
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   if (vercel) return `https://${vercel}`;
   return "http://localhost:3000";
