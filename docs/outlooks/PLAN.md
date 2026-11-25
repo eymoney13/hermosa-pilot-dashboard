@@ -322,7 +322,12 @@ Each phase is its own PR to a feature branch and is verified on a Vercel Preview
 - A 2015–2026 backtest on LA/OC days. Rain headlines line up with lab exceedances: rain today 49.6%, post-storm 27.1%, dry 7.5%, against a 13.0% baseline. An early version filed storm days under "Multiple"; that was fixed.
 - An end-to-end smoke run on historical inputs. It caught one bug, where fresh feeds with empty values were reported as complete; that was fixed.
 
-**Not yet tested.** A run on live daily inputs. That needs the branch pushed and a branch run of `daily-full-run.yml`: about 40 Actions minutes and the usual Open-Meteo calls. The publish guard stops that run from committing or publishing anything.
+**Live run (2026-11-25, project-neptune run 45527340011).** This was a branch run with `outlooks=true`. The repo variable is still unset, and the commit/publish step was skipped, so production was untouched. It took about 20 minutes.
+- 119 outlooks: 118 complete. 1 (OSB05) has no weather and shows "Environmental data unavailable".
+- Headlines: 45 recent rain, 38 large tide (king-tide period, ~8.5 ft range), 17 post-storm, 11 typical, 7 multiple.
+- **Bug found and fixed.** Santa Ana River showed as "High" at 0–1 cfs because the pipeline's flow flags use a 60-day window. Outlooks now compare measured cfs to a long-run threshold (117 cfs, the 2010–2026 p95). The window issue is logged as a forecasting task; production is unchanged.
+- **Checked, not a bug.** Buoys read about 23 °C (73 °F) water. CDIP's raw feed confirms it: 22.6–22.8 °C on Nov 23, against 17.9 °C a year earlier.
+- **Test count:** 31 tests, all passing.
 
 ## 12. Risks and decisions
 
