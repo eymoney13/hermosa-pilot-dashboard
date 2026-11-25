@@ -361,6 +361,48 @@ Each phase is its own PR to a feature branch and is verified on a Vercel Preview
 - `outputFileTracingIncludes` for `data/outlooks`.
 - A daily publish step from the pipeline.
 
+### Phase 3 results (2026-11-25): what people see, branch `feature/addmoreCAbeaches`
+
+**Built** (renders only when the page receives outlook data, i.e. `NEPTUNE_OUTLOOKS_ENABLED=true`. That is set for local development and for this branch's Preview only; Production has no such variable.)
+
+**Map**
+- Outlook-only beaches get one small outlined blue pin per beach (24 pins), drawn beneath the forecast pins.
+- **Forecast beaches keep their existing per-station coloured pins (19).** Merging, say, Dockweiler's four forecast stations into one pin would mean picking or blending a risk colour, which D2 rules out.
+- A beach's other stations are reachable from its page.
+
+**Legend and filter**
+- An "All beaches / Forecasts / Outlooks" filter and a legend sit above the map and list.
+- The list shows outlook beaches by county, each with an "Outlook" chip and today's headline. Forecast rows are unchanged.
+
+**Outlook page**
+- Headline panel (blue, no risk colours) with the conditions date and update time.
+- Staleness and partial-data notices.
+- "What's influencing water quality today" (3–5 factors, marked Notable / Unavailable).
+- The **Bacteria Forecasting** box:
+  - "Forecast not yet available", with the disabled **Notify me when forecasts launch** button (Phase 4).
+  - At a beach where another station *has* a forecast, it instead says this station has none and links to that forecast.
+- Past laboratory results: date, MPN/100 mL, exceeded or within 104, and a note that these are not today's water.
+- Station list when a beach has several.
+- County advisory links, with the D4 statement that Neptune does not ingest closures.
+- Nearby forecast beaches, the disclaimer, and data attribution, including the Open-Meteo link.
+- The Pro offer is hidden on outlook pages, so Pro is never implied to unlock a forecast there.
+
+**Forecast page**
+- Reliability label under the hero: Strong / Fair / "Validation in progress*" / "Limited reliability*", with a "What is this?" note and the asterisk footnote.
+- An "Environmental outlook" section with factors and the station list.
+- Everything else is unchanged, including the accuracy %, which stays until O1 is decided.
+
+**Checked in a browser** (local dev, desktop and 390 px phone width)
+- Map pins, the filter (outlooks-only shows just blue rings), list rows, the outlook page, a forecast page's reliability and environmental sections, and switching between stations at one beach. No horizontal scroll on the phone layout.
+- Two issues were found and fixed:
+  - The lucide `Map` icon import shadowed the JavaScript `Map` constructor, which crashed the page.
+  - Outlook stations at forecast beaches showed "Forecast not yet available".
+
+**Known gaps**
+- 10 LA beaches still show "Station SMB-…" until names are supplied (D7 hand check).
+- The review data is a single day (2026-11-25), so locally the outlook date can differ from the forecast date.
+- Analytics events come in Phase 6.
+
 ## 12. Risks and decisions
 
 ### Risks
