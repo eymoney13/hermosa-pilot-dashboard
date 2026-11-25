@@ -14,7 +14,8 @@ Status: **Plan approved 2026-11-24 with decisions D1–D9 below. Phase 1 (pipeli
 | D6 | **Inputs excluded:** swell direction (bug), river gauges with substitute coordinates or no defensible link to the beach, and UV (no source). Missing values are never treated as zero. The swell and river issues are logged as separate forecasting tasks. | `config/outlooks.json` `excluded_inputs` and the `river_gauges.allowed` list. Only the Santa Ana River gauge is allowed, and only within 3 km of its mouth: 7 stations (Huntington State Beach 0/3N/6N, Newport Slough, 2 Newport Bay). Tasks are in project-neptune `docs/OUTLOOKS.md`. |
 | D7 | **119 stations: 19 forecast and 100 outlook.** County assignments and beach groupings are verified by hand before release. | The draft registry gives 119 stations at **38 distinct beaches** (LA 65 stations / 23 beaches; OC 54 / 15). 10 LA beaches are unnamed SMB stations that need names, and every row is `verified=false` until checked. |
 | D8 | **Forecast and outlook stay distinct.** Forecast beaches keep everything they have now. Outlook beaches show a headline, measurements, lab history and a notify CTA, with no risk classification. | Phases 2–3. The outlook data files contain no prediction columns; this is enforced in code and tests. |
-| D9 | **Open-Meteo licensing:** verify it and report back. Nothing is purchased. | See "Open-Meteo licensing (D9)" below. |
+| D9 | **Open-Meteo licensing:** verify it and report back. Nothing is purchased. | See "Open-Meteo licensing (D9)" below. **Follow-up decision (2026-11-25): stay on the free tier for this experiment; no upgrade.** |
+| D10 | **(2026-11-25) Sunlight and surf are factors, not headlines.** "Multiple environmental influences" now means rain together with an elevated river. | `FACTOR_ONLY` in `outlook_rules.py`; tested. |
 
 ## Open-Meteo licensing (D9), checked 2026-11-24
 
@@ -329,6 +330,37 @@ Each phase is its own PR to a feature branch and is verified on a Vercel Preview
 - **Checked, not a bug.** Buoys read about 23 °C (73 °F) water. CDIP's raw feed confirms it: 22.6–22.8 °C on Nov 23, against 17.9 °C a year earlier.
 - **Test count:** 31 tests, all passing.
 
+### Phase 2 results (2026-11-25): dashboard data layer, branch `feature/addmoreCAbeaches`
+
+**Built**
+- `lib/outlooks/types.ts`: separate `ForecastStation` and `OutlookStation` types. `OutlookStation` has no field that could hold a probability, risk, colour or forecast (`beach?: never`). Also `BeachSite`, one pin per beach.
+- `lib/outlooks/parse.ts`: a pure parser that builds every object from an allow-list of fields.
+  - It drops unreleased stations and drops forecasts with an invalid label.
+  - A beach with a forecast station leads with it (D2).
+  - It keeps the 12 newest lab results per station and computes freshness (stale after 36 h).
+  - `assertNoPredictionFields` runs on every outlook station; if it trips, the loader returns null.
+- `lib/outlooks/load.ts`: a server-only loader that returns null unless `NEPTUNE_OUTLOOKS_ENABLED === "true"`. It never throws into the page.
+- `data/outlooks/`: outside `public/`, so the files can't be downloaded from the site. It holds a review copy of the 2026-11-25 live run, written by project-neptune `scripts/publish_outlooks.py`, which refuses to write any unreleased station.
+- **No existing page, loader, alert or Pro code was changed.** The live site is unaffected even if this were merged.
+
+**Tested** (`scripts/test-outlooks.mjs`, 17 checks; all other suites still pass)
+- Real data: 119 stations, 19 forecast and 100 outlook, at 38 beaches.
+- The forecast set matches `californiaCoverage.ts` exactly.
+- Only LA and Orange County are released.
+- No outlook station carries a prediction-shaped key.
+- Newport Bay leads with BNB05.
+- D1 labels are correct, station "0" survives, and freshness is computed correctly.
+- With the flag off, no file is even read.
+- Missing files return null.
+- Injected `exc_probability`, `prediction` and `top_factor` columns, and a `probability` key inside the influences JSON, are all stripped.
+- A forecast missing today stays a forecast.
+
+**Not done yet (Phase 3)**
+- Wiring into `/california`.
+- Setting the flag on the branch Preview.
+- `outputFileTracingIncludes` for `data/outlooks`.
+- A daily publish step from the pipeline.
+
 ## 12. Risks and decisions
 
 ### Risks
@@ -371,7 +403,6 @@ Each phase is its own PR to a feature branch and is verified on a Vercel Preview
 | O3 | Analytics names: reuse `checkout_started` / `alert_signup_completed` instead of the new `subscription_started` / `beach_saved` |
 | O4 | Public "variables" claim wording (R3) |
 | O5 | Map density: `leaflet.markercluster` vs extending the label layer. 38 pins instead of 119 makes this much less pressing. |
-| O6 | The sunlight and surf headlines show no difference from typical days in the backtest (Phase 1 results). Keep them as headlines, or show them only as influences? |
 | O7 | Split the two 15-station groupings (Long Beach City Beach, Newport Bay) into sub-beaches during the hand check? |
 
 ## 13. Additional costs

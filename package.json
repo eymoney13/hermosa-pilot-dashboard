@@ -17,7 +17,8 @@
     "test:pro-account": "node scripts/test-pro-account.mjs",
     "test:stripe-revenue": "node scripts/test-stripe-revenue.mjs",
     "test:promo-redemption": "node scripts/test-promo-redemption.mjs",
-    "test:cron-auth": "node scripts/test-cron-auth.mjs"
+    "test:cron-auth": "node scripts/test-cron-auth.mjs",
+    "test:outlooks": "node scripts/test-outlooks.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.7",
