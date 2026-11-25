@@ -75,6 +75,7 @@ const OUTLOOK_DOT: [number, number] = [16, 16];
 // Shared empty default: a fresh [] per render would change `points` every
 // render and make FitAll re-frame the map under the reader.
 const NO_OUTLOOKS: OutlookPin[] = [];
+const NO_POINTS: MapPoint[] = [];
 
 function outlookIcon(): L.DivIcon {
   const [w, h] = OUTLOOK_DOT;
@@ -538,20 +539,24 @@ function MapInteractionAnalytics() {
   return null;
 }
 
-function NearbyLocation({ beaches }: { beaches: MapPoint[] }) {
+function NearbyLocation({ beaches, extras = NO_POINTS }: { beaches: MapPoint[]; extras?: MapPoint[] }) {
   const map = useMap();
   const interacted = useRef(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const focus = useCallback((latitude: number, longitude: number) => {
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
-    const nearest = beaches.filter(b => Number.isFinite(b.latitude) && Number.isFinite(b.longitude))
+    const closest = (list: MapPoint[], n: number) => list.filter(b => Number.isFinite(b.latitude) && Number.isFinite(b.longitude))
       .map(b => ({ beach: b, distance: map.distance([latitude, longitude], [b.latitude, b.longitude]) }))
-      .sort((a, b) => a.distance - b.distance).slice(0, 3);
+      .sort((a, b) => a.distance - b.distance).slice(0, n);
+    // The nearest three beaches, plus the nearest two outlook beaches when
+    // outlooks are shown, so the local view never hides one kind entirely.
+    const nearest = [...closest(beaches, 3), ...closest(extras, 2).filter(x => x.distance <= 300000)]
+      .sort((a, b) => a.distance - b.distance);
     if (!nearest.length || nearest[0].distance > 300000) return false;
     map.fitBounds(L.latLngBounds(nearest.map(({ beach }) => [beach.latitude, beach.longitude] as [number, number])), { padding: [56, 56], maxZoom: 14 });
     return true;
-  }, [beaches, map]);
+  }, [beaches, extras, map]);
   useEffect(() => {
     const controller = new AbortController();
     const container = map.getContainer();
@@ -631,7 +636,7 @@ export default function OverviewMap({
       />
       <FitAll beaches={points} />
       <MapInteractionAnalytics />
-      {locateNearby && <NearbyLocation beaches={points} />}
+      {locateNearby && <NearbyLocation beaches={beaches} extras={outlookPins} />}
       {/* Outlooks first and pushed down the stack: forecasts stay on top. */}
       {outlookPins.map((p) => (
         <Marker
