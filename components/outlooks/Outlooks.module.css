@@ -1,0 +1,78 @@
+/* Water Quality Outlooks. Neutral blues and greys only: nothing here may borrow
+   the green/yellow/red bacteria-risk palette, which belongs to forecasts. */
+.root { --o-ink: #173a3c; --o-blue: #2f6fb3; --o-blue-bg: #eef4fb; --o-line: #dce5e2; --o-muted: #607174; color: var(--o-ink); }
+
+.panel { border: 1px solid #cfdcec; border-left: 4px solid var(--o-blue); background: var(--o-blue-bg); border-radius: 4px; padding: 22px 24px; }
+.eyebrowRow { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; align-items: baseline; font-size: 12px; color: var(--o-muted); }
+.label { display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; font-size: 11px; color: var(--o-blue); }
+.ring { width: 10px; height: 10px; border-radius: 999px; border: 2.5px solid #2f6fb3; background: #fff; display: inline-block; flex-shrink: 0; }
+.headline { margin-top: 12px; font-size: 24px; line-height: 1.25; font-weight: 700; }
+.explanation { margin-top: 10px; font-size: 15px; line-height: 1.6; }
+.notice { margin-top: 14px; padding: 10px 12px; background: #fff; border: 1px dashed #b9c8da; border-radius: 4px; font-size: 13px; line-height: 1.5; color: #3d4b5c; }
+
+.section { margin-top: 28px; }
+.section > h3 { font-size: 17px; font-weight: 700; }
+.sub { margin-top: 6px; font-size: 13px; line-height: 1.6; color: var(--o-muted); }
+
+.influences { margin-top: 14px; border-top: 1px solid var(--o-line); }
+.influences li { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 12px 0; border-bottom: 1px solid var(--o-line); }
+.influenceLabel { font-size: 14px; font-weight: 600; }
+.influenceValue { font-size: 15px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.influenceDetail { grid-column: 1 / -1; font-size: 12px; color: var(--o-muted); }
+.chip { display: inline-block; margin-left: 8px; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; vertical-align: 1px; }
+.chipNotable { background: #dbe8f7; color: #22548c; }
+.chipUnavailable { background: #eceff1; color: #55626b; }
+
+.forecastBox { border: 1px solid var(--o-line); border-radius: 4px; padding: 20px 22px; background: #fff; }
+.forecastBox h3 { font-size: 17px; font-weight: 700; }
+.forecastBox strong { display: block; margin-top: 8px; font-size: 15px; }
+.forecastBox p { margin-top: 6px; font-size: 14px; line-height: 1.6; color: #33403a; }
+.notifyButton { margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 16px; border-radius: 4px; border: 1.5px solid var(--o-blue); color: var(--o-blue); font-weight: 700; font-size: 14px; background: #fff; }
+.notifyButton:disabled { opacity: .7; cursor: not-allowed; }
+.notifyNote { font-size: 12px !important; color: var(--o-muted) !important; }
+
+.labs { margin-top: 14px; width: 100%; border-collapse: collapse; font-size: 14px; }
+.labs th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--o-muted); font-weight: 600; padding: 0 8px 8px 0; border-bottom: 1px solid var(--o-line); }
+.labs td { padding: 10px 8px 10px 0; border-bottom: 1px solid var(--o-line); font-variant-numeric: tabular-nums; }
+.labs td:last-child, .labs th:last-child { text-align: right; padding-right: 0; }
+.above { font-weight: 700; }
+
+.links { margin-top: 12px; display: grid; gap: 8px; }
+.links a { display: inline-flex; align-items: center; gap: 6px; color: #246f72; font-weight: 600; font-size: 14px; min-height: 32px; }
+
+.stations { margin-top: 12px; border-top: 1px solid var(--o-line); }
+.stations li { border-bottom: 1px solid var(--o-line); }
+.stations button { width: 100%; display: flex; gap: 12px; align-items: center; justify-content: space-between; text-align: left; min-height: 52px; padding: 8px 0; font-size: 14px; }
+.stations button[aria-current] { font-weight: 700; }
+.stationMeta { font-size: 12px; color: var(--o-muted); }
+.kindForecast, .kindOutlook { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 3px; }
+.kindForecast { background: #e7f0ef; color: #246f72; }
+.kindOutlook { background: var(--o-blue-bg); color: var(--o-blue); border: 1px solid #cfdcec; }
+
+.disclaimer { margin-top: 28px; font-size: 12px; line-height: 1.6; color: var(--o-muted); }
+.attribution { margin-top: 8px; font-size: 11px; color: var(--o-muted); }
+.attribution a { text-decoration: underline; text-underline-offset: 2px; }
+
+.reliability { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.reliabilityBadge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; border: 1px solid #c7d3de; background: #f3f6f9; color: #34495e; font-weight: 700; font-size: 12px; }
+.reliability details { font-size: 12px; color: var(--o-muted); }
+.reliability summary { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.reliability details p { margin-top: 6px; line-height: 1.5; max-width: 52ch; }
+.footnote { width: 100%; font-size: 12px; color: var(--o-muted); line-height: 1.5; }
+
+.legend { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 12px; color: var(--o-muted); align-items: center; }
+.legend > span { display: inline-flex; align-items: center; gap: 7px; }
+.legendPills { display: inline-flex; gap: 3px; }
+.legendPills i { width: 14px; height: 8px; border-radius: 999px; display: inline-block; }
+.filter { display: inline-flex; border: 1px solid var(--o-line); border-radius: 4px; overflow: hidden; }
+.filter button { min-height: 36px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--o-muted); background: #fff; }
+.filter button + button { border-left: 1px solid var(--o-line); }
+.filter button[aria-pressed=true] { background: #173a3c; color: #fff; }
+.listChip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #2f6fb3; white-space: nowrap; }
+.listHeadline { display: block; font-size: 12px; color: #607174; font-weight: 400; margin-top: 2px; }
+
+@media (max-width: 600px) {
+  .panel { padding: 18px 16px; }
+  .headline { font-size: 21px; }
+  .labs { font-size: 13px; }
+}

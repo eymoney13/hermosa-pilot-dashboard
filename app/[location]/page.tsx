@@ -16,6 +16,7 @@ import { isLiveBillingEnabled, isStripeConfigured } from "@/lib/subscription";
 import { redactForEntitlement } from "@/lib/paywall";
 import { formatMonthDayYear, getLocation, LOCATIONS } from "@/lib/data";
 import { featuresFor } from "@/lib/features";
+import { loadOutlookNetwork, outlooksEnabled } from "@/lib/outlooks/load";
 import {
   fetchNewsAlerts,
   getNewsFeedUrls,
@@ -109,6 +110,13 @@ export default async function LocationPage({
   if (location === "california") {
     const { isPaymentFirstEnabled } = await import("@/lib/purchase");
     const openForecast = entitled && (await searchParams).pro === "activated";
+    // Water Quality Outlooks: null (and no file read) unless NEPTUNE_OUTLOOKS_ENABLED
+    // is "true". Forecast payloads are not attached here; the client already has
+    // the redacted `beaches` and joins on station code, so nothing paid is
+    // serialised twice and the paywall boundary above stays the only one.
+    const outlooks = outlooksEnabled()
+      ? await loadOutlookNetwork({ forecastBeaches: [], displayNames: config.beachNames })
+      : null;
     return (
       <SandboxDashboard
         beaches={beaches}
@@ -127,6 +135,7 @@ export default async function LocationPage({
         news={news}
         newsEnabled={newsEnabled}
         advisory={config.advisory ?? DEFAULT_ADVISORY}
+        outlooks={outlooks}
       />
     );
   }

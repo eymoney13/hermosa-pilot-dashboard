@@ -27,7 +27,7 @@ function distanceScore(a: BeachData, b: BeachData) {
     * Math.sin((b.longitude - a.longitude) * rad / 2) ** 2;
 }
 
-export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMoment, advisory, alertSignup }: {
+export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMoment, advisory, alertSignup, reliability, environmental }: {
   beach: BeachData;
   beaches: BeachData[];
   onSelect: (code: string) => void;
@@ -35,6 +35,10 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
   onProMoment?: () => void;
   advisory: { label: string; href: string };
   alertSignup?: ReactNode;
+  // Water Quality Outlooks (flag-gated, empty otherwise): the reliability label
+  // under the forecast, and today's environmental outlook for this station.
+  reliability?: ReactNode;
+  environmental?: ReactNode;
 }) {
   const [selectedDate, setSelectedDate] = useState(beach.predictionDate);
   const today = buildWindowCells(beach).find((cell) => cell.type === "today")!.day;
@@ -112,6 +116,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
           <dl className={s.riskKey}>{RISK_TIERS.map((tier) => <div key={tier.label}><span className={s.keySwatch} style={{ backgroundColor: tier.color }} aria-hidden="true" /><dt>{tier.range}%</dt><dd>{tier.label}</dd></div>)}</dl>
         </details>
         <p>Neptune model prediction. <a href={advisory.href} target="_blank" rel="noopener noreferrer" title={advisory.label}>Always follow official beach advisories. <ArrowUpRight size={16} aria-hidden="true" /></a></p>
+        {reliability}
       </div>
     </section>
 
@@ -149,6 +154,7 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
       showAccuracy={false}
     />
 
+    {environmental}
     <ForecastAccuracy accuracy={beach.accuracy} hidePercent={false} showOverallPercent />
     {alertSignup}
     {nearby.length > 0 && <section className={s.nearbySection}><h3>Nearby beaches</h3><ul className={s.beaches}>{nearby.map((neighbor) => <li key={neighbor.code}><button onClick={() => onSelect(neighbor.code)}><span className={s.neighborInfo}><span className={s.beachName}>{neighbor.name}</span><span className={s.neighborMeta}>{(3958.8 * 2 * Math.asin(Math.sqrt(Math.min(1, distanceScore(beach, neighbor))))).toFixed(1)} mi away · {neighbor.probability < beach.probability ? "Lower" : neighbor.probability > beach.probability ? "Higher" : "Same"} predicted risk</span></span><span className={`${s.band} ${s.listReading} ${bandClass(neighbor.status)}`}><span>{STATUS_BAND[neighbor.status].short} risk</span></span><ArrowRight size={16} aria-hidden="true" /></button></li>)}</ul></section>}

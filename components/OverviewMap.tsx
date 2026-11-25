@@ -58,6 +58,34 @@ function dotIcon(beach: BeachData, binaryVerdict: boolean): L.DivIcon {
   });
 }
 
+/**
+ * A Water Quality Outlook beach: environmental conditions only, never a risk.
+ * Drawn as a small outlined blue ring so it reads as secondary to the coloured
+ * forecast pills and can never be mistaken for a green/yellow/red reading.
+ */
+export interface OutlookPin {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  stationCount: number;
+}
+
+const OUTLOOK_DOT: [number, number] = [16, 16];
+// Shared empty default: a fresh [] per render would change `points` every
+// render and make FitAll re-frame the map under the reader.
+const NO_OUTLOOKS: OutlookPin[] = [];
+
+function outlookIcon(): L.DivIcon {
+  const [w, h] = OUTLOOK_DOT;
+  return L.divIcon({
+    html: '<div class="nb-outlook-dot"></div>',
+    className: "nb-overview-icon",
+    iconSize: [w, h],
+    iconAnchor: [w / 2, h / 2],
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Label placement
 // ---------------------------------------------------------------------------
@@ -481,7 +509,9 @@ function escapeHtml(text: string): string {
 }
 
 // Frame all beaches with a little breathing room so every spot is visible at once.
-function FitAll({ beaches }: { beaches: BeachData[] }) {
+type MapPoint = { latitude: number; longitude: number };
+
+function FitAll({ beaches }: { beaches: MapPoint[] }) {
   const map = useMap();
   useEffect(() => {
     if (beaches.length === 0) return;
@@ -501,7 +531,7 @@ function MapInteractionAnalytics() {
   return null;
 }
 
-function NearbyLocation({ beaches }: { beaches: BeachData[] }) {
+function NearbyLocation({ beaches }: { beaches: MapPoint[] }) {
   const map = useMap();
   const interacted = useRef(false);
   const [message, setMessage] = useState("");
@@ -557,6 +587,8 @@ export default function OverviewMap({
   labelMinZoom = 0,
   locateNearby = false,
   onSelect,
+  outlookPins = NO_OUTLOOKS,
+  onSelectOutlook,
 }: {
   beaches: BeachData[];
   fallbackCenter: [number, number];
@@ -564,13 +596,18 @@ export default function OverviewMap({
   labelMinZoom?: number;
   locateNearby?: boolean;
   onSelect: (code: string) => void;
+  /** Water Quality Outlook beaches. Empty unless the outlooks flag is on. */
+  outlookPins?: OutlookPin[];
+  onSelectOutlook?: (siteId: string) => void;
 }) {
+  const points = useMemo<MapPoint[]>(() => [...beaches, ...outlookPins], [beaches, outlookPins]);
   const center = useMemo<[number, number]>(() => {
-    if (beaches.length === 0) return fallbackCenter;
-    const avgLat = beaches.reduce((s, b) => s + b.latitude, 0) / beaches.length;
-    const avgLon = beaches.reduce((s, b) => s + b.longitude, 0) / beaches.length;
+    if (points.length === 0) return fallbackCenter;
+    const avgLat = points.reduce((s, b) => s + b.latitude, 0) / points.length;
+    const avgLon = points.reduce((s, b) => s + b.longitude, 0) / points.length;
     return [avgLat, avgLon];
-  }, [beaches, fallbackCenter]);
+  }, [points, fallbackCenter]);
+  const outlookDot = useMemo(() => outlookIcon(), []);
 
   return (
     <MapContainer
@@ -585,9 +622,21 @@ export default function OverviewMap({
         subdomains={BASEMAP_SUBDOMAINS}
         maxZoom={BASEMAP_MAX_ZOOM}
       />
-      <FitAll beaches={beaches} />
+      <FitAll beaches={points} />
       <MapInteractionAnalytics />
-      {locateNearby && <NearbyLocation beaches={beaches} />}
+      {locateNearby && <NearbyLocation beaches={points} />}
+      {/* Outlooks first and pushed down the stack: forecasts stay on top. */}
+      {outlookPins.map((p) => (
+        <Marker
+          key={`outlook-${p.id}`}
+          position={[p.latitude, p.longitude]}
+          icon={outlookDot}
+          zIndexOffset={-1000}
+          eventHandlers={{ click: () => onSelectOutlook?.(p.id) }}
+          keyboard
+          title={`${p.name}: Water Quality Outlook${p.stationCount > 1 ? ` (${p.stationCount} stations)` : ""}`}
+        />
+      ))}
       {beaches.map((b) => (
         <Marker
           key={b.code}

@@ -27,6 +27,12 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Water Quality Outlooks read data/outlooks/*.csv with fs at request time.
+  // The files are deliberately outside public/ (not downloadable), so the
+  // tracer has to be told to ship them with the location page.
+  outputFileTracingIncludes: {
+    "/\\[location\\]": ["./data/outlooks/**/*"],
+  },
   // PostHog API paths use trailing slashes; don't redirect them away.
   skipTrailingSlashRedirect: true,
 };
