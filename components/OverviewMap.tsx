@@ -79,7 +79,14 @@ const NO_OUTLOOKS: OutlookPin[] = [];
 function outlookIcon(): L.DivIcon {
   const [w, h] = OUTLOOK_DOT;
   return L.divIcon({
-    html: '<div class="nb-outlook-dot"></div>',
+    // Styled inline rather than from globals.css: the global stylesheet is
+    // shared with every page and a stale copy of it shipped in the first
+    // Preview builds, leaving these pins 0px tall. Inline styles travel with
+    // the marker itself.
+    html:
+      '<div class="nb-outlook-dot" style="box-sizing:border-box;width:16px;height:16px;' +
+      'border-radius:9999px;border:3px solid #2f6fb3;background:#ffffff;' +
+      'box-shadow:0 1px 3px rgba(0,0,0,0.25);cursor:pointer"></div>',
     className: "nb-overview-icon",
     iconSize: [w, h],
     iconAnchor: [w / 2, h / 2],

@@ -60,18 +60,6 @@ body {
    OverviewMap can place them around the dots (a tooltip only offers a fixed
    direction + offset, which is what made them collide). Styled to match the
    tooltip look they replace. */
-/* Water Quality Outlook pin: an outlined blue ring, smaller than the forecast
-   pills and deliberately not filled, so it never reads as a risk colour. */
-.nb-outlook-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 9999px;
-  border: 3px solid #2f6fb3;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  cursor: pointer;
-}
-
 .nb-map-label-icon {
   background: transparent;
   border: none;
