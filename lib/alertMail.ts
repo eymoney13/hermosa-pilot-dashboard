@@ -29,6 +29,8 @@ export interface AlertedBeach {
   name: string;
   probability: number; // 0-1, as published
   status: Status;
+  // `probability` is the Neptune Index / 100, not a probability (see BeachData).
+  indexScale?: boolean;
 }
 
 export interface ComposedEmail {
@@ -40,6 +42,17 @@ export interface ComposedEmail {
 function pct(probability: number): number {
   return Math.round(probability * 100);
 }
+
+// The figure beside a beach's label. A Neptune Index is printed as "Index 62",
+// never "62%": it is not a probability, and the % sign would say it was.
+function reading(b: AlertedBeach): string {
+  return b.indexScale ? `Index ${pct(b.probability)}` : `${pct(b.probability)}%`;
+}
+
+const PERCENT_NOTE =
+  "The percentage is our estimated chance that bacteria exceed the EPA safe-swimming limit. It is a forecast, not an actual test result.";
+const INDEX_NOTE =
+  "The Neptune Index puts every beach on the same 0 to 100 scale. 50 is the line where our model advises against swimming at that beach. It is a forecast, not an actual test result.";
 
 // Every beach in an alert is there because it crossed into the top tier, so the
 // reading is always "High" - it is a label for the number beside it, not a
@@ -124,9 +137,13 @@ export function composeAlertEmail(
     ? (cleared.length ? `${highLead} ${clearedLead}` : highLead)
     : clearedLead;
 
+  // One board publishes one scale, so one beach speaks for the email.
+  const onIndex = [...beaches, ...cleared].some((b) => b.indexScale);
+  const note = onIndex ? INDEX_NOTE : PERCENT_NOTE;
+
   const row = (b: AlertedBeach, label: string, colour: string) => `      <tr>
         <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:15px;color:#0f172a;">${esc(b.name)}</td>
-        <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:15px;color:${colour};font-weight:600;text-align:right;white-space:nowrap;">${label} ${pct(b.probability)}%</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:15px;color:${colour};font-weight:600;text-align:right;white-space:nowrap;">${label} ${reading(b)}</td>
       </tr>`;
 
   const rows = beaches.map((b) => row(b, "High", "#7A1F1F")).join("\n");
@@ -149,7 +166,7 @@ export function composeAlertEmail(
 ${rows}
     </table>${clearedRows}
     <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#475569;">
-      The percentage is our estimated chance that bacteria exceed the EPA safe-swimming limit. It is a forecast, not an actual test result.
+      ${note}
     </p>
     <a href="${esc(boardUrl)}" style="display:inline-block;background:#2C8487;color:#ffffff;text-decoration:none;font-size:15px;font-weight:500;padding:11px 20px;border-radius:6px;">See the full forecast</a>
     <p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #eee;font-size:12px;line-height:1.6;color:#94a3b8;">
@@ -169,11 +186,19 @@ ${rows}
     "",
     lead,
     "",
-    ...beaches.map((b) => `  ${b.name}: High ${pct(b.probability)}%`),
-    ...cleared.map((b) => `  ${b.name}: Low ${pct(b.probability)}%`),
+    ...beaches.map((b) => `  ${b.name}: High ${reading(b)}`),
+    ...cleared.map((b) => `  ${b.name}: Low ${reading(b)}`),
     "",
-    "The percentage is our estimated chance that bacteria exceed the EPA",
-    "safe-swimming limit. It is a forecast, not an actual test result.",
+    ...(onIndex
+      ? [
+          "The Neptune Index puts every beach on the same 0 to 100 scale. 50 is",
+          "the line where our model advises against swimming at that beach. It is",
+          "a forecast, not an actual test result.",
+        ]
+      : [
+          "The percentage is our estimated chance that bacteria exceed the EPA",
+          "safe-swimming limit. It is a forecast, not an actual test result.",
+        ]),
     "",
     `See the full forecast: ${boardUrl}`,
     "",

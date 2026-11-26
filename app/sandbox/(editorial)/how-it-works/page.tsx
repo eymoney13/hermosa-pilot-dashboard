@@ -26,8 +26,8 @@ const STEPS = [
     body: "Rainfall, tides, waves, river discharge, sunlight and water temperature all shift how bacteria move and survive. Neptune pulls the current readings for each beach and feeds them in alongside the history.",
   },
   {
-    title: "Estimate the chance of an exceedance",
-    body: `A model weighs those conditions against what it learned and produces a prediction per beach: the chance that bacteria exceed the applicable safe-swimming threshold, ${EPA_MPN_THRESHOLD} MPN/100mL for ocean water. >104MPN = unsafe levels of bacteria. <104MPN = safe levels of bacteria.`,
+    title: "Score the risk of an exceedance",
+    body: `A model weighs those conditions against what it learned and scores each beach on how likely bacteria are to exceed the applicable safe-swimming threshold, ${EPA_MPN_THRESHOLD} MPN/100mL for ocean water. >104MPN = unsafe levels of bacteria. <104MPN = safe levels of bacteria.`,
   },
   {
     title: "Publish it, then verify",
@@ -53,7 +53,7 @@ const COMPARE = [
       "Estimates, using conditions and past results",
       "Covers today and the next three days",
       "Updates once a day",
-      "Is a probability of unsafe bacteria levels that day",
+      "Is a risk score for that day, with the chance of unsafe bacteria written beside it",
     ],
   },
 ];
@@ -124,7 +124,8 @@ export default async function HowItWorksPage() {
     </EditorialSection>
 
     <EditorialSection number="03" title="What the risk levels mean">
-      <p>The Neptune Index is a percentage. It is our model’s estimated probability that enterococcus exceeds {EPA_MPN_THRESHOLD} MPN/100mL at that beach. A lower percentage means an exceedance is less likely. A higher percentage means it is more likely.</p>
+      <p>The Neptune Index is a 0 to 100 risk score, not a percentage. Every beach has its own line where our model advises against swimming, because some beaches run much cleaner than others. The index puts that line at 50 for every beach, so the same number means the same thing wherever you look: below 50, the model does not advise against swimming; 50 and above, it does.</p>
+      <p>Because the index is not a probability, each beach also shows the honest chance in plain words, such as “About 1 in 20 chance the water tests unsafe today.” That chance comes from checking years of past predictions against the lab results that followed.</p>
 
       {/* Read straight off RISK_TIERS so the bands and colors here can never
           drift from the legend on the board. */}
@@ -132,14 +133,14 @@ export default async function HowItWorksPage() {
         {RISK_TIERS.map((tier) => (
           <li key={tier.label}>
             <span className={s.tierSwatch} style={{ backgroundColor: tier.color }} />
-            <span className={s.tierRange} style={{ color: tier.textColor }}>{tier.range}%</span>
+            <span className={s.tierRange} style={{ color: tier.textColor }}>{tier.range}</span>
             <span className={s.tierName}>{tier.label}</span>
           </li>
         ))}
       </ul>
 
-      <p>Those labels come from the relationship we see in the record. When past forecasts are lined up against the official lab results that followed them, samples predicted in the lower ranges have tended to come back with lower bacteria levels, and samples predicted in the higher ranges have tended to come back higher.</p>
-      <p>So the labels describe a likelihood, and how that likelihood has borne out. They are not measured bacteria counts, is it the probability of unsafe levels of bacteria for that day. </p>
+      <p>Those labels come from the record. Lining up our past forecasts for the beaches on this board against the official lab results that followed them (2024 onward), days in each band came back over the safe-swimming limit about this often: Low, about 1 in 100. Moderate, about 3 in 100. High, about 1 in 8. Very high, about 6 in 10.</p>
+      <p>So a High reading does not mean the water is more likely than not to be unsafe. It means the risk is several times higher than a normal day at that beach, which is why the model advises against swimming. Only Very high days are more often unsafe than not. The labels are not measured bacteria counts.</p>
 
       <p className={s.annotation}>A low reading means conditions look unfavorable for high bacteria, not that the water has been tested and cleared. A high reading is a reason for caution, not a closure. Official advisories and closures take precedence over anything on this page.</p>
     </EditorialSection>

@@ -373,6 +373,41 @@ function dayThreshold(row: ForecastRow, i: number, fallback: number): number {
   return raw != null && Number.isFinite(n) ? n : fallback;
 }
 
+// ── Neptune Index ───────────────────────────────────────────────────────────
+//
+// The CA backend publishes, beside its raw score:
+//   neptune_index / day{i}_index   0-100, the model's warning line at exactly 50 at
+//                                  every beach and every horizon, and
+//   chance_unsafe / day{i}_chance  the honest, calibrated chance of an exceedance.
+//
+// Where the index is present it becomes the reading the board shows and classifies
+// (probability = index / 100, cutoff = 0.50), so the shared 30/50/75 bands, the
+// status, the alert rule and the Good/Moderate/Poor split all mean "relative to
+// this beach's warning line". Raw cutoffs differ by beach and by forecast horizon
+// (0.50 nowcast, 0.40/0.46/0.39 forecast), so without this a day-1 forecast at 45
+// would read Moderate while the model had already called it Unsafe.
+//
+// Boards that publish no index (Boston) fall through to exactly the old behaviour.
+const INDEX_LINE = 0.5;
+
+function finiteOrNull(raw: unknown): number | null {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function reading(
+  rawProb: unknown,
+  rawIndex: unknown,
+  rawChance: unknown,
+  rawCutoff: number
+): { p: number; cutoff: number; chance: number | null } {
+  const chance = finiteOrNull(rawChance);
+  const idx = finiteOrNull(rawIndex);
+  if (idx !== null) return { p: idx / 100, cutoff: INDEX_LINE, chance };
+  return { p: Number(rawProb), cutoff: rawCutoff, chance };
+}
+
 // Normalize a raw days_since_sample cell to a number or null.
 function parseDaysSince(raw: unknown): number | null {
   return raw == null || Number.isNaN(Number(raw)) ? null : Number(raw);
@@ -454,10 +489,14 @@ export async function loadDashboardData(
     // Prefer the threshold the backend classified this row against; fall back to
     // thresholds.csv (a DEFAULT row plus per-beach overrides).
     const rowThreshold = Number(now.threshold);
-    const threshold =
+    const rawThreshold =
       now.threshold != null && !Number.isNaN(rowThreshold)
         ? rowThreshold
         : thresholdFor(code, thresholdMap);
+    const today = reading(
+      now.exc_probability, now.neptune_index, now.chance_unsafe, rawThreshold
+    );
+    const threshold = today.cutoff;
 
     // Locations that opt in classify against their own threshold, so the banner
     // agrees with the backend's own Safe/Unsafe call. Everything else keeps the
@@ -472,7 +511,7 @@ export async function loadDashboardData(
         ? statusFromThreshold(p, cutoff)
         : statusFromProb(p, code, thresholdMap);
 
-    const prob = Number(now.exc_probability);
+    const prob = today.p;
     const status = classify(prob);
     if (!status) continue;
 
@@ -491,8 +530,12 @@ export async function loadDashboardData(
         const probRaw = fcRow[`day${i}_probability`];
         const mpn = fcRow[`day${i}_mpn_label`] as string | undefined;
         if (!date || probRaw == null) continue;
-        const p = Number(probRaw);
-        const cutoff = dayThreshold(fcRow, i, threshold);
+        const day = reading(
+          probRaw, fcRow[`day${i}_index`], fcRow[`day${i}_chance`],
+          dayThreshold(fcRow, i, rawThreshold)
+        );
+        const p = day.p;
+        const cutoff = day.cutoff;
         const dayStatus = classify(p, cutoff);
         if (!dayStatus) continue;
         // Forecast days carry top contributing factors (why the model predicts
@@ -500,6 +543,7 @@ export async function loadDashboardData(
         forecast.push({
           date: String(date),
           probability: p,
+          chance: day.chance,
           mpnLabel: mpn,
           status: dayStatus,
           threshold: cutoff,
@@ -521,8 +565,12 @@ export async function loadDashboardData(
         const probRaw = histRow[`day${i}_probability`];
         const mpn = histRow[`day${i}_mpn_label`] as string | undefined;
         if (!date || probRaw == null) continue;
-        const p = Number(probRaw);
-        const cutoff = dayThreshold(histRow, i, threshold);
+        const day = reading(
+          probRaw, histRow[`day${i}_index`], histRow[`day${i}_chance`],
+          dayThreshold(histRow, i, rawThreshold)
+        );
+        const p = day.p;
+        const cutoff = day.cutoff;
         const dayStatus = classify(p, cutoff);
         if (!dayStatus) continue;
         // Replay that day's saved nowcast: same factors + the lab result that
@@ -530,6 +578,7 @@ export async function loadDashboardData(
         pastDays.push({
           date: String(date),
           probability: p,
+          chance: day.chance,
           mpnLabel: mpn,
           status: dayStatus,
           threshold: cutoff,
@@ -558,6 +607,8 @@ export async function loadDashboardData(
       longitude: entry.longitude ?? Number(now.Longitude),
       predictionDate: String(now.prediction_date),
       probability: prob,
+      chance: today.chance,
+      indexScale: finiteOrNull(now.neptune_index) !== null,
       mpnLabel: now.mpn_label,
       lastResult: parseLastResult(now.last_result),
       daysSinceSample: days,
@@ -573,7 +624,8 @@ export async function loadDashboardData(
       nSamples: entry.nSamples ?? null,
       pastDays,
       forecast,
-      accuracy: computeAccuracy(accuracyByCode.get(code) ?? [], threshold),
+      // accuracy.csv carries the RAW score, so it is scored against the raw cutoff.
+      accuracy: computeAccuracy(accuracyByCode.get(code) ?? [], rawThreshold),
     });
   }
 

@@ -122,9 +122,15 @@ export default function MapView({
                     included — the card's summary is where the number speaks. */}
                 {!binaryVerdict && (
                   <div style={{ fontSize: 12, color: "#555" }}>
-                    {pct}
-                    {hidePercent ? "" : "%"} probability of unsafe bacteria
-                    levels
+                    {b.indexScale ? (
+                      <>Neptune Index {pct}</>
+                    ) : (
+                      <>
+                        {pct}
+                        {hidePercent ? "" : "%"} probability of unsafe bacteria
+                        levels
+                      </>
+                    )}
                   </div>
                 )}
               </div>

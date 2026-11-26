@@ -13,6 +13,7 @@ import {
   type Status,
   type Verdict,
 } from "@/lib/data";
+import { chanceSentence } from "@/lib/chance";
 import type { FeatureFlags } from "@/lib/features";
 import { buildSummary } from "@/lib/summary";
 import {
@@ -173,6 +174,7 @@ function StatusHero({
   verdict,
   probability,
   showIndex,
+  onIndex = false,
   when,
 }: {
   status: Status;
@@ -182,6 +184,8 @@ function StatusHero({
   verdict: Verdict | null;
   probability: number;
   showIndex: boolean;
+  // The number is the Neptune Index (warning line at 50), not a probability.
+  onIndex?: boolean;
   // The day being viewed, worded for the subtitle ("today", "on Thursday").
   // Undefined keeps the existing "today" phrasing.
   when?: string;
@@ -233,7 +237,7 @@ function StatusHero({
             Neptune Index
             <InfoTooltip
               title="Neptune Index"
-              body="A 0 to 100 score for how likely bacteria are to exceed the EPA safe-swimming threshold today. Higher means a greater chance the water tests unsafe. It is the same figure as the probability of unsafe bacteria levels under “What’s affecting the water quality?”."
+              body={onIndex ? INDEX_TOOLTIP_BODY : "A 0 to 100 score for how likely bacteria are to exceed the EPA safe-swimming threshold today. Higher means a greater chance the water tests unsafe. It is the same figure as the probability of unsafe bacteria levels under “What’s affecting the water quality?”."}
               iconClassName="h-3.5 w-3.5"
               ariaLabel="About the Neptune Index"
             />
@@ -253,6 +257,30 @@ function StatusHero({
 // ---------------------------------------------------------------------------
 // 3. Exceedance scale
 // ---------------------------------------------------------------------------
+
+// What the Neptune Index means. Kept in one constant so the hero tooltip and the
+// readout tooltip cannot drift apart.
+const INDEX_TOOLTIP_BODY =
+  "A 0 to 100 score that puts every beach on the same scale. 50 is the line where our model advises against swimming at this beach; the higher the number, the further past that line. It is not a percentage — the chance of unsafe bacteria is written out beside it.";
+
+// The band sentences for the Neptune Index. Deliberately free of "X% chance": on
+// this scale the number is not a probability. The honest chance is printed
+// separately (lib/chance.ts). The wording follows what each band has actually
+// meant on the CA holdout (2024+, project-neptune outputs/calibration_report_ca.md):
+// Low rarely exceeds, Moderate seldom, High exceeds a minority of the time but
+// several times this beach's normal rate, Very high more often than not.
+function indexBandBody(index: number): string {
+  if (index < 30) {
+    return "Bacteria levels are likely low. Days that score like this rarely test over the EPA safe-swimming limit.";
+  }
+  if (index < 50) {
+    return "Bacteria levels may be slightly elevated, but most days that score like this still test below the EPA safe-swimming limit.";
+  }
+  if (index < 75) {
+    return "Past our advisory line for this beach. Most days that score like this still test below the EPA limit, but the risk is several times higher than a normal day here, so we advise against swimming.";
+  }
+  return "Bacteria levels are likely high. More often than not, days that score like this test over the EPA safe-swimming limit.";
+}
 
 function exceedanceBody(pct: number): string {
   const article = articleFor(pct);
@@ -320,10 +348,13 @@ function ExceedanceDetail({
   probability,
   hidePercent,
   hideReadout,
+  onIndex = false,
 }: {
   probability: number;
   hidePercent: boolean;
   hideReadout: boolean;
+  // The number is the Neptune Index, not a probability: relabel it.
+  onIndex?: boolean;
 }) {
   const probClamped = Math.max(0, Math.min(1, probability));
   const pct = Math.round(probClamped * 100);
@@ -351,12 +382,12 @@ function ExceedanceDetail({
               {hidePercent ? "" : "%"}
             </span>
             <span className="text-[15px] font-medium text-gray-800">
-              chance of unsafe bacteria levels
+              {onIndex ? "Neptune Index" : "chance of unsafe bacteria levels"}
             </span>
             <InfoTooltip
-              title="Probability of unsafe bacteria levels"
-              body={exceedanceBody(pct)}
-              ariaLabel="About the probability of unsafe bacteria levels"
+              title={onIndex ? "Neptune Index" : "Probability of unsafe bacteria levels"}
+              body={onIndex ? `${indexBandBody(pct)} ${INDEX_TOOLTIP_BODY}` : exceedanceBody(pct)}
+              ariaLabel={onIndex ? "About the Neptune Index" : "About the probability of unsafe bacteria levels"}
               // The readout says "bacteria" without saying which. This is where
               // a reader wonders, so this is where the answer is offered.
               link={{
@@ -524,7 +555,7 @@ function SevenDayWindow({
           // The tooltip and screen-reader text, which name the band AND the
           // number whichever the cell itself is showing.
           const cellSummary =
-            verdict ?? `${STATUS_LABEL[day.status]} · ${pct}%`;
+            verdict ?? `${STATUS_LABEL[day.status]} · ${pct}${hidePercent ? "" : "%"}`;
 
           return (
             <button
@@ -697,11 +728,20 @@ export default function BeachCard({
   // row of two-digit numbers has to be read and ranked first. In Behind the
   // Prediction, where a reader has gone looking for the workings, the numbers
   // are the point.
+  // A beach whose backend publishes the Neptune Index reads as an index
+  // everywhere on the card: no "%", no "chance of unsafe bacteria" beside the
+  // number. The honest chance is its own line under the bar.
+  const onIndex = beach.indexScale === true;
+  const hidePct = features.hidePercentSign || onIndex;
+  const chanceLine = chanceSentence(
+    activeDay.chance,
+    activeCell.type === "today" ? "today" : `on ${weekdayLong(activeDay.date)}`
+  );
   const dayWindowProps = {
     cells,
     selectedDate,
     onSelect: setSelectedDate,
-    hidePercent: features.hidePercentSign,
+    hidePercent: hidePct,
     binaryVerdict: features.binaryVerdict,
   };
   const bandWindow = <SevenDayWindow {...dayWindowProps} readout="band" />;
@@ -731,6 +771,7 @@ export default function BeachCard({
             verdict={verdict}
             probability={activeDay.probability}
             showIndex={features.neptuneIndex}
+            onIndex={onIndex}
             when={
               features.binaryVerdict && activeCell.type !== "today"
                 ? `on ${weekdayLong(activeDay.date)}`
@@ -742,6 +783,9 @@ export default function BeachCard({
               would describe a scale this beach is not measured on. */}
           {!features.binaryVerdict && (
             <ExceedanceBar probability={activeDay.probability} />
+          )}
+          {chanceLine && (
+            <p className="text-sm font-medium text-gray-800">{chanceLine}</p>
           )}
         </div>
 
@@ -775,8 +819,9 @@ export default function BeachCard({
               <div className="space-y-6">
                 <ExceedanceDetail
                   probability={activeDay.probability}
-                  hidePercent={features.hidePercentSign}
+                  hidePercent={hidePct}
                   hideReadout={features.hideExceedanceReadout}
+                  onIndex={onIndex}
                 />
                 {percentWindow}
               </div>
@@ -792,7 +837,7 @@ export default function BeachCard({
           daysSinceSample={activeDay.daysSinceSample ?? null}
           predictionDate={activeDay.date}
           accuracy={beach.accuracy}
-          hidePercent={features.hidePercentSign}
+          hidePercent={hidePct}
           hideContributingFactors={features.hideContributingFactors}
           showAccuracyPercent={features.siteAccuracyPercent}
         />

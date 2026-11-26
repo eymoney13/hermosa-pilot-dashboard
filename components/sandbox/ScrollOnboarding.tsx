@@ -7,7 +7,7 @@ import s from "./ScrollOnboarding.module.css";
 const readings = [
   { label: "Low risk", color: "#426c39", background: "#edf4e7", title: "A lower predicted bacteria risk.", text: "The model detects conditions linked to lower bacteria risk and predicts a low chance of exceeding water-quality standards. Check your beach’s details and official advisories before heading in." },
   { label: "Moderate risk", color: "#806316", background: "#f8f0d7", title: "A reason to use caution.", text: "The model detects conditions linked to elevated bacteria risk and predicts a moderate chance of exceeding water-quality standards. Use caution and check official advisories before heading in." },
-  { label: "High risk", color: "#a63d36", background: "#fbece7", title: "Reconsider getting in the water.", text: "The model detects conditions linked to higher bacteria risk and predicts a greater than 50% chance of exceeding water-quality standards. Check official advisories and consider another beach or another day." },
+  { label: "High risk", color: "#a63d36", background: "#fbece7", title: "Reconsider getting in the water.", text: "The model detects conditions linked to higher bacteria risk and scores this beach past its advisory line, where the risk of exceeding water-quality standards is several times a normal day. Check official advisories and consider another beach or another day." },
 ];
 
 export default function ScrollOnboarding() {

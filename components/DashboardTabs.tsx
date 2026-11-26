@@ -246,7 +246,7 @@ export default function DashboardTabs({
           beaches={orderForList(beaches, listTopStations)}
           locationLabel={locationLabel}
           binaryVerdict={features.binaryVerdict}
-          hidePercent={features.hidePercentSign}
+          hidePercent={features.hidePercentSign || beaches.some((b) => b.indexScale)}
           onSelect={(code) => openBeach(code, "list")}
         />
       ) : mapActive ? (
@@ -355,7 +355,7 @@ export default function DashboardTabs({
               beaches={beaches}
               selectedCode={active.code}
               fallbackCenter={fallbackCenter}
-              hidePercent={features.hidePercentSign}
+              hidePercent={features.hidePercentSign || beaches.some((b) => b.indexScale)}
               binaryVerdict={features.binaryVerdict}
             />
           </section>

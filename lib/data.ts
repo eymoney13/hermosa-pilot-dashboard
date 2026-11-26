@@ -558,7 +558,16 @@ export interface Conditions {
 
 export interface ForecastDay {
   date: string;
+  // The headline reading, 0-1. On boards whose backend publishes a Neptune Index
+  // (the CA boards) this is that index / 100: 0.50 is the model's warning line at
+  // every beach, so the shared Low/Moderate/High/Very high bands mean the same thing
+  // everywhere. It is NOT a probability there — see `chance`. Other boards still
+  // carry their raw exceedance probability here.
   probability: number;
+  // The honest, calibrated chance that the water tests over the EPA limit, 0-1.
+  // Only set where the backend publishes it; null/undefined means "not available",
+  // never "zero".
+  chance?: number | null;
   mpnLabel?: string;
   status: Status;
   // The cutoff this day was classified against. Boston's model re-tunes its
@@ -603,7 +612,16 @@ export interface BeachData {
   latitude: number;
   longitude: number;
   predictionDate: string;
+  // See ForecastDay.probability / ForecastDay.chance.
   probability: number;
+  chance?: number | null;
+  /**
+   * true when `probability` holds the Neptune Index / 100 rather than a raw
+   * exceedance probability (the backend published neptune_index). Every place that
+   * would print "%" or "chance of unsafe bacteria" next to the number reads this,
+   * because on this scale those words would be false.
+   */
+  indexScale?: boolean;
   mpnLabel?: string;
   lastResult: number | string | null;
   daysSinceSample: number | null;

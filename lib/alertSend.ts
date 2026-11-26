@@ -332,6 +332,7 @@ export async function sendAlertsForLocation(
         name: b.name,
         probability: b.probability,
         status: b.status,
+        indexScale: b.indexScale,
       }));
     if (alerted.length === 0) continue;
 

@@ -5,6 +5,7 @@ import posthog from "posthog-js";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Lock } from "lucide-react";
 import { formatMonthDayYear, RISK_TIERS, STATUS_BAND, type BeachData, type Status } from "@/lib/data";
 import { buildWindowCells } from "@/lib/window";
+import { chanceSentence } from "@/lib/chance";
 import { beachProperties, type LockedFeature } from "@/lib/analytics";
 import WhyPrediction from "../WhyPrediction";
 import ForecastAccuracy from "../ForecastAccuracy";
@@ -82,7 +83,9 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
   // A locked date is a placeholder and must never be rendered as a reading.
   const day = forecasts.find((candidate) => candidate.date === selectedDate && !candidate.locked) ?? today;
   const isToday = day.date === today.date;
+  // The Neptune Index: 0-100 with this beach's warning line at 50. Not a percentage.
   const pct = Math.round(Math.max(0, Math.min(1, day.probability)) * 100);
+  const chanceLine = chanceSentence(day.chance, isToday ? "today" : `on ${dateLabel(day.date, true)}`);
   const explanation = day.status === "Normal" ? "Bacteria levels are predicted to be below the swimming threshold." : day.status === "Slightly elevated" ? "Bacteria levels may be elevated, but are predicted to remain below the swimming threshold." : "Bacteria levels are predicted to exceed the swimming threshold.";
   const nearby = Number.isFinite(beach.latitude) && Number.isFinite(beach.longitude)
     ? beaches.filter((candidate) => candidate.code !== beach.code && Number.isFinite(candidate.latitude) && Number.isFinite(candidate.longitude))
@@ -97,9 +100,10 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
       </div>
       <div className={s.heroReading}>
         <h3>{STATUS_BAND[day.status].short} risk</h3>
-        <div className={s.heroProbability}><strong>{pct}%</strong><span>chance of unsafe<br />bacteria levels</span></div>
+        <div className={s.heroProbability}><strong>{pct}</strong><span>Neptune<br />Index</span></div>
       </div>
       <p className={s.predictionExplanation}>{explanation}</p>
+      {chanceLine && <p className={s.chanceLine}>{chanceLine}</p>}
       <div className={s.predictionNote}>
         <div className={s.scaleBar} aria-hidden="true">
           <div className={s.scaleTrack} style={{ background: "linear-gradient(to right, #97C459 0%, #97C459 25%, #EF9F27 40%, #EF9F27 55%, #E24B4A 65%, #A32D2D 100%)" }} />
@@ -109,7 +113,8 @@ export default function SandboxBeachDetail({ beach, beaches, onSelect, onProMome
         </div>
         <div className={s.scaleLabels}><span>Low risk</span><span>Very high risk</span></div>
         <details className={s.riskDetails}><summary>About risk levels</summary>
-          <dl className={s.riskKey}>{RISK_TIERS.map((tier) => <div key={tier.label}><span className={s.keySwatch} style={{ backgroundColor: tier.color }} aria-hidden="true" /><dt>{tier.range}%</dt><dd>{tier.label}</dd></div>)}</dl>
+          <dl className={s.riskKey}>{RISK_TIERS.map((tier) => <div key={tier.label}><span className={s.keySwatch} style={{ backgroundColor: tier.color }} aria-hidden="true" /><dt>{tier.range}</dt><dd>{tier.label}</dd></div>)}</dl>
+          <p className={s.probabilityCaption}>The Neptune Index puts every beach on the same 0–100 scale. 50 is where our model advises against swimming at that beach. It is not a percentage: the chance of unsafe bacteria is shown in words above.</p>
         </details>
         <p>Neptune model prediction. <a href={advisory.href} target="_blank" rel="noopener noreferrer" title={advisory.label}>Always follow official beach advisories. <ArrowUpRight size={16} aria-hidden="true" /></a></p>
       </div>

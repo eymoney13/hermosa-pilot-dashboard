@@ -68,6 +68,7 @@ export function buildWindowCells(beach: BeachData): WindowCell[] {
     day: {
       date: beach.predictionDate,
       probability: beach.probability,
+      chance: beach.chance,
       mpnLabel: beach.mpnLabel,
       status: beach.status,
       threshold: beach.threshold,
